@@ -1,0 +1,667 @@
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2023-08-17.21:45:47
+[TESTING] ---- FRONT SONAR ----
+
+[MESSAGES] Printing front sonar data received.
+Frame id: SonarFront_frame
+Field of view: 1.05
+Minimum range value: 0
+Maximum range value: 5
+Range value: 1.07032
+[END MESSAGES] Finished printing.
+
+[TESTING] ---- FRONT CAMERA ----
+
+[MESSAGES] Printing front camera data information received.
+Image Width: 640
+Image Height: 480
+[END MESSAGES] Finished printing.
+
+[TESTING] ---- BOTTOM CAMERA ----
+
+[MESSAGES] Printing bottom camera data information received.
+Image Width: 640
+Image Height: 480
+[END MESSAGES] Finished printing.
+
+[TESTING] ---- DEPTH CAMERA ----
+
+[MESSAGES] Printing depth camera data information received.
+Image Width: 320
+Image Height: 240
+[END MESSAGES] Finished printing.
+
+[TESTING] ---- LASER SENSOR ----
+
+[MESSAGES] Printing laser sensor data received.
+Frame id: base_footprint
+Start angle of the scan: -2.0944
+End angle of the scan: 2.0944
+Angular distance between measurements: 0.00858359
+Time between measurements: 0
+Time between scans: 0
+Minimum range value: 0.1
+Maximum range value: 7
+Range data: (size: 488) 
+[END MESSAGES] Finished printing.
+
+[END TIME] 2023-08-17.21:46:26
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2023-08-27.22:43:26
+[TESTING] ---- FRONT SONAR ----
+
+[MESSAGES] Printing front sonar data received.
+Frame id: SonarFront_frame
+Field of view: 1.05
+Minimum range value: 0
+Maximum range value: 5
+Range value: 1.0653
+[END MESSAGES] Finished printing.
+
+[TESTING] ---- FRONT CAMERA ----
+
+[MESSAGES] Printing front camera data information received.
+Image Width: 640
+Image Height: 480
+[END MESSAGES] Finished printing.
+
+[TESTING] ---- BOTTOM CAMERA ----
+
+[MESSAGES] Printing bottom camera data information received.
+Image Width: 640
+Image Height: 480
+[END MESSAGES] Finished printing.
+
+[TESTING] ---- DEPTH CAMERA ----
+
+[MESSAGES] Printing depth camera data information received.
+Image Width: 320
+Image Height: 240
+[END MESSAGES] Finished printing.
+
+[TESTING] ---- LASER SENSOR ----
+
+[MESSAGES] Printing laser sensor data received.
+Frame id: base_footprint
+Start angle of the scan: -2.0944
+End angle of the scan: 2.0944
+Angular distance between measurements: 0.00858359
+Time between measurements: 0
+Time between scans: 0
+Minimum range value: 0.1
+Maximum range value: 7
+Range data: (size: 488) 
+[END MESSAGES] Finished printing.
+
+[END TIME] 2023-08-27.22:43:59
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2023-08-27.22:54:44
+[TESTING] ---- FRONT SONAR ----
+
+[MESSAGES] Printing front sonar data received.
+Frame id: SonarFront_frame
+Field of view: 1.05
+Minimum range value: 0
+Maximum range value: 5
+Range value: 1.03061
+[END MESSAGES] Finished printing.
+
+[TESTING] ---- FRONT CAMERA ----
+
+[MESSAGES] Printing front camera data information received.
+Image Width: 640
+Image Height: 480
+[END MESSAGES] Finished printing.
+
+[TESTING] ---- BOTTOM CAMERA ----
+
+[MESSAGES] Printing bottom camera data information received.
+Image Width: 640
+Image Height: 480
+[END MESSAGES] Finished printing.
+
+[TESTING] ---- DEPTH CAMERA ----
+
+[MESSAGES] Printing depth camera data information received.
+Image Width: 320
+Image Height: 240
+[END MESSAGES] Finished printing.
+
+[TESTING] ---- LASER SENSOR ----
+
+[MESSAGES] Printing laser sensor data received.
+Frame id: base_footprint
+Start angle of the scan: -2.0944
+End angle of the scan: 2.0944
+Angular distance between measurements: 0.00858359
+Time between measurements: 0
+Time between scans: 0
+Minimum range value: 0.1
+Maximum range value: 7
+Range data: (size: 488) 
+[END MESSAGES] Finished printing.
+
+[END TIME] 2023-08-27.22:55:16
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2023-09-07.10:28:21
+[TESTING] ---- FRONT SONAR ----
+
+[MESSAGES] Printing front sonar data received.
+Frame id: SonarFront_frame
+Field of view: 1.05
+Minimum range value: 0
+Maximum range value: 5
+Range value: 1.05516
+[END MESSAGES] Finished printing.
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2023-09-07.10:29:00
+[TESTING] ---- FRONT SONAR ----
+
+[MESSAGES] Printing front sonar data received.
+Frame id: SonarFront_frame
+Field of view: 1.05
+Minimum range value: 0
+Maximum range value: 5
+Range value: 1.00578
+[END MESSAGES] Finished printing.
+
+[TESTING] ---- FRONT CAMERA ----
+
+[MESSAGES] Printing front camera data information received.
+Image Width: 640
+Image Height: 480
+[END MESSAGES] Finished printing.
+
+[TESTING] ---- BOTTOM CAMERA ----
+
+[MESSAGES] Printing bottom camera data information received.
+Image Width: 640
+Image Height: 480
+[END MESSAGES] Finished printing.
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2023-09-07.11:44:31
+[TESTING] ---- FRONT SONAR ----
+
+[MESSAGES] Printing front sonar data received.
+Frame id: SonarFront_frame
+Field of view: 1.05
+Minimum range value: 0
+Maximum range value: 5
+Range value: 1.07149
+[END MESSAGES] Finished printing.
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2023-09-07.11:48:09
+[TESTING] ---- FRONT SONAR ----
+
+[MESSAGES] Printing front sonar data received.
+Frame id: SonarFront_frame
+Field of view: 1.05
+Minimum range value: 0
+Maximum range value: 5
+Range value: 1.01415
+[END MESSAGES] Finished printing.
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2023-09-07.11:49:10
+[TESTING] ---- FRONT SONAR ----
+
+[MESSAGES] Printing front sonar data received.
+Frame id: SonarFront_frame
+Field of view: 1.05
+Minimum range value: 0
+Maximum range value: 5
+Range value: 1.01606
+[END MESSAGES] Finished printing.
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2023-09-07.11:50:59
+[TESTING] ---- FRONT SONAR ----
+
+[MESSAGES] Printing front sonar data received.
+Frame id: SonarFront_frame
+Field of view: 1.05
+Minimum range value: 0
+Maximum range value: 5
+Range value: 1.0571
+[END MESSAGES] Finished printing.
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2023-09-07.11:52:23
+[TESTING] ---- BACK SONAR ----
+
+[MESSAGES] Printing back sonar data received.
+Frame id: SonarBack_frame
+Field of view: 1.05
+Minimum range value: 0
+Maximum range value: 5
+Range value: 0.877908
+[END MESSAGES] Finished printing.
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2023-09-07.11:52:39
+[TESTING] ---- BACK SONAR ----
+
+[MESSAGES] Printing back sonar data received.
+Frame id: SonarBack_frame
+Field of view: 1.05
+Minimum range value: 0
+Maximum range value: 5
+Range value: 0.82155
+[END MESSAGES] Finished printing.
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2023-09-07.14:34:30
+[TESTING] ---- BACK SONAR ----
+
+[MESSAGES] Printing back sonar data received.
+Frame id: SonarBack_frame
+Field of view: 1.05
+Minimum range value: 0
+Maximum range value: 5
+Range value: 0.827154
+[END MESSAGES] Finished printing.
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2023-09-07.15:09:22
+[TESTING] ---- BACK SONAR ----
+
+[MESSAGES] Printing back sonar data received.
+Frame id: SonarBack_frame
+Field of view: 1.05
+Minimum range value: 0
+Maximum range value: 5
+Range value: 0.859
+[END MESSAGES] Finished printing.
+
+[TESTING] ---- FRONT SONAR ----
+
+[MESSAGES] Printing front sonar data received.
+Frame id: SonarFront_frame
+Field of view: 1.05
+Minimum range value: 0
+Maximum range value: 5
+Range value: 0.967569
+[END MESSAGES] Finished printing.
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2023-11-01.13:57:08
+[TESTING] ---- BACK SONAR ----
+
+[MESSAGES] Printing back sonar data received.
+Frame id: SonarBack_frame
+Field of view: 0.523599
+Minimum range value: 0.25
+Maximum range value: 2.55
+Range value: 1.01
+[END MESSAGES] Finished printing.
+
+[TESTING] ---- FRONT SONAR ----
+
+[MESSAGES] Printing front sonar data received.
+Frame id: SonarFront_frame
+Field of view: 0.523599
+Minimum range value: 0.25
+Maximum range value: 2.55
+Range value: 3.68
+[END MESSAGES] Finished printing.
+
+[TESTING] ---- FRONT CAMERA ----
+
+[MESSAGES] Printing front camera data information received.
+Image Width: 320
+Image Height: 240
+[END MESSAGES] Finished printing.
+
+[TESTING] ---- BOTTOM CAMERA ----
+
+[MESSAGES] Printing bottom camera data information received.
+Image Width: 320
+Image Height: 240
+[END MESSAGES] Finished printing.
+
+[TESTING] ---- DEPTH CAMERA ----
+
+[MESSAGES] Printing depth camera data information received.
+Image Width: 640
+Image Height: 360
+[END MESSAGES] Finished printing.
+
+[END TIME] 2023-11-01.01:58:24 PM
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2023-11-05.13:18:30
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2023-11-08.03:21:00
+[TESTING] ---- BACK SONAR ----
+
+[MESSAGES] Printing back sonar data received.
+Frame id: SonarBack_frame
+Field of view: 0.523599
+Minimum range value: 0.25
+Maximum range value: 2.55
+Range value: 1.65
+[END MESSAGES] Finished printing.
+
+[TESTING] ---- FRONT SONAR ----
+
+[MESSAGES] Printing front sonar data received.
+Frame id: SonarFront_frame
+Field of view: 0.523599
+Minimum range value: 0.25
+Maximum range value: 2.55
+Range value: 0.76
+[END MESSAGES] Finished printing.
+
+[TESTING] ---- FRONT CAMERA ----
+
+[MESSAGES] Printing front camera data information received.
+Image Width: 320
+Image Height: 240
+[END MESSAGES] Finished printing.
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2023-11-09.08:44:18
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2023-11-20.14:17:09
+[TESTING] ---- BACK SONAR ----
+
+[MESSAGES] Printing back sonar data received.
+Frame id: SonarBack_frame
+Field of view: 0.523599
+Minimum range value: 0.25
+Maximum range value: 2.55
+Range value: 1.11
+[END MESSAGES] Finished printing.
+
+[TESTING] ---- FRONT SONAR ----
+
+[MESSAGES] Printing front sonar data received.
+Frame id: SonarFront_frame
+Field of view: 0.523599
+Minimum range value: 0.25
+Maximum range value: 2.55
+Range value: 4.19
+[END MESSAGES] Finished printing.
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2023-11-20.14:18:46
+[TESTING] ---- BACK SONAR ----
+
+[MESSAGES] Printing back sonar data received.
+Frame id: SonarBack_frame
+Field of view: 0.523599
+Minimum range value: 0.25
+Maximum range value: 2.55
+Range value: 1.13
+[END MESSAGES] Finished printing.
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2023-11-20.14:19:54
+[TESTING] ---- BACK SONAR ----
+
+[MESSAGES] Printing back sonar data received.
+Frame id: SonarBack_frame
+Field of view: 0.523599
+Minimum range value: 0.25
+Maximum range value: 2.55
+Range value: 1.1
+[END MESSAGES] Finished printing.
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2023-11-20.14:20:51
+[TESTING] ---- BACK SONAR ----
+
+[MESSAGES] Printing back sonar data received.
+Frame id: SonarBack_frame
+Field of view: 0.523599
+Minimum range value: 0.25
+Maximum range value: 2.55
+Range value: 1.11
+[END MESSAGES] Finished printing.
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2023-11-20.14:21:44
+[TESTING] ---- BACK SONAR ----
+
+[MESSAGES] Printing back sonar data received.
+Frame id: SonarBack_frame
+Field of view: 0.523599
+Minimum range value: 0.25
+Maximum range value: 2.55
+Range value: 1.1
+[END MESSAGES] Finished printing.
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2023-11-20.14:49:13
+[TESTING] ---- BACK SONAR ----
+
+[MESSAGES] Printing back sonar data received.
+Frame id: SonarBack_frame
+Field of view: 0.523599
+Minimum range value: 0.25
+Maximum range value: 2.55
+Range value: 1.13
+[END MESSAGES] Finished printing.
+
+[TESTING] ---- STEREO CAMERA ----
+
+[MESSAGES] Printing stereo camera data information received.
+Image Width: 640
+Image Height: 180
+[END MESSAGES] Finished printing.
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2023-11-20.14:50:00
+[TESTING] ---- BACK SONAR ----
+
+[MESSAGES] Printing back sonar data received.
+Frame id: SonarBack_frame
+Field of view: 0.523599
+Minimum range value: 0.25
+Maximum range value: 2.55
+Range value: 1.1
+[END MESSAGES] Finished printing.
+
+[TESTING] ---- STEREO CAMERA ----
+
+[MESSAGES] Printing stereo camera data information received.
+Image Width: 640
+Image Height: 180
+[END MESSAGES] Finished printing.
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2023-11-20.14:50:38
+[TESTING] ---- BACK SONAR ----
+
+[MESSAGES] Printing back sonar data received.
+Frame id: SonarBack_frame
+Field of view: 0.523599
+Minimum range value: 0.25
+Maximum range value: 2.55
+Range value: 1.12
+[END MESSAGES] Finished printing.
+
+[TESTING] ---- STEREO CAMERA ----
+
+[MESSAGES] Printing stereo camera data information received.
+Image Width: 640
+Image Height: 180
+[END MESSAGES] Finished printing.
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2023-11-21.03:20:32
+[TESTING] ---- BACK SONAR ----
+
+[MESSAGES] Printing back sonar data received.
+Frame id: SonarBack_frame
+Field of view: 0.523599
+Minimum range value: 0.25
+Maximum range value: 2.55
+Range value: 1.11
+[END MESSAGES] Finished printing.
+
+[TESTING] ---- STEREO CAMERA ----
+
+[MESSAGES] Printing stereo camera data information received.
+Image Width: 640
+Image Height: 180
+[END MESSAGES] Finished printing.
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2023-11-21.03:21:04
+[TESTING] ---- BACK SONAR ----
+
+[MESSAGES] Printing back sonar data received.
+Frame id: SonarBack_frame
+Field of view: 0.523599
+Minimum range value: 0.25
+Maximum range value: 2.55
+Range value: 1.11
+[END MESSAGES] Finished printing.
+
+[TESTING] ---- STEREO CAMERA ----
+
+[MESSAGES] Printing stereo camera data information received.
+Image Width: 640
+Image Height: 180
+[END MESSAGES] Finished printing.
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2023-12-18.11:18:59
+[TESTING] ---- BACK SONAR ----
+
+[MESSAGES] Printing back sonar data received.
+Frame id: SonarBack_frame
+Field of view: 0.523599
+Minimum range value: 0.25
+Maximum range value: 2.55
+Range value: 1.52
+[END MESSAGES] Finished printing.
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2023-12-18.11:21:50
+[TESTING] ---- BOTTOM CAMERA ----
+
+[MESSAGES] Printing bottom camera data information received.
+Image Width: 160
+Image Height: 120
+[END MESSAGES] Finished printing.
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2023-12-18.11:22:25
+[TESTING] ---- FRONT CAMERA ----
+
+[MESSAGES] Printing front camera data information received.
+Image Width: 160
+Image Height: 120
+[END MESSAGES] Finished printing.
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2023-12-21.12:40:21
+[TESTING] ---- FRONT CAMERA ----
+
+[MESSAGES] Printing front camera data information received.
+Image Width: 160
+Image Height: 120
+[END MESSAGES] Finished printing.
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2023-12-21.12:40:58
+[TESTING] ---- FRONT CAMERA ----
+
+[MESSAGES] Printing front camera data information received.
+Image Width: 160
+Image Height: 120
+[END MESSAGES] Finished printing.
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2023-12-21.12:41:06
+[TESTING] ---- FRONT CAMERA ----
+
+[MESSAGES] Printing front camera data information received.
+Image Width: 160
+Image Height: 120
+[END MESSAGES] Finished printing.
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2023-12-21.12:41:27
+[TESTING] ---- BOTTOM CAMERA ----
+
+[MESSAGES] Printing bottom camera data information received.
+Image Width: 160
+Image Height: 120
+[END MESSAGES] Finished printing.
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2023-12-21.12:41:48
+[TESTING] ---- STEREO CAMERA ----
+
+[MESSAGES] Printing stereo camera data information received.
+Image Width: 640
+Image Height: 180
+[END MESSAGES] Finished printing.
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2023-12-21.12:41:52
+[TESTING] ---- FRONT CAMERA ----
+
+[MESSAGES] Printing front camera data information received.
+Image Width: 160
+Image Height: 120
+[END MESSAGES] Finished printing.
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2023-12-21.14:11:05
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2023-12-21.14:11:39
+[TESTING] ---- BOTTOM CAMERA ----
+
+[MESSAGES] Printing bottom camera data information received.
+Image Width: 160
+Image Height: 120
+[END MESSAGES] Finished printing.
+
