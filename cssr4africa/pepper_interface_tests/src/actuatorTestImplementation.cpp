@@ -15,7 +15,7 @@ ControlClientPtr createclient(const std::string& controller_name) {
 }
 
 /* Extract topic names for the respective simulator or physical robot */
-std::string extract_topic(std::string key){
+std::string extractTopic(std::string key){
     bool debug = false;   // used to turn debug message on
     
     std::string conf_file = "actuatorTestConfiguration.ini";  // configuration filename
@@ -594,7 +594,7 @@ void publish_velocity(ros::Publisher &pub, geometry_msgs::Twist &msg, ros::Rate 
 
 void wheels(ros::NodeHandle& nh){
     // find the respective topic
-   std::string topic_name = extract_topic("Wheels");
+   std::string topic_name = extractTopic("Wheels");
    
    // Create a publisher to publish geometry_msgs::Twist messages on the /pepper/cmd_vel topic
    ros::Publisher pub = nh.advertise<geometry_msgs::Twist>(topic_name, 1000, true);

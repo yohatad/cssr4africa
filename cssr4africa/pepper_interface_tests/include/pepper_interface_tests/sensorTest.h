@@ -61,7 +61,7 @@ void stereoCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg);
 
 
 std::vector<string> extract_tests(string key);
-string extract_topic(string set);   
+string extractTopic(string set);   
 std::string extract_mode();
 extern bool output;
 

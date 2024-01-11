@@ -5,7 +5,7 @@ bool output = true;
 /* Test functions */
 void backSonar(ros::NodeHandle nh){
     // find the respective topic
-    string topic_name = extract_topic("BackSonar");
+    string topic_name = extractTopic("BackSonar");
 
     ROS_INFO_STREAM("Subscribing to : " << topic_name << "\n" ); // Print the topic name
     ros::Duration(1).sleep();
@@ -26,7 +26,7 @@ void backSonar(ros::NodeHandle nh){
 
 void frontSonar(ros::NodeHandle nh){
     // find the respective topic
-    string topic_name = extract_topic("FrontSonar");
+    string topic_name = extractTopic("FrontSonar");
 
     ROS_INFO_STREAM("Subscribing to :" << topic_name << "\n"  ); // Print the topic name
     ros::Duration(1).sleep();
@@ -48,7 +48,7 @@ void frontSonar(ros::NodeHandle nh){
 
 void frontCamera(ros::NodeHandle nh){
     // find the respective topic
-    string topic_name = extract_topic("FrontCamera");
+    string topic_name = extractTopic("FrontCamera");
 
     ROS_INFO_STREAM("Subscribing to :" << topic_name << "\n"  ); // Print the topic name
     ros::Duration(1).sleep();
@@ -73,7 +73,7 @@ void frontCamera(ros::NodeHandle nh){
 
 void bottomCamera(ros::NodeHandle nh){
     // find the respective topic
-    string topic_name = extract_topic("BottomCamera");
+    string topic_name = extractTopic("BottomCamera");
 
     ROS_INFO_STREAM("Subscribing to :" << topic_name << "\n"  ); // Print the topic name
     ros::Duration(1).sleep();
@@ -97,7 +97,7 @@ void bottomCamera(ros::NodeHandle nh){
 
 void stereoCamera(ros::NodeHandle nh){
     // find the respective topic
-    string topic_name = extract_topic("StereoCamera");
+    string topic_name = extractTopic("StereoCamera");
 
     ROS_INFO_STREAM("Subscribing to :" << topic_name << "\n"  ); // Print the topic name
     ros::Duration(1).sleep();
@@ -122,7 +122,7 @@ void stereoCamera(ros::NodeHandle nh){
 
 void depthCamera(ros::NodeHandle nh){
     // find the respective topic
-    string topic_name = extract_topic("DepthCamera");
+    string topic_name = extractTopic("DepthCamera");
 
     ROS_INFO_STREAM("Subscribing to :" << topic_name << "\n"  ); // Print the topic name
     ros::Duration(1).sleep();
@@ -147,7 +147,7 @@ void depthCamera(ros::NodeHandle nh){
 
 void laserSensor(ros::NodeHandle nh){
     // find the respective topic
-    string topic_name = extract_topic("LaserSensor");
+    string topic_name = extractTopic("LaserSensor");
 
     ROS_INFO_STREAM("Start " << topic_name << " Subscribe Test \n"  ); // Print the topic name
     ros::Duration(1).sleep();
@@ -603,7 +603,7 @@ void prompt_and_continue(){
 }
 
 /* Extract topic names for the respective simulator or physical robot */
-string extract_topic(string key){
+string extractTopic(string key){
     bool debug = false;   // used to turn debug message on
     
     std::string conf_file = "actuatorTestConfiguration.ini";  // configuration filename
