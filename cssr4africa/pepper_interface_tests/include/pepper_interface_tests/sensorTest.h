@@ -44,7 +44,7 @@ void bottomCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg);
 void depthCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg);
 void laserSensorMessageReceived(const sensor_msgs::LaserScan& msg);
 void stereoCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg);
-void microphoneMessageReceived(const sensor_msgs::ImageConstPtr& msg);
+void microphoneMessageReceived(const audio_common_msgs::AudioData& msg);
 
 
 std::vector<string> extractTests(string key);
