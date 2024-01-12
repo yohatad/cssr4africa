@@ -23,12 +23,6 @@ using namespace boost;
 using namespace std;
 
 #define ROS
-
-/* Call back functions executed when a sensor data arrived */
-void jointStateCallBack(const sensor_msgs::JointState& state); 
-void imageCallBack(const sensor_msgs::ImageConstPtr& msg);
-
-
 void backSonar(ros::NodeHandle nh);
 void frontSonar(ros::NodeHandle nh);
 void frontCamera(ros::NodeHandle nh);
@@ -38,6 +32,9 @@ void laserSensor(ros::NodeHandle nh);
 void stereoCamera(ros::NodeHandle nh);
 void microphone(ros::NodeHandle nh);
 
+/* Call back functions executed when a sensor data arrived */
+void jointStateCallBack(const sensor_msgs::JointState& state); 
+void imageCallBack(const sensor_msgs::ImageConstPtr& msg);
 void backSonarMessageReceived(const sensor_msgs::Range& msg);
 void frontSonarMessageReceived(const sensor_msgs::Range& msg);
 void frontCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg);
