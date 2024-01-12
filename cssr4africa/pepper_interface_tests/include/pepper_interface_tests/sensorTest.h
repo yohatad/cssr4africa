@@ -1,37 +1,21 @@
 #ifndef SENSOR_TEST_H
 #define SENSOR_TEST_H
 
-#include <ros/ros.h>
-#include <ros/package.h>
-#include <std_msgs/Float64.h>
-#include <sensor_msgs/JointState.h>
-#include <sensor_msgs/CameraInfo.h>
-#include <image_transport/image_transport.h>
-#include <opencv2/highgui/highgui.hpp>
-#include <cv_bridge/cv_bridge.h>
-#include <iomanip>
-#include <trajectory_msgs/JointTrajectory.h>
-#include <trajectory_msgs/JointTrajectoryPoint.h>
-#include <ros/console.h>
-
-
 # include <ros/ros.h>
 # include <ros/package.h>
-# include <std_msgs/Float64.h>
 # include <sensor_msgs/CameraInfo.h>
+# include <sensor_msgs/Range.h>
+# include <sensor_msgs/JointState.h>
+# include <sensor_msgs/LaserScan.h>
 # include <image_transport/image_transport.h>
 # include <opencv2/highgui/highgui.hpp>
 # include <cv_bridge/cv_bridge.h>
-# include <thread>
 
-#include <fstream>
-#include <sstream>
-#include <string>
-#include <boost/algorithm/string.hpp>
-#include <geometry_msgs/Twist.h>
-#include <sensor_msgs/Range.h>
-#include <sensor_msgs/LaserScan.h>
-#include <ctime>
+# include <thread>
+# include <fstream>
+# include <string>
+# include <boost/algorithm/string.hpp>
+# include <ctime>
 
 using namespace boost;
 using namespace std;
@@ -60,12 +44,13 @@ void laserSensorMessageReceived(const sensor_msgs::LaserScan& msg);
 void stereoCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg);
 
 
-std::vector<string> extract_tests(string key);
+std::vector<string> extractTests(string key);
 string extractTopic(string set);   
-std::string extract_mode();
+std::string extractMode();
 extern bool output;
+extern int timeDuration;
 
-void prompt_and_exit(int err);
-void prompt_and_continue();
+void promptAndExit(int err);
+void promptAndContinue();
 
 #endif // SENSOR_TEST_H

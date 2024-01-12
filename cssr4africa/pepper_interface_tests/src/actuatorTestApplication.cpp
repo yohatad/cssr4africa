@@ -1,14 +1,103 @@
+/* actuatorTestApplication.cpp
+*
+* <detailed functional description>
+* The component test the functionality of the actuator of the robot using the ROS interface.
+* The test is performed by sending commands to the robot and checking if the robot performs the
+* expected action. The test is performed in two modes: sequential and parallel. In the sequential
+* mode, the tests are performed one after the other. In the parallel mode, the tests are performed
+* simultaneously. 
+
+...
+* Libraries
+* Standard libraries
+- std::string, std::vector, std::thread, std::fstream, std::cout, std::endl, std::cin, std::pow, std::sqrt, std::abs
+* ROS libraries
+- ros/ros.h, ros/package.h, actionlib/client/simple_action_client.h, control_msgs/FollowJointTrajectoryAction.h, geometry_msgs/Twist.h
+
+...
+* Parameters
+*
+* Command-line Parameters
+*
+* None
+...
+* Configuration File Parameters
+
+* Key | Value 
+* --- | ---
+* platform        | robot
+* simulatorTopics | simulatorTopics.dat
+* robotTopics     | pepperTopics.dat
+* mode            | sequential
+*
+* Key | Value
+* --- | ---
+* Head   | true
+* RArm   | true
+* LArm   | true
+* RHand  | true
+* LHand  | true
+* Leg    | true
+* Wheels | true
+
+...
+* Subscribed Topics and Message Types
+*
+* None
+...
+* Published Topics and Message Types
+* 
+* /pepper_dcm/Head_controller/follow_joint_trajectory           trajectory_msgs/JointTrajectory
+* /pepper_dcm/RightArm_controller/follow_joint_trajectory       trajectory_msgs/JointTrajectory
+* /pepper_dcm/LeftArm_controller/follow_joint_trajectory        trajectory_msgs/JointTrajectory
+* /pepper_dcm/RightHand_controller/follow_joint_trajectory      trajectory_msgs/JointTrajectory
+* /pepper_dcm/LeftHand_controller/follow_joint_trajectory       trajectory_msgs/JointTrajectory
+* /pepper_dcm/Pelvis_controller/follow_joint_trajectory         trajectory_msgs/JointTrajectory
+* /pepper_dcm/cmd_moveto                                        geometry_msgs/Twist
+
+* /pepper/Head_controller/follow_joint_trajectory               trajectory_msgs/JointTrajectory
+* /pepper/RightArm_controller/follow_joint_trajectory           trajectory_msgs/JointTrajectory
+* /pepper/LeftArm_controller/follow_joint_trajectory            trajectory_msgs/JointTrajectory
+* /pepper/Pelvis_controller/follow_joint_trajectory             trajectory_msgs/JointTrajectory
+* /pepper/cmd_vel                                               geometry_msgs/Twist
+...
+* Input Data Files
+*
+* pepperTopics.dat
+* simulatorTopics.dat
+...
+* Output Data Files
+*
+* None
+...
+* Configuration Files
+*
+* actuatorTestConfiguration.ini
+* actuatorTestInput.ini
+...
+* Example Instantiation of the Module
+*
+* rosrun pepper_interface_tests actuatorTest
+...
+*
+* Author: Yohannes Tadesse Haile, Carnegie Mellon University Africa
+* Email: yohanneh@andrew.cmu.edu
+* Date: January 11, 2024
+* Version: v1.0
+*
+*/
+
 # include "pepper_interface_tests/actuatorTest.h"
 
 int main(int argc, char** argv) {
-    std::vector<std::string> test_name = extract_tests("actuator");
+    std::vector<std::string> testName = extractTests("actuator");
 
     // Initialize ROS
     ros::init(argc, argv, "actuatorTest");
     ros::NodeHandle nh;
 
     // Extract the mode to run the tests
-    std::string mode = extract_mode();
+    std::string mode = extractMode();
     std::cout << "Mode: " << mode << std::endl;
 
     if (!ros::Time::waitForValid(ros::WallDuration(10.0))) {
@@ -18,79 +107,76 @@ int main(int argc, char** argv) {
     
     // Run the tests in the mode specified in the configuration file
     if (mode == "sequential"){
-        for (int i = 0; i < test_name.size(); ++i){
-            if (test_name[i] == "Head"){
-                std::string head_topic = extractTopic("Head");
-                head(nh, head_topic);
+        for (int i = 0; i < testName.size(); ++i){
+            if (testName[i] == "Head"){
+                std::string headTopic = extractTopic("Head");
+                head(nh, headTopic);
             }
-            else if (test_name[i] == "RArm"){
-                std::string rightArm_topic = extractTopic("RArm");
-                rArm(nh, rightArm_topic);
+            else if (testName[i] == "RArm"){
+                std::string rightArmTopic = extractTopic("RArm");
+                rArm(nh, rightArmTopic);
             }
-            else if (test_name[i] == "LArm"){
-                std::string leftArm_topic = extractTopic("LArm");
-                lArm(nh, leftArm_topic);
+            else if (testName[i] == "LArm"){
+                std::string leftArmTopic = extractTopic("LArm");
+                lArm(nh, leftArmTopic);
             }
-            else if (test_name[i] == "RHand"){
-                std::string rightHand_topic = extractTopic("RHand");
-                rHand(nh, rightHand_topic);
+            else if (testName[i] == "RHand"){
+                std::string rightHandTopic = extractTopic("RHand");
+                rHand(nh, rightHandTopic);
             }
-            else if (test_name[i] == "LHand"){
-                std::string leftHand_topic = extractTopic("LHand");
-                lHand(nh, leftHand_topic);
+            else if (testName[i] == "LHand"){
+                std::string leftHandTopic = extractTopic("LHand");
+                lHand(nh, leftHandTopic);
             }
-            else if (test_name[i] == "Leg"){
-                std::string leg_topic = extractTopic("Leg");
-                leg(nh, leg_topic);
+            else if (testName[i] == "Leg"){
+                std::string legTopic = extractTopic("Leg");
+                leg(nh, legTopic);
             }
-            else if (test_name[i] == "Wheels"){
-                std::string wheels_controller = extractTopic("Wheels");
-                wheels(nh);
+            else if (testName[i] == "Wheels"){
+                std::string wheelTopic = extractTopic("Wheels");
+                wheels(nh, wheelTopic);
             }
         }
     }
 
     else if (mode == "parallel"){
         std::vector<std::thread> threads;
-        for (int i = 0; i < test_name.size(); ++i){
-            if (test_name[i] == "Head"){
-                std::string head_topic = extractTopic("Head");
-                threads.push_back(std::thread(head, std::ref(nh), head_topic));
+        for (int i = 0; i < testName.size(); ++i){
+            if (testName[i] == "Head"){
+                std::string headTopic = extractTopic("Head");
+                threads.push_back(std::thread(head, std::ref(nh), headTopic));
             }
-            else if (test_name[i] == "RArm"){
-                std::string rightArm_topic = extractTopic("RArm");
-                threads.push_back(std::thread(rArm, std::ref(nh), rightArm_topic));
+            else if (testName[i] == "RArm"){
+                std::string rightArmTopic = extractTopic("RArm");
+                threads.push_back(std::thread(rArm, std::ref(nh), rightArmTopic));
             }
-            else if (test_name[i] == "LArm"){
-                std::string leftArm_topic = extractTopic("LArm");
-                threads.push_back(std::thread(lArm, std::ref(nh), leftArm_topic));
+            else if (testName[i] == "LArm"){
+                std::string leftArmTopic = extractTopic("LArm");
+                threads.push_back(std::thread(lArm, std::ref(nh), leftArmTopic));
             }
-            else if (test_name[i] == "RHand"){
-                std::string rightHand_topic = extractTopic("RHand");
-                threads.push_back(std::thread(rHand, std::ref(nh), rightHand_topic));
+            else if (testName[i] == "RHand"){
+                std::string rightHandTopic = extractTopic("RHand");
+                threads.push_back(std::thread(rHand, std::ref(nh), rightHandTopic));
             }
-            else if (test_name[i] == "LHand"){
-                std::string leftHand_topic = extractTopic("LHand");
-                threads.push_back(std::thread(lHand, std::ref(nh), leftHand_topic));
+            else if (testName[i] == "LHand"){
+                std::string leftHandTopic = extractTopic("LHand");
+                threads.push_back(std::thread(lHand, std::ref(nh), leftHandTopic));
             }
-            else if (test_name[i] == "Leg"){
-                std::string leg_topic = extractTopic("Leg");
-                threads.push_back(std::thread(leg, std::ref(nh), leg_topic));
+            else if (testName[i] == "Leg"){
+                std::string legTopic = extractTopic("Leg");
+                threads.push_back(std::thread(leg, std::ref(nh), legTopic));
             }
-            else if (test_name[i] == "Wheels"){
-                std::string wheels_controller = extractTopic("Wheels");
-                threads.push_back(std::thread(wheels, std::ref(nh)));
+            else if (testName[i] == "Wheels"){
+                std::string wheelTopic = extractTopic("Wheels");
+                threads.push_back(std::thread(wheels, std::ref(nh), wheelTopic));
             }
         }
         for (auto& th : threads) th.join();
     }
-    
-
     else{
         printf("Invalid mode. Please check the mode in the configuration file.\n");
-        prompt_and_exit(1);
+        promptAndExit(1);
     }
-   
-       
+          
     return 0;
 }
