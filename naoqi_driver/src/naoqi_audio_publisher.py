@@ -6,7 +6,7 @@ import sys
 import time
 import numpy as np
 import rospy
-from std_msgs.msg import Int16MultiArray
+from audio_common_msgs.msg import AudioData  # Import AudioData from audio_common_msgs
 
 class SoundProcessingModule(object):
     def __init__(self, app, topic_name="/naoqi_driver/audio"):
@@ -17,9 +17,9 @@ class SoundProcessingModule(object):
         self.module_name = "SoundProcessingModule"
         self.micFront = []
 
-        # ROS setup
+        # ROS setup with AudioData message type
         rospy.init_node('naoqi_audio_publisher', anonymous=True)
-        self.pub = rospy.Publisher(topic_name, Int16MultiArray, queue_size=10)
+        self.pub = rospy.Publisher(topic_name, AudioData, queue_size=10)
 
     def startProcessing(self):
         self.audio_service.setClientPreferences(self.module_name, 16000, 3, 0)
@@ -33,11 +33,13 @@ class SoundProcessingModule(object):
     def processRemote(self, nbOfChannels, nbOfSamplesByChannel, timeStamp, inputBuffer):
         self.micFront = np.frombuffer(inputBuffer, dtype=np.int16)
 
-        # Publish the audio data to ROS
-        audio_msg = Int16MultiArray(data=self.micFront.tolist())
-        self.pub.publish(audio_msg)
+        # Convert the numpy array to a byte array and publish it
+        audio_data = AudioData()
+        audio_data.data = self.micFront.tobytes()
+        self.pub.publish(audio_data)
 
 if __name__ == "__main__":
+    # Initialize the ROS node
     rospy.init_node('naoqi_audio_publisher', anonymous=True)
 
     # Parse command-line arguments
