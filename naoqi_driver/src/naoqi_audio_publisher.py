@@ -9,7 +9,7 @@ import rospy
 from std_msgs.msg import Int16MultiArray
 
 class SoundProcessingModule(object):
-    def __init__(self, app, topic_name="/naoqi_driver/audio_publisher"):
+    def __init__(self, app, topic_name="/naoqi_driver/audio"):
         super(SoundProcessingModule, self).__init__()
         app.start()
         session = app.session
