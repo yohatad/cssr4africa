@@ -34,6 +34,7 @@ void bottomCamera(ros::NodeHandle nh);
 void depthCamera(ros::NodeHandle nh);
 void laserSensor(ros::NodeHandle nh);
 void stereoCamera(ros::NodeHandle nh);
+void microphone(ros::NodeHandle nh);
 
 void backSonarMessageReceived(const sensor_msgs::Range& msg);
 void frontSonarMessageReceived(const sensor_msgs::Range& msg);
@@ -42,6 +43,7 @@ void bottomCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg);
 void depthCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg);
 void laserSensorMessageReceived(const sensor_msgs::LaserScan& msg);
 void stereoCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg);
+void microphoneMessageReceived(const sensor_msgs::ImageConstPtr& msg);
 
 
 std::vector<string> extractTests(string key);
