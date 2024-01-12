@@ -184,6 +184,33 @@ void laserSensor(ros::NodeHandle nh){
     }
 }
 
+void microphone(ros::NodeHandle nh){
+    // find the respective topic
+    string topicName = extractTopic("Microphone");
+
+    ROS_INFO_STREAM("Start " << topicName << " Subscribe Test \n"  ); // Print the topic name
+    ros::Duration(1).sleep();
+    
+    ros::Subscriber sub = nh.subscribe(topicName, 1, microphoneMessageReceived);
+    
+    // Listen for incoming messages and execute the callback function
+    ros::Rate rate(30); 
+    ros::Time startTime = ros::Time::now(); // start now
+    ros::Duration waitTime = ros::Duration(timeDuration);  // duration of 5 seconds
+    ros::Time endTime = startTime + waitTime;   // end after 5 seconds of the start time
+    
+    while(ros::ok() && ros::Time::now() < endTime) {
+        ros::spinOnce();
+        rate.sleep();
+    }
+}
+
+void microphoneMessageReceived(const audio_common_msgs::AudioData& msg) {
+    // Process the received audio data
+    // For example, you can print the size of the received audio buffer
+    ROS_INFO("Received audio data with size: %lu", msg.data.size());
+}
+
 
 /* Call back functions for each sensor test */
 // Callback function to process the received sonar message
