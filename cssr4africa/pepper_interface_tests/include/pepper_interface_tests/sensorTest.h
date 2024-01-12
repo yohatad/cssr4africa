@@ -11,6 +11,7 @@
 # include <opencv2/highgui/highgui.hpp>
 # include <cv_bridge/cv_bridge.h>
 # include <audio_common_msgs/AudioData.h>
+# include <sndfile.h>
 
 # include <thread>
 # include <fstream>

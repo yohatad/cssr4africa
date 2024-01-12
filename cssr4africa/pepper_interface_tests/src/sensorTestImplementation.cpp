@@ -19,6 +19,10 @@
 
 bool output = true;
 int timeDuration = 10;
+vector<uint8_t> audioBuffer;
+unsigned int sampleRate = 16000; // Sample rate in Hz
+unsigned int bitDepth = 16;      // Bit depth
+unsigned int channelCount = 1;   // Number of audio channels
 
 /* Test functions */
 void backSonar(ros::NodeHandle nh){
@@ -184,31 +188,67 @@ void laserSensor(ros::NodeHandle nh){
     }
 }
 
-void microphone(ros::NodeHandle nh){
-    // find the respective topic
-    string topicName = extractTopic("Microphone");
+bool isBufferFull() {
+    unsigned int bytesPerSecond = (sampleRate * bitDepth / 8) * channelCount;
+    return audioBuffer.size() >= 10 * bytesPerSecond;
+}
 
-    ROS_INFO_STREAM("Start " << topicName << " Subscribe Test \n"  ); // Print the topic name
+void addDataToBuffer(const vector<uint8_t>& newData) {
+    audioBuffer.insert(audioBuffer.end(), newData.begin(), newData.end());
+}
+
+void clearBuffer() {
+    audioBuffer.clear();
+}
+
+void saveToWav(const vector<uint8_t>& data, const string& filename) {
+    SF_INFO sfinfo;
+    memset(&sfinfo, 0, sizeof(sfinfo));
+
+    sfinfo.samplerate = sampleRate;
+    sfinfo.channels = channelCount;
+    sfinfo.format = SF_FORMAT_WAV | SF_FORMAT_PCM_16; // Assuming 16-bit PCM data
+
+    SNDFILE *outfile = sf_open(filename.c_str(), SFM_WRITE, &sfinfo);
+    if (!outfile) {
+        ROS_ERROR("Error opening output file");
+        return;
+    }
+
+    // Since we're assuming 16-bit audio, cast the buffer to int16_t*
+    sf_write_short(outfile, reinterpret_cast<const int16_t*>(data.data()), data.size() / 2);
+
+    sf_close(outfile);
+}
+
+void microphone(ros::NodeHandle nh) {
+    string topicName = "/naoqi_driver/audio"; // Replace with your actual topic name
+
+    ROS_INFO_STREAM("Start " << topicName << " Subscribe Test \n");
     ros::Duration(1).sleep();
     
     ros::Subscriber sub = nh.subscribe(topicName, 1, microphoneMessageReceived);
     
-    // Listen for incoming messages and execute the callback function
-    ros::Rate rate(30); 
-    ros::Time startTime = ros::Time::now(); // start now
-    ros::Duration waitTime = ros::Duration(timeDuration);  // duration of 5 seconds
-    ros::Time endTime = startTime + waitTime;   // end after 5 seconds of the start time
+    ros::Rate rate(30);
+    ros::Time startTime = ros::Time::now();
+    ros::Duration waitTime = ros::Duration(timeDuration);
+    ros::Time endTime = startTime + waitTime;
     
     while(ros::ok() && ros::Time::now() < endTime) {
         ros::spinOnce();
         rate.sleep();
     }
+
+    if (isBufferFull()) {
+        saveToWav(audioBuffer, "output.wav");
+        clearBuffer();
+    }
 }
 
 void microphoneMessageReceived(const audio_common_msgs::AudioData& msg) {
-    // Process the received audio data
-    // For example, you can print the size of the received audio buffer
-    ROS_INFO("Received audio data with size: %lu", msg.data.size());
+    if (!isBufferFull()) {
+        addDataToBuffer(msg.data);
+    }
 }
 
 
