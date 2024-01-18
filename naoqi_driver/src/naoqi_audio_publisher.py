@@ -48,7 +48,7 @@ if __name__ == "__main__":
 
     # Parse command-line arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument("--ip", type=str, default="172.29.111.232", help="Robot IP address.")
+    parser.add_argument("--ip", type=str, default="172.29.111.246", help="Robot IP address.")
     parser.add_argument("--port", type=int, default=9559, help="Naoqi port number")
     args, _ = parser.parse_known_args()
 
