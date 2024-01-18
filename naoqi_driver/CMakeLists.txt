@@ -12,7 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
 # Add message files
 add_message_files(
   FILES
-  AudioCommonMsg.msg
+  AudioCustomMsg.msg
 )
 
 # Generate added messages and services
