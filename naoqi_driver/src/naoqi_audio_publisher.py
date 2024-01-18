@@ -15,14 +15,18 @@ class SoundProcessingModule(object):
         session = app.session
         self.audio_service = session.service("ALAudioDevice")  # Initialize audio service
         self.module_name = "SoundProcessingModule"
+        self.micLeft = []
+        self.micRight = []
         self.micFront = []
+        self.micRear = []
+        self.audioBuffer = []
 
         # ROS setup with AudioData message type
         rospy.init_node('naoqi_audio_publisher', anonymous=True)
         self.pub = rospy.Publisher(topic_name, AudioData, queue_size=10)
 
     def startProcessing(self):
-        self.audio_service.setClientPreferences(self.module_name, 16000, 3, 0)
+        self.audio_service.setClientPreferences(self.module_name, 48000, 0, 1)
         self.audio_service.subscribe(self.module_name)
 
         while not rospy.is_shutdown():
@@ -31,7 +35,7 @@ class SoundProcessingModule(object):
         self.audio_service.unsubscribe(self.module_name)
 
     def processRemote(self, nbOfChannels, nbOfSamplesByChannel, timeStamp, inputBuffer):
-        self.micFront = np.frombuffer(inputBuffer, dtype=np.int16)
+        self.audioBuffer = np.frombuffer(inputBuffer, dtype=np.int16)
 
         # Convert the numpy array to a byte array and publish it
         audio_data = AudioData()

@@ -1,6 +1,37 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(naoqi_driver)
 
+# Find catkin and anycatkin pacakges
+find_package(catkin REQUIRED COMPONENTS
+    roscpp
+    rospy
+    std_msgs
+    message_generation
+)
+
+# Add message files
+add_message_files(
+  FILES
+  AudioCommonMsg.msg
+)
+
+# Generate added messages and services
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+)
+
+# Declare a catkin package
+catkin_package(
+  CATKIN_DEPENDS message_runtime
+)
+
+# Include directories
+include_directories(
+  include 
+      ${catkin_INCLUDE_DIRS}
+)
+
 # define source files that can be used by qibuild or catkin
 set(
   CONVERTERS_SRC
