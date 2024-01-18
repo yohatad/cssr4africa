@@ -36,6 +36,7 @@ class SoundProcessingModule(object):
         self.audio_service.unsubscribe(self.module_name)
 
     def processRemote(self, nbOfChannels, nbOfSamplesByChannel, timeStamp, inputBuffer):
+        # Convert the inputBuffer to a numpy array and split it into 4 channels
         self.audioBuffer = np.frombuffer(inputBuffer, dtype=np.int16)
         self.micLeft = self.audioBuffer[nbOfSamplesByChannel*0:nbOfSamplesByChannel*1]
         self.micRight = self.audioBuffer[nbOfSamplesByChannel*1:nbOfSamplesByChannel*2]
