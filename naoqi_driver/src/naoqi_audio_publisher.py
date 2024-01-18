@@ -6,7 +6,7 @@ import sys
 import time
 import numpy as np
 import rospy
-from audio_common_msgs.msg import AudioData  # Import AudioData from audio_common_msgs
+from naoqi_driver.msg import AudioCustomMsg
 
 class SoundProcessingModule(object):
     def __init__(self, app, topic_name="/naoqi_driver/audio"):
@@ -23,7 +23,7 @@ class SoundProcessingModule(object):
 
         # ROS setup with AudioData message type
         rospy.init_node('naoqi_audio_publisher', anonymous=True)
-        self.pub = rospy.Publisher(topic_name, AudioData, queue_size=10)
+        self.pub = rospy.Publisher(topic_name, AudioCustomMsg, queue_size=10)
 
     def startProcessing(self):
         self.audio_service.setClientPreferences(self.module_name, 48000, 0, 1)
@@ -36,10 +36,20 @@ class SoundProcessingModule(object):
 
     def processRemote(self, nbOfChannels, nbOfSamplesByChannel, timeStamp, inputBuffer):
         self.audioBuffer = np.frombuffer(inputBuffer, dtype=np.int16)
+        self.micLeft = self.audioBuffer[nbOfSamplesByChannel*0:nbOfSamplesByChannel*1]
+        self.micRight = self.audioBuffer[nbOfSamplesByChannel*1:nbOfSamplesByChannel*2]
+        self.micFront = self.audioBuffer[nbOfSamplesByChannel*2:nbOfSamplesByChannel*3]
+        self.micRear = self.audioBuffer[nbOfSamplesByChannel*3:nbOfSamplesByChannel*4]
 
         # Convert the numpy array to a byte array and publish it
-        audio_data = AudioData()
-        audio_data.data = self.micFront.tobytes()
+        audio_data = AudioCustomMsg()
+        audio_data.header.stamp = rospy.Time.now()
+        audio_data.header.frame_id = "naoqi_driver/audio"
+        audio_data.micLeft = self.micLeft.tobytes()
+        audio_data.micRight = self.micRight.tobytes()
+        audio_data.micFront = self.micFront.tobytes()
+        audio_data.micRear = self.micRear.tobytes()
+
         self.pub.publish(audio_data)
 
 if __name__ == "__main__":
