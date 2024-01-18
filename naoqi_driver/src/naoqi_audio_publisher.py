@@ -20,13 +20,14 @@ class SoundProcessingModule(object):
         self.micFront = []
         self.micRear = []
         self.audioBuffer = []
+        self.sampleRate = 48000
 
         # ROS setup with AudioData message type
         rospy.init_node('naoqi_audio_publisher', anonymous=True)
         self.pub = rospy.Publisher(topic_name, AudioCustomMsg, queue_size=10)
 
     def startProcessing(self):
-        self.audio_service.setClientPreferences(self.module_name, 48000, 0, 1)
+        self.audio_service.setClientPreferences(self.module_name, self.sampleRate, 0, 1)
         self.audio_service.subscribe(self.module_name)
 
         while not rospy.is_shutdown():
@@ -44,7 +45,6 @@ class SoundProcessingModule(object):
         # Convert the numpy array to a byte array and publish it
         audio_data = AudioCustomMsg()
         audio_data.header.stamp = rospy.Time.now()
-        audio_data.header.frame_id = "naoqi_driver/audio"
         audio_data.micLeft = self.micLeft.tobytes()
         audio_data.micRight = self.micRight.tobytes()
         audio_data.micFront = self.micFront.tobytes()
