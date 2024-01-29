@@ -96,12 +96,12 @@ int main(int argc, char** argv)
     return -1;
   }
 
-  if (!session->connected)
-  {
-    ROS_ERROR("Cannot connect to session");
-    session->close();
-    return -1;
-  }
+  // if (session->connected)
+  // {
+  //   ROS_ERROR("Cannot connect to session");
+  //   session->close();
+  //   return -1;
+  // }
 
   // Deal with ALBrokerManager singleton (add your broker into NAOqi)
   boost::shared_ptr<Robot> robot = boost::make_shared<Robot>(session);
@@ -109,7 +109,7 @@ int main(int argc, char** argv)
   // stop ALTouch service to prevent the robot shaking
   try
   {
-    qi::AnyObject touch_proxy = session->service("ALTouch");
+    qi::AnyObject touch_proxy = session->service("ALTouch").value();
     touch_proxy.call<void>("exit");
     ROS_INFO_STREAM("Naoqi Touch service is shut down");
   }
@@ -121,7 +121,7 @@ int main(int argc, char** argv)
   // stop AutonomousLife service to prevent the robot shaking
   try
   {
-    qi::AnyObject life_proxy = session->service("ALAutonomousLife");
+    qi::AnyObject life_proxy = session->service("ALAutonomousLife").value();
     if (life_proxy.call<std::string>("getState") != "disabled")
     {
       life_proxy.call<void>("setState", "disabled");

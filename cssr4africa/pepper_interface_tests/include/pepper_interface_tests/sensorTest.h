@@ -10,8 +10,6 @@
 # include <image_transport/image_transport.h>
 # include <opencv2/highgui/highgui.hpp>
 # include <cv_bridge/cv_bridge.h>
-# include <audio_common_msgs/AudioData.h>
-# include <sndfile.h>
 
 # include <thread>
 # include <fstream>
@@ -23,6 +21,12 @@ using namespace boost;
 using namespace std;
 
 #define ROS
+
+/* Call back functions executed when a sensor data arrived */
+void jointStateCallBack(const sensor_msgs::JointState& state); 
+void imageCallBack(const sensor_msgs::ImageConstPtr& msg);
+
+
 void backSonar(ros::NodeHandle nh);
 void frontSonar(ros::NodeHandle nh);
 void frontCamera(ros::NodeHandle nh);
@@ -30,11 +34,7 @@ void bottomCamera(ros::NodeHandle nh);
 void depthCamera(ros::NodeHandle nh);
 void laserSensor(ros::NodeHandle nh);
 void stereoCamera(ros::NodeHandle nh);
-void microphone(ros::NodeHandle nh);
 
-/* Call back functions executed when a sensor data arrived */
-void jointStateCallBack(const sensor_msgs::JointState& state); 
-void imageCallBack(const sensor_msgs::ImageConstPtr& msg);
 void backSonarMessageReceived(const sensor_msgs::Range& msg);
 void frontSonarMessageReceived(const sensor_msgs::Range& msg);
 void frontCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg);
@@ -42,7 +42,6 @@ void bottomCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg);
 void depthCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg);
 void laserSensorMessageReceived(const sensor_msgs::LaserScan& msg);
 void stereoCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg);
-void microphoneMessageReceived(const audio_common_msgs::AudioData& msg);
 
 
 std::vector<string> extractTests(string key);

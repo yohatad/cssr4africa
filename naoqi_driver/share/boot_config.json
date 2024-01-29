@@ -75,11 +75,6 @@
       "range_min"     : 0.1,
       "range_max"     : 3.0
     },
-    "people":
-    {
-      "enabled"       : true,
-      "frequency"     : 1
-    },
     "sonar":
     {
       "enabled"       : true,

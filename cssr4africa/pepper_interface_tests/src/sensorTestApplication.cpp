@@ -188,9 +188,6 @@ int main(int argc, char **argv){
             else if (test == "stereocamera"){
                 stereoCamera(nh);
             }
-            // else if (test == "microphone"){
-            //     microphone(nh);
-            // }
             else{
                 std::cout << "No test provided. Exiting...\n";
                 promptAndExit(1);

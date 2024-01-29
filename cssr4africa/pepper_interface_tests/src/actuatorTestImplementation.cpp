@@ -607,7 +607,7 @@ void wheels(ros::NodeHandle& nh, std::string wheelTopic){
    // Create a Twist message object
    geometry_msgs::Twist msg;
    
-    ROS_INFO_STREAM("-------[START WHEEL CONTROL TEST]--------");
+   ROS_INFO_STREAM("-------[START WHEEL CONTROL TEST]--------");
    /* [1] THIS SECTION PUBLISHES A LINEAR VELOCITY ON THE CMD VEL TOPIC */
    ROS_INFO_STREAM("[LINEAR VELOCITY START] Publishing linear velocity on the cmd vel started.");
    
@@ -620,10 +620,10 @@ void wheels(ros::NodeHandle& nh, std::string wheelTopic){
 
    // Publish a fixed positive linear velocity
    ROS_INFO_STREAM("[POSITIVE VELOCITY] Publishing a fixed positive velocity value");
-   msg.linear.x = 0.5;
+   msg.linear.x = 0.05;
 
    // Publish the positive velocity 
-   publishVelocity(pub, msg, rate, 2);
+   publishVelocity(pub, msg, rate, 4);
 
    // Reset linear velocity to 0
    ROS_INFO_STREAM("[ZERO VELOCITY] Publishing 0 velocity value.");
@@ -634,17 +634,17 @@ void wheels(ros::NodeHandle& nh, std::string wheelTopic){
 
    // Publish a fixed negative linear velocity
    ROS_INFO_STREAM("[NEGATIVE VELOCITY] Publishing a fixed negative velocity value");
-   msg.linear.x = -0.5;
+   msg.linear.x = -0.05;
 
    // Publish the negative velocity 
-   publishVelocity(pub, msg, rate, 2);
+   publishVelocity(pub, msg, rate, 4);
 
    // Reset linear velocity to 0
    ROS_INFO_STREAM("[ZERO VELOCITY] Publishing 0 velocity value.");
    msg.linear.x = 0.0;
 
    // Publish 0 velocity 
-   publishVelocity(pub, msg, rate, 2);
+   publishVelocity(pub, msg, rate, 4);
    
    ROS_INFO_STREAM("[LINEAR VELOCITY END] Publishing linear velocity ended.");
    
@@ -660,7 +660,7 @@ void wheels(ros::NodeHandle& nh, std::string wheelTopic){
 
    // Publish a fixed positive angular velocity
    ROS_INFO_STREAM("[POSITIVE VELOCITY] Publishing a fixed positive velocity value");
-   msg.angular.z = 1.57;
+   msg.angular.z = 0.3925;
 
    // Publish the positive velocity 
    publishVelocity(pub, msg, rate, 4);
@@ -670,11 +670,11 @@ void wheels(ros::NodeHandle& nh, std::string wheelTopic){
    msg.angular.z = 0.0;
 
    // Publish 0 velocity 
-   publishVelocity(pub, msg, rate, 2);
+   publishVelocity(pub, msg, rate, 1);
 
    // Publish a fixed negative angular velocity
    ROS_INFO_STREAM("[NEGATIVE VELOCITY] Publishing a fixed negative velocity value");
-   msg.angular.z = -1.57;
+   msg.angular.z = -0.3925;
 
    // Publish the negative velocity 
    publishVelocity(pub, msg, rate, 4);
@@ -684,11 +684,11 @@ void wheels(ros::NodeHandle& nh, std::string wheelTopic){
    msg.angular.z = 0.0;
 
    // Publish 0 velocity 
-   publishVelocity(pub, msg, rate, 2);
+   publishVelocity(pub, msg, rate, 4);
    
    ROS_INFO_STREAM("[ANGULAR VELOCITY END] Publishing angular velocity ended.");
     
    // Print success message
    ROS_INFO_STREAM("[SUCCESS] Wheel control test completed.");
-    ROS_INFO_STREAM("-------[END WHEEL CONTROL TEST]--------");
+   ROS_INFO_STREAM("                                       ");
 }

@@ -1,6 +1,5 @@
 # AudioCustomMsg.msg
-std_msgs/Header header
-uint8[] micLeft
-uint8[] micRight
-uint8[] micFront
-uint8[] micRear
+int16[] micLeft
+int16[] micRight
+int16[] micFront
+int16[] micRear

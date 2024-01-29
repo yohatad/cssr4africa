@@ -4,7 +4,6 @@ FrontCamera         /naoqi_driver/camera/front/image_raw
 BottomCamera        /naoqi_driver/camera/bottom/image_raw
 DepthCamera         /naoqi_driver/camera/depth/image_raw
 StereoCamera        /naoqi_driver/camera/stereo/image_raw
-Microphone          /naoqi_driver/audio
 Laser               /pepper/laser_2
 Head                /pepper_dcm/Head_controller/follow_joint_trajectory
 RArm                /pepper_dcm/RightArm_controller/follow_joint_trajectory
