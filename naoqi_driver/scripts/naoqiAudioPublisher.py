@@ -25,10 +25,10 @@ def udp_ros_client():
 
             audio = np.frombuffer(data, dtype=np.int16)
 
-            micLeft = audio[0:nbOfSamplesByChannel].tolist()
+            micLeft  = audio[0:nbOfSamplesByChannel].tolist()
             micRight = audio[nbOfSamplesByChannel:nbOfSamplesByChannel*2].tolist()
             micFront = audio[nbOfSamplesByChannel*2:nbOfSamplesByChannel*3].tolist()
-            micRear = audio[nbOfSamplesByChannel*3:nbOfSamplesByChannel*4].tolist()
+            micRear  = audio[nbOfSamplesByChannel*3:nbOfSamplesByChannel*4].tolist()
 
             msg = AudioCustomMsg()
             msg.micLeft = micLeft
@@ -36,6 +36,7 @@ def udp_ros_client():
             msg.micFront = micFront
             msg.micRear = micRear
             pub.publish(msg)
+            
     except KeyboardInterrupt:
         print("Shutting down due to keyboard interrupt.")
     finally:
