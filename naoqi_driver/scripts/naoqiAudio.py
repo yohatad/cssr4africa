@@ -18,8 +18,6 @@ import argparse
 import sys
 import time
 import socket
-import numpy as np
-import wave
 
 class SoundProcessingModule(object):
     def __init__(self, app):
@@ -43,7 +41,6 @@ class SoundProcessingModule(object):
         self.audio_service.unsubscribe(self.module_name)
 
     def processRemote(self, nbOfChannels, nbOfSamplesByChannel, timeStamp, inputBuffer):
-        audio = np.frombuffer(inputBuffer, dtype=np.int16)
         udp_socket.sendto(inputBuffer, ('localhost', 9999))
 
 if __name__ == "__main__":
