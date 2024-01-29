@@ -7,7 +7,7 @@ from naoqi_driver.msg import AudioCustomMsg
 
 def udp_ros_client():
     rospy.init_node('NaoqiAudioPublisher')
-    pub = rospy.Publisher('/naoqi_audio', AudioCustomMsg, queue_size=10)
+    pub = rospy.Publisher('/naoqi_driver/audio', AudioCustomMsg, queue_size=10)
     udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     udp_socket.bind(('0.0.0.0', 9999))
     udp_socket.settimeout(1.0)  # Set a timeout of 1 second
