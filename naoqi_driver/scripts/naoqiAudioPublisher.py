@@ -10,26 +10,37 @@ def udp_ros_client():
     pub = rospy.Publisher('/naoqi_audio', AudioCustomMsg, queue_size=10)
     udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     udp_socket.bind(('0.0.0.0', 9999))
+    udp_socket.settimeout(1.0)  # Set a timeout of 1 second
 
     nbOfSamplesByChannel = 4096
 
-    while not rospy.is_shutdown():
-        data, addr = udp_socket.recvfrom(32768)  # Adjust buffer size as needed
-        audio = np.frombuffer(data, dtype=np.int16)
+    print("Naoqi Audio Publisher is running")
 
-        micLeft = audio[0:nbOfSamplesByChannel].tolist()
-        micRight = audio[nbOfSamplesByChannel:nbOfSamplesByChannel*2].tolist()
-        micFront = audio[nbOfSamplesByChannel*2:nbOfSamplesByChannel*3].tolist()
-        micRear = audio[nbOfSamplesByChannel*3:nbOfSamplesByChannel*4].tolist()
+    try:
+        while not rospy.is_shutdown():
+            try:
+                data, addr = udp_socket.recvfrom(32768)  # Adjust buffer size as needed
+            except socket.timeout:
+                continue  # No data, go back to the start of the loop
 
-        msg = AudioCustomMsg()
-        msg.micLeft = micLeft
-        msg.micRight = micRight
-        msg.micFront = micFront
-        msg.micRear = micRear
-        pub.publish(msg)
-                    
-    udp_socket.close()
+            audio = np.frombuffer(data, dtype=np.int16)
+
+            micLeft = audio[0:nbOfSamplesByChannel].tolist()
+            micRight = audio[nbOfSamplesByChannel:nbOfSamplesByChannel*2].tolist()
+            micFront = audio[nbOfSamplesByChannel*2:nbOfSamplesByChannel*3].tolist()
+            micRear = audio[nbOfSamplesByChannel*3:nbOfSamplesByChannel*4].tolist()
+
+            msg = AudioCustomMsg()
+            msg.micLeft = micLeft
+            msg.micRight = micRight
+            msg.micFront = micFront
+            msg.micRear = micRear
+            pub.publish(msg)
+    except KeyboardInterrupt:
+        print("Shutting down due to keyboard interrupt.")
+    finally:
+        udp_socket.close()
+        print("UDP socket closed.")
 
 if __name__ == "__main__":
     udp_ros_client()

@@ -1,1 +1,1 @@
-# cssr4africa1.0
+# cssr4africa
