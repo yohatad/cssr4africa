@@ -154,6 +154,19 @@ int main(int argc, char **argv){
             else if (test == "stereocamera"){
                 threads.push_back(std::thread(stereoCamera, nh));
             }
+            // else if (test == "microphone"){
+            //     threads.push_back(std::thread(microphone, nh));
+            // }
+            // else if (test == "Odometry"){
+            //     threads.push_back(std::thread(odometry, nh));
+            // }
+            // else if (test == "IMU"){
+            //     threads.push_back(std::thread(IMU, nh));
+            // }
+
+            // else if (test == "Speech"){
+            //     threads.push_back(std::thread(speech, nh));
+            // }
             else{
                 std::cout << "No test provided. Exiting...\n";
                 promptAndExit(1);
@@ -188,6 +201,18 @@ int main(int argc, char **argv){
             else if (test == "stereocamera"){
                 stereoCamera(nh);
             }
+            // else if (test == "microphone"){
+            //     microphone(nh);
+            // }
+            // else if (test == "Odometry"){
+            //     odometry(nh);
+            // }
+            // else if (test == "IMU"){
+            //     IMU(nh);
+            // }
+            // else if (test == "Speech"){
+            //     speech(nh);
+            // }
             else{
                 std::cout << "No test provided. Exiting...\n";
                 promptAndExit(1);
