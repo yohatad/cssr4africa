@@ -16,13 +16,14 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   actionlib
   control_msgs
+  naoqi_driver
 )
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 find_package(OpenCV REQUIRED)
-    catkin_package(
-    CATKIN_DEPENDS cv_bridge image_transport roscpp sensor_msgs std_msgs
+catkin_package(
+    CATKIN_DEPENDS cv_bridge image_transport roscpp sensor_msgs std_msgs naoqi_driver
 )
 
 ## Uncomment this if the package has a setup.py. This macro ensures
@@ -54,11 +55,10 @@ find_package(OpenCV REQUIRED)
 ##   * uncomment the generate_messages entry below
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
-## Generate messages in the 'msg' folder
+# Generate messages in the 'msg' folder
 # add_message_files(
 #   FILES
-#   Message1.msg
-#   Message2.msg
+#   AudioCustomMsg.msg
 # )
 
 ## Generate services in the 'srv' folder

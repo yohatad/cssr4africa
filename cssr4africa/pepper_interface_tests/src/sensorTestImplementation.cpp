@@ -205,50 +205,60 @@ void microphone(ros::NodeHandle nh){
     }
 }
 
-void odometry(ros::NodeHandle nh){
-    // find the respective topic
-    string topicName = extractTopic("Odometry");
+// void odometry(ros::NodeHandle nh){
+//     // find the respective topic
+//     string topicName = extractTopic("Odometry");
 
-    ROS_INFO_STREAM("Start " << topicName << " Subscribe Test \n"  ); // Print the topic name
-    ros::Duration(1).sleep();
+//     ROS_INFO_STREAM("Start " << topicName << " Subscribe Test \n"  ); // Print the topic name
+//     ros::Duration(1).sleep();
     
-    ros::Subscriber sub = nh.subscribe(topicName, 1, odometryMessageReceived);
+//     ros::Subscriber sub = nh.subscribe(topicName, 1, odometryMessageReceived);
     
-    // Listen for incoming messages and execute the callback function
-    ros::Rate rate(30); 
-    ros::Time startTime = ros::Time::now(); // start now
-    ros::Duration waitTime = ros::Duration(timeDuration);  // duration of 5 seconds
-    ros::Time endTime = startTime + waitTime;   // end after 5 seconds of the start time
+//     // Listen for incoming messages and execute the callback function
+//     ros::Rate rate(30); 
+//     ros::Time startTime = ros::Time::now(); // start now
+//     ros::Duration waitTime = ros::Duration(timeDuration);  // duration of 5 seconds
+//     ros::Time endTime = startTime + waitTime;   // end after 5 seconds of the start time
     
-    while(ros::ok() && ros::Time::now() < endTime) {
-        ros::spinOnce();
-        rate.sleep();
+//     while(ros::ok() && ros::Time::now() < endTime) {
+//         ros::spinOnce();
+//         rate.sleep();
+//     }
+// }
+
+// void IMU(ros::NodeHandle nh){
+//     // find the respective topic
+//     string topicName = extractTopic("IMU");
+
+//     ROS_INFO_STREAM("Start " << topicName << " Subscribe Test \n"  ); // Print the topic name
+//     ros::Duration(1).sleep();
+    
+//     ros::Subscriber sub = nh.subscribe(topicName, 1, IMUMessageReceived);
+    
+//     // Listen for incoming messages and execute the callback function
+//     ros::Rate rate(30); 
+//     ros::Time startTime = ros::Time::now(); // start now
+//     ros::Duration waitTime = ros::Duration(timeDuration);  // duration of 5 seconds
+//     ros::Time endTime = startTime + waitTime;   // end after 5 seconds of the start time
+    
+//     while(ros::ok() && ros::Time::now() < endTime) {
+//         ros::spinOnce();
+//         rate.sleep();
+//     }
+// }
+
+// callback function to process the received microphone message
+void microphoneMessageReceived(const naoqi_driver::AudioCustomMsg& msg) {
+    // Print a message indicating that microphone data is being printed
+    ROS_INFO_STREAM("[MESSAGES] Printing microphone data received.\n");
+
+    std::cout << "Microphone Data: ";
+    for(const auto& value : msg.micLeft) {
+        std::cout << value << " ";
     }
+    std::cout << std::endl;
 }
 
-void IMU(ros::NodeHandle nh){
-    // find the respective topic
-    string topicName = extractTopic("IMU");
-
-    ROS_INFO_STREAM("Start " << topicName << " Subscribe Test \n"  ); // Print the topic name
-    ros::Duration(1).sleep();
-    
-    ros::Subscriber sub = nh.subscribe(topicName, 1, IMUMessageReceived);
-    
-    // Listen for incoming messages and execute the callback function
-    ros::Rate rate(30); 
-    ros::Time startTime = ros::Time::now(); // start now
-    ros::Duration waitTime = ros::Duration(timeDuration);  // duration of 5 seconds
-    ros::Time endTime = startTime + waitTime;   // end after 5 seconds of the start time
-    
-    while(ros::ok() && ros::Time::now() < endTime) {
-        ros::spinOnce();
-        rate.sleep();
-    }
-}
-
-
-/* Call back functions for each sensor test */
 // Callback function to process the received sonar message
 void backSonarMessageReceived(const sensor_msgs::Range& msg) {
     // Print a message indicating that sonar data is being printed

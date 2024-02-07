@@ -13,7 +13,6 @@
 #include <vector>
 #include <cmath>   
 
-
 #define ROS
 typedef actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction> ControlClient;
 typedef boost::shared_ptr<ControlClient> ControlClientPtr;
