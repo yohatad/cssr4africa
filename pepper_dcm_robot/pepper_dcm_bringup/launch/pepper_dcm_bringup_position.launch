@@ -19,6 +19,8 @@
     <param name="RobotPort"           value="$(arg robot_port)" />
     <param name="DriverBrokerIP"      value="$(arg roscore_ip)" />
     <param name="network_interface"   value="$(arg network_interface)" />
-  </node>
-	
+    <param name="motor_groups"        value="Body" /> <!-- either "Body" or separate groups in the order "Head LArm RArm" -->
+    <param name="use_dcm"             value="False" />
+    <param name="max_stiffness"       value="0.9" />
+  </node>	
 </launch>
