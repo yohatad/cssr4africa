@@ -86,15 +86,15 @@
     },
     "bumper":
     {
-      "enabled"       : true
+      "enabled"       : false
     },
     "touch_hand":
     {
-      "enabled"       : true
+      "enabled"       : false
     },
     "touch_head":
     {
-      "enabled"       : true
+      "enabled"       : false
     },
     "odom":
     {
