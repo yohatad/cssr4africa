@@ -934,3 +934,170 @@ Image Height: 360
 [START TIME] 2024-02-08.16:55:04
 [END TIME] 2024-02-08.16:55:06
 
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2024-02-08.17:00:32
+[TESTING] ---- IMU ----
+
+[MESSAGES] Printing IMU data received.
+Header: seq: 3
+stamp: 1707404434.898689913
+frame_id: base_footprint
+
+Orientation: x: -0.00468492
+y: 0.0151887
+z: 0.0118594
+w: 0.999803
+
+Angular velocity: x: -0.00372843
+y: 0.000532632
+z: 0
+
+Linear acceleration: x: 0.201182
+y: 0.0862207
+z: -9.27352
+
+[END MESSAGES] Finished printing.
+
+[END TIME] 2024-02-08.17:00:43
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2024-02-08.17:00:59
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2024-02-08.17:01:27
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2024-02-08.17:01:51
+[TESTING] ---- ODOMETRY ----
+
+[MESSAGES] Printing odometry data received.
+Header: seq: 186
+stamp: 1707404512.638952567
+frame_id: odom
+
+Child frame id: base_link
+Pose: pose: 
+  position: 
+    x: -0.0289689
+    y: -0.000426483
+    z: 0.754964
+  orientation: 
+    x: 0.00148043
+    y: 0.261534
+    z: -0.000400594
+    w: 0.965193
+covariance[]
+  covariance[0]: 0
+  covariance[1]: 0
+  covariance[2]: 0
+  covariance[3]: 0
+  covariance[4]: 0
+  covariance[5]: 0
+  covariance[6]: 0
+  covariance[7]: 0
+  covariance[8]: 0
+  covariance[9]: 0
+  covariance[10]: 0
+  covariance[11]: 0
+  covariance[12]: 0
+  covariance[13]: 0
+  covariance[14]: 0
+  covariance[15]: 0
+  covariance[16]: 0
+  covariance[17]: 0
+  covariance[18]: 0
+  covariance[19]: 0
+  covariance[20]: 0
+  covariance[21]: 0
+  covariance[22]: 0
+  covariance[23]: 0
+  covariance[24]: 0
+  covariance[25]: 0
+  covariance[26]: 0
+  covariance[27]: 0
+  covariance[28]: 0
+  covariance[29]: 0
+  covariance[30]: 0
+  covariance[31]: 0
+  covariance[32]: 0
+  covariance[33]: 0
+  covariance[34]: 0
+  covariance[35]: 0
+
+Twist: twist: 
+  linear: 
+    x: 0
+    y: 0
+    z: 0
+  angular: 
+    x: 0
+    y: 0
+    z: 9.54745e-09
+covariance[]
+  covariance[0]: 0
+  covariance[1]: 0
+  covariance[2]: 0
+  covariance[3]: 0
+  covariance[4]: 0
+  covariance[5]: 0
+  covariance[6]: 0
+  covariance[7]: 0
+  covariance[8]: 0
+  covariance[9]: 0
+  covariance[10]: 0
+  covariance[11]: 0
+  covariance[12]: 0
+  covariance[13]: 0
+  covariance[14]: 0
+  covariance[15]: 0
+  covariance[16]: 0
+  covariance[17]: 0
+  covariance[18]: 0
+  covariance[19]: 0
+  covariance[20]: 0
+  covariance[21]: 0
+  covariance[22]: 0
+  covariance[23]: 0
+  covariance[24]: 0
+  covariance[25]: 0
+  covariance[26]: 0
+  covariance[27]: 0
+  covariance[28]: 0
+  covariance[29]: 0
+  covariance[30]: 0
+  covariance[31]: 0
+  covariance[32]: 0
+  covariance[33]: 0
+  covariance[34]: 0
+  covariance[35]: 0
+
+[END MESSAGES] Finished printing.
+
+[END TIME] 2024-02-08.17:02:02
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2024-02-08.17:02:33
+[END TIME] 2024-02-08.17:02:44
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2024-02-08.17:04:16
+[END TIME] 2024-02-08.17:04:24
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2024-02-08.17:04:44
+[TESTING] ---- JOINT STATE ----
+
+[MESSAGES] Printing joint state data received.
+Header: seq: 113126
+stamp: 1707404685.308222263
+frame_id: 
+
+[END MESSAGES] Finished printing.
+
+[END TIME] 2024-02-08.17:04:55
+

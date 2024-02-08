@@ -5,8 +5,8 @@ BottomCamera        /naoqi_driver/camera/bottom/image_raw
 DepthCamera         /naoqi_driver/camera/depth/image_raw
 StereoCamera        /naoqi_driver/camera/stereo/image_raw
 Microphone          /naoqi_driver/audio
-JointState          /joint_state
-Odom                /naoqi_driver/odom
+JointState          /joint_states
+Odometry            /naoqi_driver/odom
 IMU                 /naoqi_driver/imu/base
 Speech              /speech
 Laser               /pepper/laser_2
