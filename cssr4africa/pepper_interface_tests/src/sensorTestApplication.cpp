@@ -37,6 +37,11 @@
 * DepthCamera   |   True
 * StereoCamera  |   True
 * LaserSensor   |   True
+* Microphone    |   True
+* JointState    |   True
+* Odometry      |   True
+* IMU           |   True
+* Speech        |   True
 ...
 * Subscribed Topics and Message Types
 *
@@ -47,6 +52,11 @@
 * /naoqi_driver/camera/depth/image_raw          sensor_msgs/Image
 * /naoqi_driver/camera/stereo/image_raw         sensor_msgs/Image
 * /pepper/laser_2                               sensor_msgs/LaserScan
+* /pepper/microphone/naoqi_microphone           audio_common_msgs/AudioData
+* /pepper/joint_states                          sensor_msgs/JointState
+* /pepper/odom                                  nav_msgs/Odometry
+* /pepper/imu                                   sensor_msgs/Imu
+* /pepper/naoqi_speech/speech                   std_msgs/String
 
 * /pepper/sonar_back                            sensor_msgs/Range
 * /pepper/sonar_front                           sensor_msgs/Range
