@@ -204,15 +204,18 @@ int main(int argc, char **argv){
             else if (test == "microphone"){
                 microphone(nh);
             }
-            // else if (test == "Odometry"){
-            //     odometry(nh);
-            // }
-            // else if (test == "IMU"){
-            //     IMU(nh);
-            // }
-            // else if (test == "Speech"){
-            //     speech(nh);
-            // }
+            else if (test == "jointstate"){
+                jointState(nh);
+            }
+            else if (test == "odometry"){
+                odom(nh);
+            }
+            else if (test == "imu"){
+                imu(nh);
+            }
+            else if (test == "speech"){
+                speech(nh);
+            }
             else{
                 std::cout << "No test provided. Exiting...\n";
                 promptAndExit(1);

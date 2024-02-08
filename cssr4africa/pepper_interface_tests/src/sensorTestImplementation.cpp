@@ -17,6 +17,8 @@
 
 #include "pepper_interface_tests/sensorTest.h"
 
+std::ofstream outFile;
+int totalSamples = 0;
 bool output = true;
 int timeDuration = 10;
 
@@ -187,9 +189,19 @@ void laserSensor(ros::NodeHandle nh){
 void microphone(ros::NodeHandle nh){
     // find the respective topic
     string topicName = extractTopic("Microphone");
+    int sampleRate = 48000;
 
     ROS_INFO_STREAM("Start " << topicName << " Subscribe Test \n"  ); // Print the topic name
     ros::Duration(1).sleep();
+
+    #ifdef ROS
+        outFile.open(ros::package::getPath(ROS_PACKAGE_NAME) + "/data/microphone.wav", std::ios::binary);
+    #else
+        ROS_INFO_STREAM("Unable to open the output file microphone.wav\n");
+        promptAndExit(1);
+    #endif
+
+    writeWavHeader(outFile, sampleRate, 0);
     
     ros::Subscriber sub = nh.subscribe(topicName, 1, microphoneMessageReceived);
     
@@ -203,60 +215,284 @@ void microphone(ros::NodeHandle nh){
         ros::spinOnce();
         rate.sleep();
     }
+
+    outFile.seekp(0, std::ios::beg);
+    writeWavHeader(outFile, sampleRate, totalSamples);
+
+    outFile.close();
+    ROS_INFO_STREAM("Microphone test finished\n");
+
+    playAndDeleteFile();
 }
 
-// void odometry(ros::NodeHandle nh){
-//     // find the respective topic
-//     string topicName = extractTopic("Odometry");
+void odom(ros::NodeHandle nh){
+    // find the respective topic
+    string topicName = extractTopic("Odometry");
 
-//     ROS_INFO_STREAM("Start " << topicName << " Subscribe Test \n"  ); // Print the topic name
-//     ros::Duration(1).sleep();
+    ROS_INFO_STREAM("Start " << topicName << " Subscribe Test \n"  ); // Print the topic name
+    ros::Duration(1).sleep();
     
-//     ros::Subscriber sub = nh.subscribe(topicName, 1, odometryMessageReceived);
+    ros::Subscriber sub = nh.subscribe(topicName, 1, odomMessageReceived);
     
-//     // Listen for incoming messages and execute the callback function
-//     ros::Rate rate(30); 
-//     ros::Time startTime = ros::Time::now(); // start now
-//     ros::Duration waitTime = ros::Duration(timeDuration);  // duration of 5 seconds
-//     ros::Time endTime = startTime + waitTime;   // end after 5 seconds of the start time
+    // Listen for incoming messages and execute the callback function
+    ros::Rate rate(30); 
+    ros::Time startTime = ros::Time::now(); // start now
+    ros::Duration waitTime = ros::Duration(timeDuration);  // duration of 5 seconds
+    ros::Time endTime = startTime + waitTime;   // end after 5 seconds of the start time
     
-//     while(ros::ok() && ros::Time::now() < endTime) {
-//         ros::spinOnce();
-//         rate.sleep();
-//     }
-// }
+    while(ros::ok() && ros::Time::now() < endTime) {
+        ros::spinOnce();
+        rate.sleep();
+    }
+}
 
-// void IMU(ros::NodeHandle nh){
-//     // find the respective topic
-//     string topicName = extractTopic("IMU");
+void imu(ros::NodeHandle nh){
+    // find the respective topic
+    string topicName = extractTopic("IMU");
 
-//     ROS_INFO_STREAM("Start " << topicName << " Subscribe Test \n"  ); // Print the topic name
-//     ros::Duration(1).sleep();
+    ROS_INFO_STREAM("Start " << topicName << " Subscribe Test \n"  ); // Print the topic name
+    ros::Duration(1).sleep();
     
-//     ros::Subscriber sub = nh.subscribe(topicName, 1, IMUMessageReceived);
+    ros::Subscriber sub = nh.subscribe(topicName, 1, imuMessageReceived);
     
-//     // Listen for incoming messages and execute the callback function
-//     ros::Rate rate(30); 
-//     ros::Time startTime = ros::Time::now(); // start now
-//     ros::Duration waitTime = ros::Duration(timeDuration);  // duration of 5 seconds
-//     ros::Time endTime = startTime + waitTime;   // end after 5 seconds of the start time
+    // Listen for incoming messages and execute the callback function
+    ros::Rate rate(30); 
+    ros::Time startTime = ros::Time::now(); // start now
+    ros::Duration waitTime = ros::Duration(timeDuration);  // duration of 5 seconds
+    ros::Time endTime = startTime + waitTime;   // end after 5 seconds of the start time
     
-//     while(ros::ok() && ros::Time::now() < endTime) {
-//         ros::spinOnce();
-//         rate.sleep();
-//     }
-// }
+    while(ros::ok() && ros::Time::now() < endTime) {
+        ros::spinOnce();
+        rate.sleep();
+    }
+}
+
+void jointState(ros::NodeHandle nh){
+    // find the respective topic
+    string topicName = extractTopic("JointState");
+
+    ROS_INFO_STREAM("Start " << topicName << " Subscribe Test \n"  ); // Print the topic name
+    ros::Duration(1).sleep();
+    
+    ros::Subscriber sub = nh.subscribe(topicName, 1, jointStateMessageReceived);
+    
+    // Listen for incoming messages and execute the callback function
+    ros::Rate rate(30); 
+    ros::Time startTime = ros::Time::now(); // start now
+    ros::Duration waitTime = ros::Duration(timeDuration);  // duration of 5 seconds
+    ros::Time endTime = startTime + waitTime;   // end after 5 seconds of the start time
+    
+    while(ros::ok() && ros::Time::now() < endTime) {
+        ros::spinOnce();
+        rate.sleep();
+    }
+}
+
+void speech(ros::NodeHandle nh){
+    // Assuming extractTopic is a custom function that returns a std::string
+    std::string topicName = extractTopic("Speech");
+
+    // Publish the speech message "Hello Pepper"
+    ros::Publisher pub = nh.advertise<std_msgs::String>(topicName, 1);
+    ros::Duration(1).sleep(); // Wait for the connection to establish
+
+    std_msgs::String msg;
+    msg.data = "This is the CSSR4Africa speaker test.";
+    pub.publish(msg);
+    ros::spinOnce(); // Process incoming messages once. Not typically necessary for a publisher only.
+    ros::Duration(1).sleep(); // Ensure there's time for the message to be sent before the program potentially exits
+}
+
+// Callback function to process the received odometry message
+void jointStateMessageReceived(const sensor_msgs::JointState& msg) {
+    ROS_INFO_STREAM("[MESSAGES] Printing joint state data received.\n");
+    // Print the received message attributes
+    ROS_INFO_STREAM("Header: " << msg.header << "\n" );
+    for (size_t i = 0; i < msg.name.size(); ++i) {
+        std::cout << "Name: " << msg.name[i] << "\n"
+                  << "Position: ";
+        if (std::isnan(msg.position[i])) {
+            std::cout << "NaN";
+        } else {
+            std::cout << std::setprecision(9) << msg.position[i];
+        }
+        std::cout << "\nVelocity: ";
+        if (std::isnan(msg.velocity[i])) {
+            std::cout << "NaN";
+        } else {
+            std::cout << std::setprecision(9) << msg.velocity[i];
+        }
+        std::cout << "\nEffort: ";
+        if (std::isnan(msg.effort[i])) {
+            std::cout << "NaN";
+        } else {
+            std::cout << std::setprecision(9) << msg.effort[i];
+        }
+        std::cout << "\n\n";
+    }
+    ROS_INFO_STREAM("[END MESSAGES] Finished printing.\n");
+
+    // Write the message received in an output file if the output variable is true
+    if (output == true){
+        string path;
+        // set the main path for the output file
+        #ifdef ROS
+            path = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
+        #else
+            path = "..";
+        #endif
+        
+        // complete the path of the output file
+        path += "/data/sensorTestOutput.dat";
+        
+        // open the output file
+        std::ofstream out_of;
+        out_of.open(path.c_str(), ofstream::app);
+        if (!out_of.is_open()){
+            printf("Unable to open the output file %s\n", path.c_str());
+            promptAndExit(1);
+        }
+
+        // write on the output file
+        out_of << "[TESTING] ---- JOINT STATE ----\n\n";
+        out_of << "[MESSAGES] Printing joint state data received.\n";
+        out_of << "Header: " << msg.header << "\n" ;
+        for (size_t i = 0; i < msg.name.size(); ++i) {
+        std::cout << "Name: " << msg.name[i] << "\n"
+                  << "Position: ";
+        if (std::isnan(msg.position[i])) {
+            std::cout << "NaN";
+        } else {
+            std::cout << std::setprecision(9) << msg.position[i];
+        }
+        std::cout << "\nVelocity: ";
+        if (std::isnan(msg.velocity[i])) {
+            std::cout << "NaN";
+        } else {
+            std::cout << std::setprecision(9) << msg.velocity[i];
+        }
+        std::cout << "\nEffort: ";
+        if (std::isnan(msg.effort[i])) {
+            std::cout << "NaN";
+        } else {
+            std::cout << std::setprecision(9) << msg.effort[i];
+        }
+        std::cout << "\n\n";
+    }
+        out_of << "[END MESSAGES] Finished printing.\n\n";
+        
+        // close the output file
+        out_of.close();
+
+        // set the output to false so that only the first received message will be written to the output file
+        output = false;
+    }
+}
+
+void odomMessageReceived(const nav_msgs::Odometry& msg){
+    ROS_INFO_STREAM("[MESSAGES] Printing odometry data received.\n");
+    // Print the received message attributes
+    ROS_INFO_STREAM("Header: " << msg.header << "\n" );
+    ROS_INFO_STREAM("Child frame id: " << msg.child_frame_id << "\n" );
+    ROS_INFO_STREAM("Pose: " << msg.pose << "\n" );
+    ROS_INFO_STREAM("Twist: " << msg.twist << "\n" );
+    ROS_INFO_STREAM("[END MESSAGES] Finished printing.\n");
+
+    // Write the message received in an output file if the output variable is true
+    if (output == true){
+        string path;
+        // set the main path for the output file
+        #ifdef ROS
+            path = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
+        #else
+            path = "..";
+        #endif
+        
+        // complete the path of the output file
+        path += "/data/sensorTestOutput.dat";
+        
+        // open the output file
+        std::ofstream out_of;
+        out_of.open(path.c_str(), ofstream::app);
+        if (!out_of.is_open()){
+            printf("Unable to open the output file %s\n", path.c_str());
+            promptAndExit(1);
+        }
+
+        // write on the output file
+        out_of << "[TESTING] ---- ODOMETRY ----\n\n";
+        out_of << "[MESSAGES] Printing odometry data received.\n";
+        out_of << "Header: " << msg.header << "\n" ;
+        out_of << "Child frame id: " << msg.child_frame_id << "\n" ;
+        out_of << "Pose: " << msg.pose << "\n" ;
+        out_of << "Twist: " << msg.twist << "\n" ;
+        out_of << "[END MESSAGES] Finished printing.\n\n";
+        
+        // close the output file
+        out_of.close();
+
+        // set the output to false so that only the first received message will be written to the output file
+        output = false;
+    }
+}
+
+void imuMessageReceived(const sensor_msgs::Imu& msg) {
+    ROS_INFO_STREAM("[MESSAGES] Printing IMU data received.\n");
+    // Print the received message attributes
+    ROS_INFO_STREAM("Header: " << msg.header << "\n" );
+    ROS_INFO_STREAM("Orientation: " << msg.orientation << "\n" );
+    ROS_INFO_STREAM("Angular velocity: " << msg.angular_velocity << "\n" );
+    ROS_INFO_STREAM("Linear acceleration: " << msg.linear_acceleration << "\n" );
+    ROS_INFO_STREAM("[END MESSAGES] Finished printing.\n");
+
+    // Write the message received in an output file if the output variable is true
+    if (output == true){
+        string path;
+        // set the main path for the output file
+        #ifdef ROS
+            path = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
+        #else
+            path = "..";
+        #endif
+        
+        // complete the path of the output file
+        path += "/data/sensorTestOutput.dat";
+        
+        // open the output file
+        std::ofstream out_of;
+        out_of.open(path.c_str(), ofstream::app);
+        if (!out_of.is_open()){
+            printf("Unable to open the output file %s\n", path.c_str());
+            promptAndExit(1);
+        }
+
+        // write on the output file
+        out_of << "[TESTING] ---- IMU ----\n\n";
+        out_of << "[MESSAGES] Printing IMU data received.\n";
+        out_of << "Header: " << msg.header << "\n" ;
+        out_of << "Orientation: " << msg.orientation << "\n" ;
+        out_of << "Angular velocity: " << msg.angular_velocity << "\n" ;
+        out_of << "Linear acceleration: " << msg.linear_acceleration << "\n" ;
+        out_of << "[END MESSAGES] Finished printing.\n\n";
+        
+        // close the output file
+        out_of.close();
+
+        // set the output to false so that only the first received message will be written to the output file
+        output = false;
+    }
+}
 
 // callback function to process the received microphone message
 void microphoneMessageReceived(const naoqi_driver::AudioCustomMsg& msg) {
-    // Print a message indicating that microphone data is being printed
-    ROS_INFO_STREAM("[MESSAGES] Printing microphone data received.\n");
-
-    std::cout << "Microphone Data: ";
-    for(const auto& value : msg.micLeft) {
-        std::cout << value << " ";
+    if (!outFile.is_open()){
+        return;
     }
-    std::cout << std::endl;
+
+    for (const auto& sample : msg.micLeft){
+        outFile.write(reinterpret_cast<const char*>(&sample), sizeof(sample));
+        totalSamples++;
+    }
 }
 
 // Callback function to process the received sonar message
@@ -929,5 +1165,55 @@ std::string extractMode(){
         promptAndExit(1);
     }
     return modeValue;
+}
 
+// Write a WAV header to the output file
+void writeWavHeader(std::ofstream& file, int sampleRate, int numSamples) {
+    int byteRate = sampleRate * 2; // 16-bit mono = 2 bytes per sample
+    int dataSize = numSamples * 2; // Total number of bytes in data
+    int chunkSize = 36 + dataSize;
+    
+    file.write("RIFF", 4); // ChunkID
+    file.write(reinterpret_cast<const char*>(&chunkSize), 4); // ChunkSize
+    file.write("WAVE", 4); // Format
+    file.write("fmt ", 4); // Subchunk1ID
+    int subChunk1Size = 16; // PCM header size
+    file.write(reinterpret_cast<const char*>(&subChunk1Size), 4); // Subchunk1Size
+    short audioFormat = 1; // PCM = 1
+    file.write(reinterpret_cast<const char*>(&audioFormat), 2); // AudioFormat
+    short numChannels = 1; // Mono = 1, Stereo = 2
+    file.write(reinterpret_cast<const char*>(&numChannels), 2); // NumChannels
+    file.write(reinterpret_cast<const char*>(&sampleRate), 4); // SampleRate
+    file.write(reinterpret_cast<const char*>(&byteRate), 4); // ByteRate
+    short blockAlign = 2; // NumChannels * BitsPerSample/8
+    file.write(reinterpret_cast<const char*>(&blockAlign), 2); // BlockAlign
+    short bitsPerSample = 16; // Bits per sample
+    file.write(reinterpret_cast<const char*>(&bitsPerSample), 2); // BitsPerSample
+    file.write("data", 4); // Subchunk2ID
+    file.write(reinterpret_cast<const char*>(&dataSize), 4); // Subchunk2Size
+}
+
+void playAndDeleteFile() {
+    // check if the file exists
+    std::string fileName = ros::package::getPath(ROS_PACKAGE_NAME) + "/data/microphone.wav";
+
+    // check if the file exists
+    std::ifstream file(fileName);
+    if (!file.good()) {
+        std::cerr << "Error: File not found: " << fileName << std::endl;
+        return;
+    }
+
+    // Play the audio file
+    if (std::system(("aplay " + fileName).c_str()) != 0) {
+        std::cerr << "Error playing file: " << fileName << std::endl;
+        return; // Exit if playing failed
+    }
+
+    // Delete the file after playing
+    if (std::system(("rm -f " + fileName).c_str()) != 0) {
+        std::cerr << "Error deleting file: " << fileName << std::endl;
+    } else {
+        std::cout << "File deleted successfully: " << fileName << std::endl;
+    }
 }
