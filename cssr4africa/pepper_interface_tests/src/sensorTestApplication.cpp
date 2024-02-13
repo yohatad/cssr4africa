@@ -52,7 +52,7 @@
 * /naoqi_driver/camera/depth/image_raw          sensor_msgs/Image
 * /naoqi_driver/camera/stereo/image_raw         sensor_msgs/Image
 * /pepper/laser_2                               sensor_msgs/LaserScan
-* /pepper/microphone/naoqi_microphone           audio_common_msgs/AudioData
+* /pepper/microphone/naoqi_microphone           naoqi_driver/AudioCustomMsg
 * /pepper/joint_states                          sensor_msgs/JointState
 * /pepper/odom                                  nav_msgs/Odometry
 * /pepper/imu                                   sensor_msgs/Imu
