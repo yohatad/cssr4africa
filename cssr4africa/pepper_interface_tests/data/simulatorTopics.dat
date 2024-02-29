@@ -4,6 +4,7 @@ FrontCamera         /pepper/camera/front/image_raw
 BottomCamera        /pepper/camera/bottom/image_raw
 DepthCamera         /pepper/camera/depth/image_raw
 LaserSensor         /pepper/laser_2
+JointState          /joint_states
 Head                /pepper/Head_controller/follow_joint_trajectory
 RArm                /pepper/RightArm_controller/follow_joint_trajectory
 LArm                /pepper/LeftArm_controller/follow_joint_trajectory

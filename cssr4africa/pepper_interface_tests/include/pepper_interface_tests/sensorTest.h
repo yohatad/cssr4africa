@@ -18,6 +18,7 @@
 # include <thread>
 # include <fstream>
 # include <string>
+# include <unordered_map>
 # include <boost/algorithm/string.hpp>
 # include <ctime>
 # include <iostream>
@@ -28,6 +29,7 @@
 
 using namespace boost;
 using namespace std;
+using TestFunction = std::function<void(ros::NodeHandle&)>;
 
 #define ROS
 
@@ -64,6 +66,12 @@ extern bool output;
 extern int timeDuration;
 void writeWavHeader(std::ofstream &file, int sampleRate, int numSamples);
 void playAndDeleteFile();
+void initializeOutputFile(std::ofstream& out_of, const std::string& path);
+std::string getOutputFilePath();
+std::string getCurrentTime();
+void finalizeOutputFile(std::ofstream& out_of, const std::string& path);
+void executeTestsSequentially(const std::vector<std::string>& testNames, ros::NodeHandle& nh);
+void executeTestsInParallel(const std::vector<std::string>& testNames, ros::NodeHandle& nh);
 
 void promptAndExit(int err);
 void promptAndContinue();

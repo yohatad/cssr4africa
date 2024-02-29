@@ -1101,3 +1101,81 @@ frame_id:
 
 [END TIME] 2024-02-08.17:04:55
 
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2024-02-29.14:15:09
+[END TIME] 2024-02-29.14:15:09
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2024-02-29.14:15:20
+[TESTING] ---- BACK SONAR ----
+
+[MESSAGES] Printing back sonar data received.
+Frame id: SonarBack_frame
+Field of view: 0.523599
+Minimum range value: 0.25
+Maximum range value: 2.55
+Range value: 2.39
+[END MESSAGES] Finished printing.
+
+[END TIME] 2024-02-29.14:15:25
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2024-02-29.14:21:02
+[TESTING] ---- BACK SONAR ----
+
+[MESSAGES] Printing back sonar data received.
+Frame id: SonarBack_frame
+Field of view: 0.523599
+Minimum range value: 0.25
+Maximum range value: 2.55
+Range value: 2.38
+[END MESSAGES] Finished printing.
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2024-02-29.14:23:09
+[TESTING] ---- BACK SONAR ----
+
+[MESSAGES] Printing back sonar data received.
+Frame id: SonarBack_frame
+Field of view: 0.523599
+Minimum range value: 0.25
+Maximum range value: 2.55
+Range value: 2.38
+[END MESSAGES] Finished printing.
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2024-02-29.15:56:05
+[TESTING] ---- BACK SONAR ----
+
+[MESSAGES] Printing back sonar data received.
+Frame id: SonarBack_frame
+Field of view: 0.523599
+Minimum range value: 0.25
+Maximum range value: 2.55
+Range value: 2.38
+[END MESSAGES] Finished printing.
+
+[END TIME] 2024-02-29.15:57:44
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2024-02-29.15:58:57
+[TESTING] ---- JOINT STATE ----
+
+[MESSAGES] Printing joint state data received.
+Header: seq: 1531
+stamp: 1709215150.008794900
+frame_id: 
+
+[END MESSAGES] Finished printing.
+
+[END TIME] 2024-02-29.15:59:13
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2024-02-29.16:01:25

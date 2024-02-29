@@ -115,31 +115,6 @@ void bottomCamera(ros::NodeHandle nh){
     cv::destroyWindow("Bottom Camera");
 }
 
-void stereoCamera(ros::NodeHandle nh){
-    // find the respective topic
-    string topicName = extractTopic("StereoCamera");
-
-    ROS_INFO_STREAM("Subscribing to :" << topicName << "\n"  ); // Print the topic name
-    ros::Duration(1).sleep();
-
-    // Create an image transport subscriber
-    image_transport::ImageTransport it(nh);
-    image_transport::Subscriber sub = it.subscribe(topicName, 1, stereoCameraMessageReceived);
-
-    // Listen for incoming messages and execute the callback function
-    ros::Rate rate(30); 
-    ros::Time startTime = ros::Time::now(); // start now
-    ros::Duration waitTime = ros::Duration(timeDuration);  
-    ros::Time endTime = startTime + waitTime;  
-    
-    while(ros::ok() && ros::Time::now() < endTime) {
-        ros::spinOnce();
-        rate.sleep();
-    }
-
-    cv::destroyWindow("Stereo Camera");
-}
-
 void depthCamera(ros::NodeHandle nh){
     // find the respective topic
     string topicName = extractTopic("DepthCamera");
@@ -186,44 +161,6 @@ void laserSensor(ros::NodeHandle nh){
     }
 }
 
-void microphone(ros::NodeHandle nh){
-    // find the respective topic
-    string topicName = extractTopic("Microphone");
-    int sampleRate = 48000;
-
-    ROS_INFO_STREAM("Start " << topicName << " Subscribe Test \n"  ); // Print the topic name
-    ros::Duration(1).sleep();
-
-    #ifdef ROS
-        outFile.open(ros::package::getPath(ROS_PACKAGE_NAME) + "/data/microphone.wav", std::ios::binary);
-    #else
-        ROS_INFO_STREAM("Unable to open the output file microphone.wav\n");
-        promptAndExit(1);
-    #endif
-
-    writeWavHeader(outFile, sampleRate, 0);
-    
-    ros::Subscriber sub = nh.subscribe(topicName, 1, microphoneMessageReceived);
-    
-    // Listen for incoming messages and execute the callback function
-    ros::Rate rate(30); 
-    ros::Time startTime = ros::Time::now(); // start now
-    ros::Duration waitTime = ros::Duration(timeDuration);  // duration of 5 seconds
-    ros::Time endTime = startTime + waitTime;   // end after 5 seconds of the start time
-    
-    while(ros::ok() && ros::Time::now() < endTime) {
-        ros::spinOnce();
-        rate.sleep();
-    }
-
-    outFile.seekp(0, std::ios::beg);
-    writeWavHeader(outFile, sampleRate, totalSamples);
-
-    outFile.close();
-    ROS_INFO_STREAM("Microphone test finished\n");
-
-    playAndDeleteFile();
-}
 
 void odom(ros::NodeHandle nh){
     // find the respective topic
@@ -288,6 +225,7 @@ void jointState(ros::NodeHandle nh){
     }
 }
 
+
 void speech(ros::NodeHandle nh){
     // Assuming extractTopic is a custom function that returns a std::string
     std::string topicName = extractTopic("Speech");
@@ -302,6 +240,147 @@ void speech(ros::NodeHandle nh){
     ros::spinOnce(); // Process incoming messages once. Not typically necessary for a publisher only.
     ros::Duration(1).sleep(); // Ensure there's time for the message to be sent before the program potentially exits
 }
+
+// compile only if PEPPER_ROBOT is defined
+#ifdef PEPPER_ROBOT
+void stereoCamera(ros::NodeHandle nh){
+    // find the respective topic
+    string topicName = extractTopic("StereoCamera");
+
+    ROS_INFO_STREAM("Subscribing to :" << topicName << "\n"  ); // Print the topic name
+    ros::Duration(1).sleep();
+
+    // Create an image transport subscriber
+    image_transport::ImageTransport it(nh);
+    image_transport::Subscriber sub = it.subscribe(topicName, 1, stereoCameraMessageReceived);
+
+    // Listen for incoming messages and execute the callback function
+    ros::Rate rate(30); 
+    ros::Time startTime = ros::Time::now(); // start now
+    ros::Duration waitTime = ros::Duration(timeDuration);  
+    ros::Time endTime = startTime + waitTime;  
+    
+    while(ros::ok() && ros::Time::now() < endTime) {
+        ros::spinOnce();
+        rate.sleep();
+    }
+
+    cv::destroyWindow("Stereo Camera");
+}
+void microphone(ros::NodeHandle nh){
+    // find the respective topic
+    string topicName = extractTopic("Microphone");
+    int sampleRate = 48000;
+
+    ROS_INFO_STREAM("Start " << topicName << " Subscribe Test \n"  ); // Print the topic name
+    ros::Duration(1).sleep();
+
+    #ifdef ROS
+        outFile.open(ros::package::getPath(ROS_PACKAGE_NAME) + "/data/microphone.wav", std::ios::binary);
+    #else
+        ROS_INFO_STREAM("Unable to open the output file microphone.wav\n");
+        promptAndExit(1);
+    #endif
+
+    writeWavHeader(outFile, sampleRate, 0);
+    
+    ros::Subscriber sub = nh.subscribe(topicName, 1, microphoneMessageReceived);
+    
+    // Listen for incoming messages and execute the callback function
+    ros::Rate rate(30); 
+    ros::Time startTime = ros::Time::now(); // start now
+    ros::Duration waitTime = ros::Duration(timeDuration);  // duration of 5 seconds
+    ros::Time endTime = startTime + waitTime;   // end after 5 seconds of the start time
+    
+    while(ros::ok() && ros::Time::now() < endTime) {
+        ros::spinOnce();
+        rate.sleep();
+    }
+
+    outFile.seekp(0, std::ios::beg);
+    writeWavHeader(outFile, sampleRate, totalSamples);
+
+    outFile.close();
+    ROS_INFO_STREAM("Microphone test finished\n");
+
+    playAndDeleteFile();
+}
+
+// callback function to process the received microphone message
+void microphoneMessageReceived(const naoqi_driver::AudioCustomMsg& msg) {
+    if (!outFile.is_open()){
+        return;
+    }
+
+    for (const auto& sample : msg.micLeft){
+        outFile.write(reinterpret_cast<const char*>(&sample), sizeof(sample));
+        totalSamples++;
+    }
+}
+
+// Callback function to process the received stereo camera image message
+void stereoCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg) {
+    // Extract image attributes from the received message
+    int imgWidth = msg->width;
+    int imgHeight = msg->height;
+
+    // Print the received image attributes
+    ROS_INFO("[MESSAGE] Image received has a width: %d and height: %d", imgWidth, imgHeight);
+
+    // Write the message received in an output file if the output variable is true
+    if (output == true){
+        string path;
+        // set the main path for the output file
+        #ifdef ROS
+            path = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
+        #else
+            path = "..";
+        #endif
+        
+        // complete the path of the output file
+        path += "/data/sensorTestOutput.dat";
+        
+        // open the output file
+        std::ofstream out_of;
+        out_of.open(path.c_str(), ofstream::app);
+        if (!out_of.is_open()){
+            printf("Unable to open the output file %s\n", path.c_str());
+            promptAndExit(1);
+        }
+
+        // write on the output file
+        out_of << "[TESTING] ---- STEREO CAMERA ----\n\n";
+        out_of << "[MESSAGES] Printing stereo camera data information received.\n";
+        out_of << "Image Width: " << imgWidth << "\n";
+        out_of << "Image Height: " << imgHeight << "\n";
+        out_of << "[END MESSAGES] Finished printing.\n\n";
+
+        // close the output file
+        out_of.close();
+
+        // set the output to false so that only the first received message will be written to the output file
+        output = false;
+    }
+
+    // create an image pointer
+    cv_bridge::CvImagePtr cv_ptr;
+
+    try{
+        //  convert to BGR image
+        cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
+    }
+    catch(const cv_bridge::Exception& e){
+        ROS_ERROR("cv_bridge exception: %s", e.what());
+    }
+
+    cv::Mat img = cv_ptr->image;
+
+    cv::imshow("Stereo Camera", img);
+
+    cv::waitKey(30);
+}
+
+#endif
 
 // Callback function to process the received odometry message
 void jointStateMessageReceived(const sensor_msgs::JointState& msg) {
@@ -483,17 +562,6 @@ void imuMessageReceived(const sensor_msgs::Imu& msg) {
     }
 }
 
-// callback function to process the received microphone message
-void microphoneMessageReceived(const naoqi_driver::AudioCustomMsg& msg) {
-    if (!outFile.is_open()){
-        return;
-    }
-
-    for (const auto& sample : msg.micLeft){
-        outFile.write(reinterpret_cast<const char*>(&sample), sizeof(sample));
-        totalSamples++;
-    }
-}
 
 // Callback function to process the received sonar message
 void backSonarMessageReceived(const sensor_msgs::Range& msg) {
@@ -717,67 +785,7 @@ void bottomCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg) {
     cv::waitKey(30);
 }
 
-// Callback function to process the received stereo camera image message
-void stereoCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg) {
-    // Extract image attributes from the received message
-    int imgWidth = msg->width;
-    int imgHeight = msg->height;
 
-    // Print the received image attributes
-    ROS_INFO("[MESSAGE] Image received has a width: %d and height: %d", imgWidth, imgHeight);
-
-    // Write the message received in an output file if the output variable is true
-    if (output == true){
-        string path;
-        // set the main path for the output file
-        #ifdef ROS
-            path = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
-        #else
-            path = "..";
-        #endif
-        
-        // complete the path of the output file
-        path += "/data/sensorTestOutput.dat";
-        
-        // open the output file
-        std::ofstream out_of;
-        out_of.open(path.c_str(), ofstream::app);
-        if (!out_of.is_open()){
-            printf("Unable to open the output file %s\n", path.c_str());
-            promptAndExit(1);
-        }
-
-        // write on the output file
-        out_of << "[TESTING] ---- STEREO CAMERA ----\n\n";
-        out_of << "[MESSAGES] Printing stereo camera data information received.\n";
-        out_of << "Image Width: " << imgWidth << "\n";
-        out_of << "Image Height: " << imgHeight << "\n";
-        out_of << "[END MESSAGES] Finished printing.\n\n";
-
-        // close the output file
-        out_of.close();
-
-        // set the output to false so that only the first received message will be written to the output file
-        output = false;
-    }
-
-    // create an image pointer
-    cv_bridge::CvImagePtr cv_ptr;
-
-    try{
-        //  convert to BGR image
-        cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
-    }
-    catch(const cv_bridge::Exception& e){
-        ROS_ERROR("cv_bridge exception: %s", e.what());
-    }
-
-    cv::Mat img = cv_ptr->image;
-
-    cv::imshow("Stereo Camera", img);
-
-    cv::waitKey(30);
-}
 
 // Callback function to process the received depth camera image message
 void depthCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg) {
@@ -1038,8 +1046,7 @@ string extractTopic(string key){
 
     // verify the topic_value is not empty
     if (topic_value == ""){
-        printf("Unable to find a valid topic.\n");
-        promptAndExit(1);
+        printf("Unable to find a valid topic for %s.\n", key.c_str());
     }
     return topic_value;
 }
@@ -1048,8 +1055,8 @@ string extractTopic(string key){
 std::vector<std::string> extractTests(std::string set){
     bool debug = false;   // used to turn debug message on
     
-    std::string inputFileName;                                  // input filename
-    std::string inputPath;                                  // input path
+    std::string inputFileName;                         // input filename
+    std::string inputPath;                             // input path
     std::string inputPathFile;                         // input path and filename
     
     std::vector<std::string> testName;
@@ -1066,7 +1073,9 @@ std::vector<std::string> extractTests(std::string set){
     #ifdef ROS
         inputPath = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
     #else
-        inputPath = "..";
+        // print out error message and exit if the package name is not defined
+        printf("ROS_PACKAGE_NAME is not defined. Please define the ROS_PACKAGE_NAME environment variable.\n");
+        promptAndExit(1);
     #endif
 
     // set input path
@@ -1194,6 +1203,8 @@ void writeWavHeader(std::ofstream& file, int sampleRate, int numSamples) {
 }
 
 void playAndDeleteFile() {
+    // use True/False to delete the file after playing
+    bool deleteFile = true;
     // check if the file exists
     std::string fileName = ros::package::getPath(ROS_PACKAGE_NAME) + "/data/microphone.wav";
 
@@ -1210,10 +1221,127 @@ void playAndDeleteFile() {
         return; // Exit if playing failed
     }
 
-    // Delete the file after playing
-    if (std::system(("rm -f " + fileName).c_str()) != 0) {
-        std::cerr << "Error deleting file: " << fileName << std::endl;
-    } else {
-        std::cout << "File deleted successfully: " << fileName << std::endl;
+    if (deleteFile) {
+        if (std::remove(fileName.c_str()) != 0) {
+            std::cerr << "Error deleting file: " << fileName << std::endl;
+        } else {
+            std::cout << "File deleted successfully: " << fileName << std::endl;
+        }
+    }
+}
+
+void initializeOutputFile(std::ofstream& out_of, const std::string& path) { 
+    out_of.open(path, std::ofstream::app);
+    if (!out_of.is_open()) {
+        std::cerr << "Unable to open the output file " << path << "\n";
+        throw std::runtime_error("Failed to open output file.");
+    }
+
+    out_of << "[TESTING] ############ SENSORS ############\n\n";
+    // Assuming getCurrentTime() is implemented elsewhere
+    out_of << "[START TIME] " << getCurrentTime() << "\n";
+    // Explicit close is not required but can be kept for clarity or error checking
+    out_of.close();
+}
+
+void finalizeOutputFile(std::ofstream& out_of, const std::string& path) {
+    out_of.open(path, std::ofstream::app);
+    out_of << "[END TIME] " << getCurrentTime() << "\n\n";
+    out_of.close();
+}
+
+std::string getCurrentTime() {
+    char buffer[50];
+    std::time_t now = std::time(0);
+    std::strftime(buffer, sizeof(buffer), "%Y-%m-%d.%X", std::localtime(&now));
+    return std::string(buffer);
+}
+
+std::string getOutputFilePath() {
+    std::string basePath;
+    std::string fileName = "sensorTestOutput.dat";
+
+    #ifdef ROS
+    // If ROS is defined, use the ROS package path
+    basePath = ros::package::getPath(ROS_PACKAGE_NAME);
+    // Append the subdirectory and filename to the base path
+    basePath += "/data/";
+    #else
+    // If not running within ROS, output an error message and exit
+    std::cerr << "Error: ROS environment not detected. Unable to determine the output file path." << std::endl;
+    exit(EXIT_FAILURE);
+    #endif
+
+    return basePath + fileName;
+}
+
+void executeTestsSequentially(const std::vector<std::string>& testNames, ros::NodeHandle& nh) {
+    // Map test names to their corresponding functions
+    std::unordered_map<std::string, TestFunction> testMap = {
+        {"backsonar", backSonar},
+        {"frontsonar", frontSonar},
+        {"frontcamera", frontCamera},
+        {"bottomcamera", bottomCamera},
+        {"depthcamera", depthCamera},
+        {"lasersensor", laserSensor},
+        {"jointstate", jointState},
+        {"odometry", odom},
+        {"imu", imu}
+    };
+
+    #ifdef PEPPER_ROBOT
+    testMap["stereocamera"] = stereoCamera;
+    testMap["microphone"] = microphone;
+    testMap["speech"] = speech;
+    #endif
+
+
+    for (const auto& testName : testNames) {
+        auto it = testMap.find(testName);
+        if (it != testMap.end()) {
+            // Call the function associated with testName
+            it->second(nh);
+        } else {
+            std::cerr << "Unknown test provided: " << testName << ". Exiting...\n";
+        }
+    }
+}
+
+void executeTestsInParallel(const std::vector<std::string>& testNames, ros::NodeHandle& nh) {
+    std::unordered_map<std::string, TestFunction> testMap = {
+        {"backsonar", backSonar},
+        {"frontsonar", frontSonar},
+        {"frontcamera", frontCamera},
+        {"bottomcamera", bottomCamera},
+        {"depthcamera", depthCamera},
+        {"lasersensor", laserSensor},
+        {"jointstate", jointState},
+        {"odometry", odom},
+        {"imu", imu},
+    };
+
+    #ifdef PEPPER_ROBOT
+    testMap["stereocamera"] = stereoCamera;
+    testMap["microphone"] = microphone;
+    testMap["speech"] = speech;
+    #endif
+
+    std::vector<std::thread> threads;
+
+    // Create a thread for each test found in the map
+    for (const auto& testName : testNames) {
+        auto it = testMap.find(testName);
+        if (it != testMap.end()) {
+            threads.emplace_back(it->second, std::ref(nh));
+        } else {
+            std::cerr << "There is no test function associated with the test name: " << testName << "Proceeding to the next test...\n";
+        }
+    }
+
+    // Wait for all threads to finish execution
+    for (auto& thread : threads) {
+        if (thread.joinable()) {
+            thread.join();
+        }
     }
 }
