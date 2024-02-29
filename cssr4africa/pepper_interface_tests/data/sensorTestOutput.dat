@@ -1179,3 +1179,201 @@ frame_id:
 [TESTING] ############ SENSORS ############
 
 [START TIME] 2024-02-29.16:01:25
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2024-02-29.16:13:38
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2024-02-29.16:14:50
+[TESTING] ---- JOINT STATE ----
+
+[MESSAGES] Printing joint state data received.
+Header: seq: 9797
+stamp: 1709216102.985848200
+frame_id: 
+
+[END MESSAGES] Finished printing.
+
+[END TIME] 2024-02-29.16:15:34
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2024-02-29.16:22:21
+[TESTING] ---- JOINT STATE ----
+
+[MESSAGES] Printing joint state data received.
+Header: seq: 12996
+stamp: 1709216553.490374600
+frame_id: 
+
+[END MESSAGES] Finished printing.
+
+[END TIME] 2024-02-29.16:22:37
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2024-02-29.16:22:50
+[END TIME] 2024-02-29.16:23:00
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2024-02-29.16:27:16
+[END TIME] 2024-02-29.16:27:27
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2024-02-29.16:50:34
+[END TIME] 2024-02-29.16:50:45
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2024-02-29.16:52:04
+[END TIME] 2024-02-29.16:52:04
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2024-02-29.16:54:37
+[END TIME] 2024-02-29.16:54:48
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2024-02-29.17:00:34
+[END TIME] 2024-02-29.17:00:45
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2024-02-29.17:08:02
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2024-02-29.17:09:53
+[END TIME] 2024-02-29.17:09:56
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2024-02-29.17:09:59
+[END TIME] 2024-02-29.17:10:10
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2024-02-29.17:44:24
+[END TIME] 2024-02-29.17:44:32
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2024-02-29.17:45:05
+[END TIME] 2024-02-29.17:45:15
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2024-02-29.17:48:42
+[END TIME] 2024-02-29.17:48:53
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2024-02-29.17:49:08
+[END TIME] 2024-02-29.17:49:19
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2024-02-29.17:49:54
+[TESTING] ---- LASER SENSOR ----
+
+[MESSAGES] Printing laser sensor data received.
+Frame id: base_footprint
+Start angle of the scan: -2.0944
+End angle of the scan: 2.0944
+Angular distance between measurements: 0.0686688
+Time between measurements: 0
+Time between scans: 0
+Minimum range value: 0.1
+Maximum range value: 3
+Range data: (size: 61) 
+[END MESSAGES] Finished printing.
+
+[END TIME] 2024-02-29.17:50:05
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2024-02-29.17:51:51
+[END TIME] 2024-02-29.17:51:51
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2024-02-29.17:52:44
+[TESTING] ---- LASER SENSOR ----
+
+[MESSAGES] Printing laser sensor data received.
+Frame id: base_footprint
+Start angle of the scan: -2.0944
+End angle of the scan: 2.0944
+Angular distance between measurements: 0.0686688
+Time between measurements: 0
+Time between scans: 0
+Minimum range value: 0.1
+Maximum range value: 3
+Range data: (size: 61) 
+[END MESSAGES] Finished printing.
+
+[END TIME] 2024-02-29.17:52:49
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2024-02-29.17:53:10
+[TESTING] ---- JOINT STATE ----
+
+[MESSAGES] Printing joint state data received.
+Header: seq: 56860
+stamp: 1709221992.074754000
+frame_id: 
+
+[END MESSAGES] Finished printing.
+
+[END TIME] 2024-02-29.17:53:21
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2024-02-29.17:53:58
+[TESTING] ---- JOINT STATE ----
+
+[MESSAGES] Printing joint state data received.
+Header: seq: 57131
+stamp: 1709222040.035384500
+frame_id: 
+
+[END MESSAGES] Finished printing.
+
+[END TIME] 2024-02-29.17:54:09
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2024-02-29.17:54:19
+[TESTING] ---- LASER SENSOR ----
+
+[MESSAGES] Printing laser sensor data received.
+Frame id: base_footprint
+Start angle of the scan: -2.0944
+End angle of the scan: 2.0944
+Angular distance between measurements: 0.0686688
+Time between measurements: 0
+Time between scans: 0
+Minimum range value: 0.1
+Maximum range value: 3
+Range data: (size: 61) 
+[END MESSAGES] Finished printing.
+
+[END TIME] 2024-02-29.17:54:30
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2024-02-29.17:55:07
+[TESTING] ---- JOINT STATE ----
+
+[MESSAGES] Printing joint state data received.
+Header: seq: 57528
+stamp: 1709222109.121714800
+frame_id: 
+
+[END MESSAGES] Finished printing.
+
+[END TIME] 2024-02-29.17:56:49
+

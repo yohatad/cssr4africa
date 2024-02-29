@@ -142,7 +142,7 @@ void depthCamera(ros::NodeHandle nh){
 
 void laserSensor(ros::NodeHandle nh){
     // find the respective topic
-    string topicName = extractTopic("LaserSensor");
+    string topicName = extractTopic("Laser");
 
     ROS_INFO_STREAM("Start " << topicName << " Subscribe Test \n"  ); // Print the topic name
     ros::Duration(1).sleep();
@@ -225,7 +225,8 @@ void jointState(ros::NodeHandle nh){
     }
 }
 
-
+// compile only if PEPPER_ROBOT is defined
+#ifdef PEPPER_ROBOT
 void speech(ros::NodeHandle nh){
     // Assuming extractTopic is a custom function that returns a std::string
     std::string topicName = extractTopic("Speech");
@@ -241,8 +242,7 @@ void speech(ros::NodeHandle nh){
     ros::Duration(1).sleep(); // Ensure there's time for the message to be sent before the program potentially exits
 }
 
-// compile only if PEPPER_ROBOT is defined
-#ifdef PEPPER_ROBOT
+
 void stereoCamera(ros::NodeHandle nh){
     // find the respective topic
     string topicName = extractTopic("StereoCamera");
@@ -942,29 +942,30 @@ void promptAndContinue(){
 string extractTopic(string key){
     bool debug = false;   // used to turn debug message on
     
-    std::string configFileName = "actuatorTestConfiguration.ini";  // configuration filename
-    std::string configPath;                                  // configuration path
-    std::string configPathFile;                         // configuration path and filename
+    std::string configFileName = "sensorTestConfiguration.ini";             // configuration filename
+    std::string configPath;                                                 // configuration path
+    std::string configPathFile;                                             // configuration path and filename
     
-    std::string platformKey = "platform";                     // platform key 
-    std::string robotTopicKey = "robotTopics";                // robot topic key
-    std::string simulatorTopicKey = "simulatorTopics";        // simulator topic key
+    std::string platformKey         = "platform";                           // platform key 
+    std::string robotTopicKey       = "robotTopics";                        // robot topic key
+    std::string simulatorTopicKey   = "simulatorTopics";                    // simulator topic key
 
-    std::string platformValue;                                // platform value
-    std::string robotTopicValue;                              // robot topic value
-    std::string simulatorTopicValue;                          // simulator topic value
+    std::string platformValue;                                              // platform value
+    std::string robotTopicValue;                                            // robot topic value
+    std::string simulatorTopicValue;                                        // simulator topic value
     
-    std::string topicFileName;                                   // topic filename
-    std::string topicPath;                                   // topic filename path
-    std::string topicPathFile;                          // topic with path and file 
+    std::string topicFileName;                                              // topic filename
+    std::string topicPath;                                                  // topic filename path
+    std::string topicPathFile;                                              // topic with path and file 
 
-    std::string topic_value = "";                             // topic value
+    std::string topic_value = "";                                           // topic value
 
     // Construct the full path of the configuration file
     #ifdef ROS
         configPath = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
     #else
-        configPath = "..";
+        printf("ROS_PACKAGE_NAME is not defined. Please define the ROS_PACKAGE_NAME environment variable.\n");
+        promptAndExit(1);
     #endif
 
     // set configuration path
@@ -1010,7 +1011,8 @@ string extractTopic(string key){
     #ifdef ROS
         topicPath = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
     #else
-        topicPath = "..";
+        printf("ROS_PACKAGE_NAME is not defined. Please define the ROS_PACKAGE_NAME environment variable.\n");
+        promptAndExit(1);
     #endif
 
     // set topic path    
@@ -1283,7 +1285,7 @@ void executeTestsSequentially(const std::vector<std::string>& testNames, ros::No
         {"frontcamera", frontCamera},
         {"bottomcamera", bottomCamera},
         {"depthcamera", depthCamera},
-        {"lasersensor", laserSensor},
+        {"laser", laserSensor},
         {"jointstate", jointState},
         {"odometry", odom},
         {"imu", imu}
@@ -1314,7 +1316,7 @@ void executeTestsInParallel(const std::vector<std::string>& testNames, ros::Node
         {"frontcamera", frontCamera},
         {"bottomcamera", bottomCamera},
         {"depthcamera", depthCamera},
-        {"lasersensor", laserSensor},
+        {"laser", laserSensor},
         {"jointstate", jointState},
         {"odometry", odom},
         {"imu", imu},
