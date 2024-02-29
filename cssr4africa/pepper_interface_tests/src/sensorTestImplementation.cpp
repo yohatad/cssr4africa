@@ -334,7 +334,8 @@ void stereoCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg) {
         #ifdef ROS
             path = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
         #else
-            path = "..";
+            ROS_INFO_STREAM("Unable to find the ROS package\n");
+            promptAndExit(1);
         #endif
         
         // complete the path of the output file
@@ -418,7 +419,8 @@ void jointStateMessageReceived(const sensor_msgs::JointState& msg) {
         #ifdef ROS
             path = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
         #else
-            path = "..";
+            ROS_INFO_STREAM("Unable to find the ROS package\n");
+            promptAndExit(1);
         #endif
         
         // complete the path of the output file
@@ -484,7 +486,8 @@ void odomMessageReceived(const nav_msgs::Odometry& msg){
         #ifdef ROS
             path = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
         #else
-            path = "..";
+            ROS_INFO_STREAM("Unable to find the ROS package\n");
+            promptAndExit(1);
         #endif
         
         // complete the path of the output file
@@ -531,7 +534,8 @@ void imuMessageReceived(const sensor_msgs::Imu& msg) {
         #ifdef ROS
             path = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
         #else
-            path = "..";
+            ROS_INFO_STREAM("Unable to find the ROS package\n");
+            promptAndExit(1);
         #endif
         
         // complete the path of the output file
@@ -582,7 +586,8 @@ void backSonarMessageReceived(const sensor_msgs::Range& msg) {
         #ifdef ROS
             path = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
         #else
-            path = "..";
+            ROS_INFO_STREAM("Unable to find the ROS package\n");
+            promptAndExit(1);
         #endif
 
         // complete the path of the output file
@@ -634,7 +639,8 @@ void frontSonarMessageReceived(const sensor_msgs::Range& msg) {
         #ifdef ROS
             path = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
         #else
-            path = "..";
+            ROS_INFO_STREAM("Unable to find the ROS package\n");
+            promptAndExit(1);
         #endif
         
         // complete the path of the output file
@@ -683,7 +689,8 @@ void frontCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg) {
         #ifdef ROS
             path = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
         #else
-            path = "..";
+            ROS_INFO_STREAM("Unable to find the ROS package\n");
+            promptAndExit(1);
         #endif
         
         // complete the path of the output file
@@ -739,7 +746,8 @@ void bottomCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg) {
         #ifdef ROS
             path = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
         #else
-            path = "..";
+            ROS_INFO_STREAM("Unable to find the ROS package\n");
+            promptAndExit(1);
         #endif
         
         // complete the path of the output file
@@ -803,7 +811,8 @@ void depthCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg) {
         #ifdef ROS
             path = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
         #else
-            path = "..";
+            ROS_INFO_STREAM("Unable to find the ROS package\n");
+            promptAndExit(1);
         #endif
         
         // complete the path of the output file
@@ -890,7 +899,8 @@ void laserSensorMessageReceived(const sensor_msgs::LaserScan& msg) {
         #ifdef ROS
             path = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
         #else
-            path = "..";
+            ROS_INFO_STREAM("Unable to find the ROS package\n");
+            promptAndExit(1);
         #endif
         
         // complete the path of the output file
