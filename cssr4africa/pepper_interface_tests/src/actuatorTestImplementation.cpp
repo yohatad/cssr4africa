@@ -516,7 +516,6 @@ std::string extractTopic(std::string key){
 
         // To lower case
         transform(paramKey.begin(), paramKey.end(), paramKey.begin(), ::tolower);
-        transform(paramValue.begin(), paramValue.end(), paramValue.begin(), ::tolower);
 
         if (paramKey == platformKey){ platformValue = paramValue;}
         else if (paramKey == robotTopicKey){ robotTopicValue = paramValue;}
@@ -577,7 +576,7 @@ std::string extractTopic(std::string key){
 std::string extractMode(){
     bool debug = false;   // used to turn debug message on
     
-    std::string configFileName = "actuatorTestConfiguration.ini";   // configuration filename
+    std::string configFileName  = "actuatorTestConfiguration.ini";   // configuration filename
     std::string configPath;                                         // configuration path
     std::string configPathFile;                                     // configuration path and filename
     
@@ -644,16 +643,6 @@ std::vector<std::string> extractTests(std::string test){
     std::vector<std::string> testName;
     std::string flag;
 
-    if (test == "actuator"){
-        inputFileName = "actuatorTestInput.ini";
-    }
-    else if (test == "sensor"){
-        inputFileName = "sensorTestInput.ini";
-    }
-    else {
-        printf("unable to identify the test.\n");
-    }
-
     // Construct the full path of the input file
     #ifdef ROS
         inputPath = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
@@ -664,7 +653,7 @@ std::vector<std::string> extractTests(std::string test){
     
     inputPath += "/config/";
     inputPathFile = inputPath;
-    inputPathFile += inputFileName;
+    inputPathFile += "actuatorTestInput.ini";
 
     if (debug) printf("Input file is %s\n", inputPathFile.c_str());
 
@@ -688,6 +677,7 @@ std::vector<std::string> extractTests(std::string test){
         iss >> paramValue;
         
         trim(paramValue); // trim whitespace
+        transform(paramKey.begin(), paramKey.end(), paramKey.begin(), ::tolower); // convert to lower case
         transform(paramValue.begin(), paramValue.end(), paramValue.begin(), ::tolower); // convert to lower case
 
         if (paramValue == "true"){ testName.push_back(paramKey);}

@@ -1130,13 +1130,6 @@ std::vector<std::string> extractTests(std::string set){
     std::vector<std::string> testName;
     std::string flag;
 
-    if (set == "actuator"){
-        inputFileName = "actuatorTestInput.ini";
-    }
-    else{
-        inputFileName = "sensorTestInput.ini";
-    }
-
     // Construct the full path of the input file
     #ifdef ROS
         inputPath = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
@@ -1149,7 +1142,7 @@ std::vector<std::string> extractTests(std::string set){
     // set input path
     inputPath += "/config/";
     inputPathFile = inputPath;
-    inputPathFile += inputFileName;
+    inputPathFile += "sensorTestInput.ini";
 
     if (debug) printf("Input file is %s\n", inputPathFile.c_str());
 
@@ -1370,7 +1363,7 @@ void executeTestsSequentially(const std::vector<std::string>& testNames, ros::No
             // Call the function associated with testName
             it->second(nh);
         } else {
-            std::cerr << "Unknown test provided: " << testName << ". Exiting...\n";
+            std::cerr << "Unknown test provided: " << testName << ". Proceeding to the next test...\n";
         }
     }
 }
@@ -1379,7 +1372,7 @@ void executeTestsInParallel(const std::vector<std::string>& testNames, ros::Node
     std::unordered_map<std::string, TestFunction> testMap = {
         {"backsonar", backSonar},
         {"frontsonar", frontSonar},
-        {"frontcamera", frontCamera},
+        {"frontcamera", frontCamera},   
         {"bottomcamera", bottomCamera},
         {"depthcamera", depthCamera},
         {"laser", laserSensor},
