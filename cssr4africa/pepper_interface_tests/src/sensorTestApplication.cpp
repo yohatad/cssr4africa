@@ -117,7 +117,7 @@ int main(int argc, char **argv){
     } else if (mode == "sequential") {
         executeTestsSequentially(testNames, nh);
     } else {
-        std::cerr << "Invalid mode provided. Exiting...\n";
+        std::cerr << "Invalid mode. Please check the mode in the configuration file.\n";
         promptAndExit(1);
     }
 

@@ -27,6 +27,12 @@ void backSonar(ros::NodeHandle nh){
     // find the respective topic
     string topicName = extractTopic("BackSonar");
 
+     // Check if the topic name is empty
+    if (topicName.empty()) {
+        ROS_WARN_STREAM("No valid topic found for FrontCamera. Skipping this sensor test.");
+        return; // Exit the function early if no valid topic is found
+    }
+
     ROS_INFO_STREAM("Subscribing to : " << topicName << "\n" ); // Print the topic name
     ros::Duration(1).sleep();
 
@@ -47,6 +53,12 @@ void backSonar(ros::NodeHandle nh){
 void frontSonar(ros::NodeHandle nh){
     // find the respective topic
     string topicName = extractTopic("FrontSonar");
+
+    // check if the topic name is empty
+    if (topicName.empty()) {
+        ROS_WARN_STREAM("No valid topic found for FrontCamera. Skipping this sensor test.");
+        return; // Exit the function early if no valid topic is found
+    }
 
     ROS_INFO_STREAM("Subscribing to :" << topicName << "\n"  ); // Print the topic name
     ros::Duration(1).sleep();
@@ -69,6 +81,12 @@ void frontSonar(ros::NodeHandle nh){
 void frontCamera(ros::NodeHandle nh){
     // find the respective topic
     string topicName = extractTopic("FrontCamera");
+
+    // check if the topic name is empty
+    if (topicName.empty()) {
+        ROS_WARN_STREAM("No valid topic found for FrontCamera. Skipping this sensor test.");
+        return; // Exit the function early if no valid topic is found
+    }
 
     ROS_INFO_STREAM("Subscribing to :" << topicName << "\n"  ); // Print the topic name
     ros::Duration(1).sleep();
@@ -119,6 +137,13 @@ void depthCamera(ros::NodeHandle nh){
     // find the respective topic
     string topicName = extractTopic("DepthCamera");
 
+    // check if the topic name is empty
+    if (topicName.empty()) {
+        ROS_WARN_STREAM("No valid topic found for DepthCamera. Skipping this sensor test.");
+        return; // Exit the function early if no valid topic is found
+    }
+
+
     ROS_INFO_STREAM("Subscribing to :" << topicName << "\n"  ); // Print the topic name
     ros::Duration(1).sleep();
 
@@ -144,6 +169,12 @@ void laserSensor(ros::NodeHandle nh){
     // find the respective topic
     string topicName = extractTopic("Laser");
 
+    // check if the topic name is empty
+    if (topicName.empty()) {
+        ROS_WARN_STREAM("No valid topic found for Laser. Skipping this sensor test.");
+        return; // Exit the function early if no valid topic is found
+    }
+
     ROS_INFO_STREAM("Start " << topicName << " Subscribe Test \n"  ); // Print the topic name
     ros::Duration(1).sleep();
     
@@ -166,6 +197,12 @@ void odom(ros::NodeHandle nh){
     // find the respective topic
     string topicName = extractTopic("Odometry");
 
+    // check if the topic name is empty
+    if (topicName.empty()) {
+        ROS_WARN_STREAM("No valid topic found for Odometry. Skipping this sensor test.");
+        return; // Exit the function early if no valid topic is found
+    }
+
     ROS_INFO_STREAM("Start " << topicName << " Subscribe Test \n"  ); // Print the topic name
     ros::Duration(1).sleep();
     
@@ -187,6 +224,12 @@ void imu(ros::NodeHandle nh){
     // find the respective topic
     string topicName = extractTopic("IMU");
 
+    // check if the topic name is empty
+    if (topicName.empty()) {
+        ROS_WARN_STREAM("No valid topic found for IMU. Skipping this sensor test.");
+        return; // Exit the function early if no valid topic is found
+    }
+
     ROS_INFO_STREAM("Start " << topicName << " Subscribe Test \n"  ); // Print the topic name
     ros::Duration(1).sleep();
     
@@ -207,6 +250,12 @@ void imu(ros::NodeHandle nh){
 void jointState(ros::NodeHandle nh){
     // find the respective topic
     string topicName = extractTopic("JointState");
+
+    // check if the topic name is empty
+    if (topicName.empty()) {
+        ROS_WARN_STREAM("No valid topic found for JointState. Skipping this sensor test.");
+        return; // Exit the function early if no valid topic is found
+    }
 
     ROS_INFO_STREAM("Start " << topicName << " Subscribe Test \n"  ); // Print the topic name
     ros::Duration(1).sleep();
@@ -247,6 +296,12 @@ void stereoCamera(ros::NodeHandle nh){
     // find the respective topic
     string topicName = extractTopic("StereoCamera");
 
+    // check if the topic name is empty
+    if (topicName.empty()) {
+        ROS_WARN_STREAM("No valid topic found for StereoCamera. Skipping this sensor test.");
+        return; // Exit the function early if no valid topic is found
+    }
+
     ROS_INFO_STREAM("Subscribing to :" << topicName << "\n"  ); // Print the topic name
     ros::Duration(1).sleep();
 
@@ -271,6 +326,12 @@ void microphone(ros::NodeHandle nh){
     // find the respective topic
     string topicName = extractTopic("Microphone");
     int sampleRate = 48000;
+
+    // check if the topic name is empty
+    if (topicName.empty()) {
+        ROS_WARN_STREAM("No valid topic found for Microphone. Skipping this sensor test.");
+        return; // Exit the function early if no valid topic is found
+    }
 
     ROS_INFO_STREAM("Start " << topicName << " Subscribe Test \n"  ); // Print the topic name
     ros::Duration(1).sleep();
@@ -952,7 +1013,7 @@ void promptAndContinue(){
 string extractTopic(string key){
     bool debug = false;   // used to turn debug message on
     
-    std::string configFileName = "sensorTestConfiguration.ini";             // configuration filename
+    std::string configFileName      = "sensorTestConfiguration.ini";        // configuration filename
     std::string configPath;                                                 // configuration path
     std::string configPathFile;                                             // configuration path and filename
     
@@ -1004,11 +1065,10 @@ string extractTopic(string key){
         trim(paramValue);
         
         if (paramKey == platformKey){ platformValue = paramValue;}
-        
         else if (paramKey == robotTopicKey){ robotTopicValue = paramValue;}
-
         else if (paramKey == simulatorTopicKey){ simulatorTopicValue = paramValue;}
     }
+    
     configFile.close();
 
     // set the topic file based on the config extracted above
@@ -1056,10 +1116,6 @@ string extractTopic(string key){
     }
     topicFile.close();
 
-    // verify the topic_value is not empty
-    if (topic_value == ""){
-        printf("Unable to find a valid topic for %s.\n", key.c_str());
-    }
     return topic_value;
 }
 
@@ -1132,19 +1188,19 @@ std::vector<std::string> extractTests(std::string set){
 std::string extractMode(){
     bool debug = false;   // used to turn debug message on
 
-    std::string configFileName = "sensorTestConfiguration.ini";  // configuration filename
-    std::string configPath;                                  // configuration path
-    std::string configPathFile;                         // configuration path and filename
+    std::string configFileName = "sensorTestConfiguration.ini";     // configuration filename
+    std::string configPath;                                         // configuration path
+    std::string configPathFile;                                     // configuration path and filename
 
-    std::string modeKey = "mode";                             // mode key
+    std::string modeKey = "mode";                                   // mode key
 
-    std::string modeValue;                                    // mode value
+    std::string modeValue;                                          // mode value
 
     // Construct the full path of the configuration file
     #ifdef ROS
         configPath = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
     #else
-        configPath = "..";
+        printf("ROS_PACKAGE_NAME is not defined. Please define the ROS_PACKAGE_NAME environment variable.\n");
     #endif
 
     // set configuration path

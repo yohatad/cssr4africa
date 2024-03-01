@@ -25,11 +25,15 @@
 # include <vector>
 # include <cstdlib>
 # include <filesystem>
+#ifdef PEPPER_ROBOT
 # include <naoqi_driver/AudioCustomMsg.h>
+#endif // DEBUG
 
 using namespace boost;
 using namespace std;
 using TestFunction = std::function<void(ros::NodeHandle&)>;
+extern bool output;
+extern int timeDuration;
 
 #define ROS
 
@@ -40,7 +44,6 @@ void bottomCamera(ros::NodeHandle nh);
 void depthCamera(ros::NodeHandle nh);
 void stereoCamera(ros::NodeHandle nh);
 void laserSensor(ros::NodeHandle nh);
-void microphone(ros::NodeHandle nh);
 void jointState(ros::NodeHandle nh);
 void odom(ros::NodeHandle nh);
 void imu(ros::NodeHandle nh);
@@ -54,16 +57,18 @@ void bottomCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg);
 void depthCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg);
 void stereoCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg);
 void laserSensorMessageReceived(const sensor_msgs::LaserScan& msg);
-void microphoneMessageReceived(const naoqi_driver::AudioCustomMsg& msg);
 void jointStateMessageReceived(const sensor_msgs::JointState& msg);
 void odomMessageReceived(const nav_msgs::Odometry& msg);
 void imuMessageReceived(const sensor_msgs::Imu& msg);
 
+#ifdef PEPPER_ROBOT
+void microphone(ros::NodeHandle nh);
+void microphoneMessageReceived(const naoqi_driver::AudioCustomMsg& msg);
+#endif // DEBUG
+
 std::vector<string> extractTests(string key);
 string extractTopic(string set);   
 std::string extractMode();
-extern bool output;
-extern int timeDuration;
 void writeWavHeader(std::ofstream &file, int sampleRate, int numSamples);
 void playAndDeleteFile();
 void initializeOutputFile(std::ofstream& out_of, const std::string& path);
