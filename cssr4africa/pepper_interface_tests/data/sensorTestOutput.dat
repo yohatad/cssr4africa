@@ -101,3 +101,81 @@ Image Height: 480
 
 [END TIME] 2024-03-02.17:19:56
 
+<<<<<<< Updated upstream
+=======
+[START TIME] 2024-02-29.16:01:25
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2024-02-29.16:13:38
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2024-02-29.16:14:50
+[TESTING] ---- JOINT STATE ----
+
+[MESSAGES] Printing joint state data received.
+Header: seq: 9797
+stamp: 1709216102.985848200
+frame_id: 
+
+[END MESSAGES] Finished printing.
+
+[END TIME] 2024-02-29.16:15:34
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2024-02-29.16:22:21
+[TESTING] ---- JOINT STATE ----
+
+[MESSAGES] Printing joint state data received.
+Header: seq: 12996
+stamp: 1709216553.490374600
+frame_id: 
+
+[END MESSAGES] Finished printing.
+
+[END TIME] 2024-02-29.16:22:37
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2024-02-29.16:22:50
+[END TIME] 2024-02-29.16:23:00
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2024-02-29.16:27:16
+[END TIME] 2024-02-29.16:27:27
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2024-02-29.16:50:34
+[END TIME] 2024-02-29.16:50:45
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2024-02-29.16:52:04
+[END TIME] 2024-02-29.16:52:04
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2024-02-29.16:54:37
+[END TIME] 2024-02-29.16:54:48
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2024-02-29.17:00:34
+[END TIME] 2024-02-29.17:00:45
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2024-02-29.17:08:02
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2024-02-29.17:09:53
+[END TIME] 2024-02-29.17:09:56
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2024-02-29.17:09:59
+[END TIME] 2024-02-29.17:10:10
+
+>>>>>>> Stashed changes
