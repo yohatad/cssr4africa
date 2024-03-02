@@ -65,3 +65,39 @@ frame_id:
 
 [END MESSAGES] Finished printing.
 
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2024-03-02.17:18:07
+[TESTING] ---- FRONT CAMERA ----
+
+[MESSAGES] Printing front camera data information received.
+Image Width: 640
+Image Height: 480
+[END MESSAGES] Finished printing.
+
+[END TIME] 2024-03-02.17:18:18
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2024-03-02.17:19:28
+[TESTING] ---- FRONT CAMERA ----
+
+[MESSAGES] Printing front camera data information received.
+Image Width: 640
+Image Height: 480
+[END MESSAGES] Finished printing.
+
+[END TIME] 2024-03-02.17:19:39
+
+[TESTING] ############ SENSORS ############
+
+[START TIME] 2024-03-02.17:19:45
+[TESTING] ---- FRONT CAMERA ----
+
+[MESSAGES] Printing front camera data information received.
+Image Width: 640
+Image Height: 480
+[END MESSAGES] Finished printing.
+
+[END TIME] 2024-03-02.17:19:56
+
