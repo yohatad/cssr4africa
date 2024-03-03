@@ -1013,11 +1013,7 @@ void promptAndContinue(){
 string extractTopic(string key){
     bool debug = false;   // used to turn debug message on
     
-<<<<<<< Updated upstream
     std::string configFileName      = "sensorTestConfiguration.ini";        // configuration filename
-=======
-    std::string configFileName = "sensorTestConfiguration.ini";             // configuration filename
->>>>>>> Stashed changes
     std::string configPath;                                                 // configuration path
     std::string configPathFile;                                             // configuration path and filename
     
