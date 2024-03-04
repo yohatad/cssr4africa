@@ -436,9 +436,7 @@ void stereoCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg) {
     }
 
     cv::Mat img = cv_ptr->image;
-
     cv::imshow("Stereo Camera", img);
-
     cv::waitKey(30);
 }
 
@@ -782,12 +780,10 @@ void frontCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg) {
     cv_bridge::CvImagePtr cv_ptr;
 
     //  convert to BGR image
-    cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
-    
+    cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8); 
     cv::Mat img = cv_ptr->image;
 
     cv::imshow("Front Camera", img);
-
     cv::waitKey(30);
 }
 
@@ -848,9 +844,7 @@ void bottomCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg) {
     }
 
     cv::Mat img = cv_ptr->image;
-
     cv::imshow("Bottom Camera", img);
-
     cv::waitKey(30);
 }
 
@@ -913,21 +907,17 @@ void depthCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg) {
     cv::Mat img = cv_ptr->image;
 
     double min = 0;
-
     double max = 1000;
 
     cv::Mat img_scaled_8u;
     cv::Mat color_img;
     
-
     cv::Mat(cv_ptr->image-min).convertTo(img_scaled_8u, CV_8UC1, 255. / (max - min));
-
     if(img_scaled_8u.type() ==  CV_8UC1){
        cv::cvtColor(img_scaled_8u, color_img, CV_GRAY2RGB); 
     }
 
     cv::imshow("Depth Camera", color_img);
-
     cv::waitKey(30);
 }
 
