@@ -349,9 +349,9 @@ void microphone(ros::NodeHandle nh){
     
     // Listen for incoming messages and execute the callback function
     ros::Rate rate(30); 
-    ros::Time startTime = ros::Time::now(); // start now
-    ros::Duration waitTime = ros::Duration(timeDuration);  // duration of 5 seconds
-    ros::Time endTime = startTime + waitTime;   // end after 5 seconds of the start time
+    ros::Time startTime = ros::Time::now();                     // start now
+    ros::Duration waitTime = ros::Duration(timeDuration);       // duration of 5 seconds
+    ros::Time endTime = startTime + waitTime;                   // end after 5 seconds of the start time
     
     while(ros::ok() && ros::Time::now() < endTime) {
         ros::spinOnce();
@@ -633,12 +633,12 @@ void backSonarMessageReceived(const sensor_msgs::Range& msg) {
     // Print a message indicating that sonar data is being printed
     ROS_INFO_STREAM("[MESSAGES] Printing back sonar data received.\n");
 
-    ROS_INFO_STREAM("Frame id: " << msg.header.frame_id << "\n" );// Print the frame ID of the received message
-    ROS_INFO_STREAM("Field of view: " << msg.field_of_view << "\n" ); // Print the field of view of the sonar sensor
-    ROS_INFO_STREAM("Minimum range value: " << msg.min_range << "\n" ); // Print the minimum range value reported by the sonar sensor
-    ROS_INFO_STREAM("Maximum range value: " << msg.max_range << "\n" ); // Print the maximum range value reported by the sonar sensor
-    ROS_INFO_STREAM("Range value: " << msg.range << "\n" ); // Print the received range value reported by the sonar sensor
-    ROS_INFO_STREAM("[END MESSAGES] Finished printing.\n"); // Print a message indicating the end of printing sonar data
+    ROS_INFO_STREAM("Frame id: " << msg.header.frame_id << "\n" );          // Print the frame ID of the received message
+    ROS_INFO_STREAM("Field of view: " << msg.field_of_view << "\n" );       // Print the field of view of the sonar sensor
+    ROS_INFO_STREAM("Minimum range value: " << msg.min_range << "\n" );     // Print the minimum range value reported by the sonar sensor
+    ROS_INFO_STREAM("Maximum range value: " << msg.max_range << "\n" );     // Print the maximum range value reported by the sonar sensor
+    ROS_INFO_STREAM("Range value: " << msg.range << "\n" );                 // Print the received range value reported by the sonar sensor
+    ROS_INFO_STREAM("[END MESSAGES] Finished printing.\n");                 // Print a message indicating the end of printing sonar data
     
     // Write the message received in an output file if the output variable is true
     if (output == true){
@@ -685,12 +685,12 @@ void frontSonarMessageReceived(const sensor_msgs::Range& msg) {
     // Print a message indicating that sonar data is being printed
     ROS_INFO_STREAM("[MESSAGES] Printing front sonar data received.\n");
 
-    ROS_INFO_STREAM("Frame id: " << msg.header.frame_id << "\n" );// Print the frame ID of the received message
-    ROS_INFO_STREAM("Field of view: " << msg.field_of_view << "\n" ); // Print the field of view of the sonar sensor
-    ROS_INFO_STREAM("Minimum range value: " << msg.min_range << "\n" ); // Print the minimum range value reported by the sonar sensor
-    ROS_INFO_STREAM("Maximum range value: " << msg.max_range << "\n" ); // Print the maximum range value reported by the sonar sensor
-    ROS_INFO_STREAM("Range value: " << msg.range << "\n" ); // Print the received range value reported by the sonar sensor
-    ROS_INFO_STREAM("[END MESSAGES] Finished printing.\n"); // Print a message indicating the end of printing sonar data
+    ROS_INFO_STREAM("Frame id: " << msg.header.frame_id << "\n" );          // Print the frame ID of the received message
+    ROS_INFO_STREAM("Field of view: " << msg.field_of_view << "\n" );       // Print the field of view of the sonar sensor
+    ROS_INFO_STREAM("Minimum range value: " << msg.min_range << "\n" );     // Print the minimum range value reported by the sonar sensor
+    ROS_INFO_STREAM("Maximum range value: " << msg.max_range << "\n" );     // Print the maximum range value reported by the sonar sensor
+    ROS_INFO_STREAM("Range value: " << msg.range << "\n" );                 // Print the received range value reported by the sonar sensor
+    ROS_INFO_STREAM("[END MESSAGES] Finished printing.\n");                 // Print a message indicating the end of printing sonar data
 
     // Write the message received in an output file if the output variable is true
     if (output == true){
@@ -1153,9 +1153,9 @@ std::vector<std::string> extractTests(std::string set){
         promptAndExit(1);
     }
 
-    std::string inpLineRead;  // variable to read the line in the file
+    std::string inpLineRead;            // variable to read the line in the file
     
-    std::string paramKey, paramValue; // variables to keep the key value pairs read
+    std::string paramKey, paramValue;   // variables to keep the key value pairs read
 
     // Get key-value pairs from the input file
     while(std::getline(inputFile, inpLineRead)){
@@ -1166,9 +1166,9 @@ std::vector<std::string> extractTests(std::string set){
         std::getline(iss, paramValue);
         iss >> paramValue;
         
-        trim(paramValue); // trim whitespace
-        transform(paramValue.begin(), paramValue.end(), paramValue.begin(), ::tolower); // convert to lower case
-        transform(paramKey.begin(), paramKey.end(), paramKey.begin(), ::tolower); // convert to lower case
+        trim(paramValue);                                                                   // trim whitespace
+        transform(paramValue.begin(), paramValue.end(), paramValue.begin(), ::tolower);     // convert to lower case
+        transform(paramKey.begin(), paramKey.end(), paramKey.begin(), ::tolower);           // convert to lower case
 
         if (paramValue == "true"){ testName.push_back(paramKey);}
     }
@@ -1211,6 +1211,7 @@ std::string extractMode(){
     }
 
     std::string configLineRead;  // variable to read the line in the file
+    
     // Get key-value pairs from the configuration file
     while(std::getline(configFile, configLineRead)){
         std::istringstream iss(configLineRead);
@@ -1266,6 +1267,7 @@ void writeWavHeader(std::ofstream& file, int sampleRate, int numSamples) {
 void playAndDeleteFile() {
     // use True/False to delete the file after playing
     bool deleteFile = true;
+    
     // check if the file exists
     std::string fileName = ros::package::getPath(ROS_PACKAGE_NAME) + "/data/microphone.wav";
 
@@ -1299,8 +1301,10 @@ void initializeOutputFile(std::ofstream& out_of, const std::string& path) {
     }
 
     out_of << "[TESTING] ############ SENSORS ############\n\n";
+    
     // Assuming getCurrentTime() is implemented elsewhere
     out_of << "[START TIME] " << getCurrentTime() << "\n";
+    
     // Explicit close is not required but can be kept for clarity or error checking
     out_of.close();
 }
@@ -1325,9 +1329,11 @@ std::string getOutputFilePath() {
     #ifdef ROS
     // If ROS is defined, use the ROS package path
     basePath = ros::package::getPath(ROS_PACKAGE_NAME);
+    
     // Append the subdirectory and filename to the base path
     basePath += "/data/";
     #else
+    
     // If not running within ROS, output an error message and exit
     std::cerr << "Error: ROS environment not detected. Unable to determine the output file path." << std::endl;
     exit(EXIT_FAILURE);
