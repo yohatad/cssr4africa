@@ -98,7 +98,7 @@ int main(int argc, char** argv) {
 
     // Extract the mode to run the tests
     std::string mode = extractMode();
-    std::cout << "Mode: " << mode << std::endl;
+    printf("Mode: %s\n", mode.c_str());
 
     if (!ros::Time::waitForValid(ros::WallDuration(10.0))) {
         ROS_FATAL("Timeout waiting for valid time");

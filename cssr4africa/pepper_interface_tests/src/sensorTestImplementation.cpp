@@ -330,7 +330,7 @@ void microphone(ros::NodeHandle nh){
     // check if the topic name is empty
     if (topicName.empty()) {
         ROS_WARN_STREAM("No valid topic found for Microphone. Skipping this sensor test.");
-        return; // Exit the function early if no valid topic is found
+        return;                                                        // Exit the function early if no valid topic is found
     }
 
     ROS_INFO_STREAM("Start " << topicName << " Subscribe Test \n"  ); // Print the topic name
@@ -400,7 +400,7 @@ void stereoCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg) {
         #endif
         
         // complete the path of the output file
-        path += "/data/sensorTestOutput.dat";
+        path    += "/data/sensorTestOutput.dat";
         
         // open the output file
         std::ofstream out_of;
@@ -436,9 +436,7 @@ void stereoCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg) {
     }
 
     cv::Mat img = cv_ptr->image;
-
     cv::imshow("Stereo Camera", img);
-
     cv::waitKey(30);
 }
 
@@ -476,6 +474,7 @@ void jointStateMessageReceived(const sensor_msgs::JointState& msg) {
     // Write the message received in an output file if the output variable is true
     if (output == true){
         string path;
+        
         // set the main path for the output file
         #ifdef ROS
             path = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
@@ -1140,9 +1139,9 @@ std::vector<std::string> extractTests(std::string set){
     #endif
 
     // set input path
-    inputPath += "/config/";
-    inputPathFile = inputPath;
-    inputPathFile += "sensorTestInput.ini";
+    inputPath       += "/config/";
+    inputPathFile    = inputPath;
+    inputPathFile   += "sensorTestInput.ini";
 
     if (debug) printf("Input file is %s\n", inputPathFile.c_str());
 
@@ -1185,7 +1184,7 @@ std::string extractMode(){
     std::string configPath;                                         // configuration path
     std::string configPathFile;                                     // configuration path and filename
 
-    std::string modeKey = "mode";                                   // mode key
+    std::string modeKey        = "mode";                            // mode key
 
     std::string modeValue;                                          // mode value
 

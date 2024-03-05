@@ -451,6 +451,8 @@ void wheels(ros::NodeHandle& nh){
     ROS_INFO_STREAM("                                       ");
 }
 
+
+
 /* Extract topic names for the respective simulator or physical robot */
 std::string extractTopic(std::string key){
     bool debug = false;   // used to turn debug message on
@@ -472,7 +474,7 @@ std::string extractTopic(std::string key){
     std::string topicPath;                                              // topic filename path
     std::string topicPathFile;                                          // topic with path and file 
 
-    std::string topic_value = "";                                       // topic value
+    std::string topic_value          = "";                              // topic value with empty string as default
 
     // Construct the full path of the configuration file
     #ifdef ROS
@@ -569,13 +571,13 @@ std::string extractTopic(std::string key){
 std::string extractMode(){
     bool debug = false;   // used to turn debug message on
     
-    std::string configFileName  = "actuatorTestConfiguration.ini";   // configuration filename
-    std::string configPath;                                         // configuration path
-    std::string configPathFile;                                     // configuration path and filename
+    std::string configFileName  = "actuatorTestConfiguration.ini";          // configuration filename
+    std::string configPath;                                                 // configuration path
+    std::string configPathFile;                                             // configuration path and filename
     
     std::string modeKey         = "mode";                                   // mode key 
 
-    std::string modeValue;                                          // mode value
+    std::string modeValue;                                                  // mode value
     
     // Construct the full path of the configuration file
     #ifdef ROS
@@ -599,6 +601,7 @@ std::string extractMode(){
     }
 
     std::string configLineRead;  // variable to read the line in the file
+    
     // Get key-value pairs from the configuration file
     while(std::getline(configFile, configLineRead)){
         std::istringstream iss(configLineRead);
@@ -627,11 +630,11 @@ std::string extractMode(){
 
 /* Extract the expected tests to run for the respective actuator or sensor tests */
 std::vector<std::string> extractTests(std::string test){
-    bool debug = false;   // used to turn debug message on
+    bool debug = false;                                         // used to turn debug message on
     
     std::string inputFileName;                                  // input filename
-    std::string inputPath;                                  // input path
-    std::string inputPathFile;                         // input path and filename
+    std::string inputPath;                                      // input path
+    std::string inputPathFile;                                  // input path and filename
     
     std::vector<std::string> testName;
     std::string flag;
@@ -639,14 +642,14 @@ std::vector<std::string> extractTests(std::string test){
     // Construct the full path of the input file
     #ifdef ROS
         inputPath = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
-        std::cout<<inputPath<<std::endl;
     #else
-        inputPath = "..";
+        printf("ROS_PACKAGE_NAME is not defined. Please define the ROS_PACKAGE_NAME environment variable.\n");
+        promptAndExit(1);
     #endif
     
-    inputPath += "/config/";
-    inputPathFile = inputPath;
-    inputPathFile += "actuatorTestInput.ini";
+    inputPath       += "/config/";
+    inputPathFile    = inputPath;
+    inputPathFile   += "actuatorTestInput.ini";
 
     if (debug) printf("Input file is %s\n", inputPathFile.c_str());
 
@@ -669,9 +672,9 @@ std::vector<std::string> extractTests(std::string test){
         std::getline(iss, paramValue);
         iss >> paramValue;
         
-        trim(paramValue); // trim whitespace
-        transform(paramKey.begin(), paramKey.end(), paramKey.begin(), ::tolower); // convert to lower case
-        transform(paramValue.begin(), paramValue.end(), paramValue.begin(), ::tolower); // convert to lower case
+        trim(paramValue);                                                                   // trim whitespace
+        transform(paramKey.begin(), paramKey.end(), paramKey.begin(), ::tolower);           // convert to lower case
+        transform(paramValue.begin(), paramValue.end(), paramValue.begin(), ::tolower);     // convert to lower case
 
         if (paramValue == "true"){ testName.push_back(paramKey);}
     }
