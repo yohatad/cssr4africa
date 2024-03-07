@@ -1,5 +1,5 @@
 # AudioCustomMsg.msg
-int16[] micLeft
-int16[] micRight
-int16[] micFront
-int16[] micRear
+int16[] backLeft
+int16[] backRight
+int16[] frontLeft
+int16[] frontRight

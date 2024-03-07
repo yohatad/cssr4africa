@@ -21,6 +21,7 @@ std::ofstream outFile;
 int totalSamples = 0;
 bool output = true;
 int timeDuration = 10;
+bool saveVideo = true;
 
 /* Test functions */
 void backSonar(ros::NodeHandle nh){
@@ -154,8 +155,8 @@ void depthCamera(ros::NodeHandle nh){
     // Listen for incoming messages and execute the callback function
     ros::Rate rate(30); 
     ros::Time startTime = ros::Time::now(); // start now
-    ros::Duration waitTime = ros::Duration(timeDuration);  // duration of 5 seconds
-    ros::Time endTime = startTime + waitTime;   // end after 5 seconds of the start time
+    ros::Duration waitTime = ros::Duration(timeDuration);  
+    ros::Time endTime = startTime + waitTime;   
     
     while(ros::ok() && ros::Time::now() < endTime) {
         ros::spinOnce();
@@ -183,15 +184,14 @@ void laserSensor(ros::NodeHandle nh){
     // Listen for incoming messages and execute the callback function
     ros::Rate rate(30); 
     ros::Time startTime = ros::Time::now(); // start now
-    ros::Duration waitTime = ros::Duration(timeDuration);  // duration of 5 seconds
-    ros::Time endTime = startTime + waitTime;   // end after 5 seconds of the start time
+    ros::Duration waitTime = ros::Duration(timeDuration);  
+    ros::Time endTime = startTime + waitTime;   
     
     while(ros::ok() && ros::Time::now() < endTime) {
         ros::spinOnce();
         rate.sleep();
     }
 }
-
 
 void odom(ros::NodeHandle nh){
     // find the respective topic
@@ -210,9 +210,9 @@ void odom(ros::NodeHandle nh){
     
     // Listen for incoming messages and execute the callback function
     ros::Rate rate(30); 
-    ros::Time startTime = ros::Time::now(); // start now
-    ros::Duration waitTime = ros::Duration(timeDuration);  // duration of 5 seconds
-    ros::Time endTime = startTime + waitTime;   // end after 5 seconds of the start time
+    ros::Time startTime = ros::Time::now();             // start now
+    ros::Duration waitTime = ros::Duration(timeDuration);  
+    ros::Time endTime = startTime + waitTime;   
     
     while(ros::ok() && ros::Time::now() < endTime) {
         ros::spinOnce();
@@ -237,9 +237,9 @@ void imu(ros::NodeHandle nh){
     
     // Listen for incoming messages and execute the callback function
     ros::Rate rate(30); 
-    ros::Time startTime = ros::Time::now(); // start now
-    ros::Duration waitTime = ros::Duration(timeDuration);  // duration of 5 seconds
-    ros::Time endTime = startTime + waitTime;   // end after 5 seconds of the start time
+    ros::Time startTime = ros::Time::now();                         // start now
+    ros::Duration waitTime = ros::Duration(timeDuration);  
+    ros::Time endTime = startTime + waitTime;   
     
     while(ros::ok() && ros::Time::now() < endTime) {
         ros::spinOnce();
@@ -265,8 +265,8 @@ void jointState(ros::NodeHandle nh){
     // Listen for incoming messages and execute the callback function
     ros::Rate rate(30); 
     ros::Time startTime = ros::Time::now(); // start now
-    ros::Duration waitTime = ros::Duration(timeDuration);  // duration of 5 seconds
-    ros::Time endTime = startTime + waitTime;   // end after 5 seconds of the start time
+    ros::Duration waitTime = ros::Duration(timeDuration);  
+    ros::Time endTime = startTime + waitTime;   
     
     while(ros::ok() && ros::Time::now() < endTime) {
         ros::spinOnce();
@@ -350,8 +350,8 @@ void microphone(ros::NodeHandle nh){
     // Listen for incoming messages and execute the callback function
     ros::Rate rate(30); 
     ros::Time startTime = ros::Time::now();                     // start now
-    ros::Duration waitTime = ros::Duration(timeDuration);       // duration of 5 seconds
-    ros::Time endTime = startTime + waitTime;                   // end after 5 seconds of the start time
+    ros::Duration waitTime = ros::Duration(timeDuration);       
+    ros::Time endTime = startTime + waitTime;                   
     
     while(ros::ok() && ros::Time::now() < endTime) {
         ros::spinOnce();
@@ -738,21 +738,44 @@ void frontCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg) {
     int imgWidth = msg->width;
     int imgHeight = msg->height;
 
+    cv::videoWriter videoWriter;
+
     // Print the received image attributes
     ROS_INFO("[MESSAGE] Image received has a width: %d and height: %d", imgWidth, imgHeight);
-    
+
+    // set the main path for the output file
+    #ifdef ROS
+        path = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
+    #else
+        ROS_INFO_STREAM("Unable to find the ROS package\n");
+        promptAndExit(1);
+    #endif
+
+    if (saveVideo == true){
+        // complete the path of the output file
+        path += "/data/frontcamera.mp4";
+
+        // open the output file
+        videoWriter.open(path, cv::VideoWriter::fourcc('m', 'p', '4', 'v'), 30, cv::Size(imgWidth, imgHeight));
+
+        if (!videoWriter.isOpened()){
+            printf("Unable to open the output file %s\n", path.c_str());
+            promptAndExit(1);
+        }
+
+        // write on the output file
+        videoWriter.write(msg);
+
+        // close the output file
+        videoWriter.release();
+
+        // set the output to false so that only the first received message will be written to the output file
+        saveVideo = false;
+    }  
     // Write the message received in an output file if the output variable is true
     if (output == true){
         string path;
 
-        // set the main path for the output file
-        #ifdef ROS
-            path = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
-        #else
-            ROS_INFO_STREAM("Unable to find the ROS package\n");
-            promptAndExit(1);
-        #endif
-        
         // complete the path of the output file
         path += "/data/sensorTestOutput.dat";
         
@@ -782,11 +805,8 @@ void frontCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg) {
 
     //  convert to BGR image
     cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
-    
     cv::Mat img = cv_ptr->image;
-
-    cv::imshow("Front Camera", img);
-
+    cv::imshow("Front Camera", img)
     cv::waitKey(30);
 }
 
@@ -796,20 +816,43 @@ void bottomCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg) {
     int imgWidth = msg->width;
     int imgHeight = msg->height;
 
+    cv::videoWriter videoWriter;
+
     // Print the received image attributes
     ROS_INFO("[MESSAGE] Image received has a width: %d and height: %d", imgWidth, imgHeight);
 
-    // Write the message received in an output file if the output variable is true
-    if (output == true){
-        string path;
-        // set the main path for the output file
-        #ifdef ROS
-            path = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
-        #else
-            ROS_INFO_STREAM("Unable to find the ROS package\n");
+    // set the main path for the output file
+    #ifdef ROS
+        path = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
+    #else
+        ROS_INFO_STREAM("Unable to find the ROS package\n");
+        promptAndExit(1);
+    #endif
+
+    string path;
+
+    if (saveVideo == true){
+        // complete the path of the output file
+        path += "/data/bottomcamera.mp4";
+
+        // open the output file
+        videoWriter.open(path, cv::VideoWriter::fourcc('m', 'p', '4', 'v'), 30, cv::Size(imgWidth, imgHeight));
+
+        if (!videoWriter.isOpened()){
+            printf("Unable to open the output file %s\n", path.c_str());
             promptAndExit(1);
-        #endif
-        
+        }
+
+        // write on the output file
+        videoWriter.write(msg);
+        videoWriter.release();
+
+        // set the output to false so that only the first received message will be written to the output file
+        saveVideo = false;
+    }
+
+    // Write the message received in an output file if the output variable is true
+    if (output == true){        
         // complete the path of the output file
         path += "/data/sensorTestOutput.dat";
         
@@ -847,9 +890,7 @@ void bottomCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg) {
     }
 
     cv::Mat img = cv_ptr->image;
-
     cv::imshow("Bottom Camera", img);
-
     cv::waitKey(30);
 }
 
@@ -864,17 +905,18 @@ void depthCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg) {
     // Print the received image attributes
     ROS_INFO("[MESSAGE] Image received has a width: %d and height: %d", imgWidth, imgHeight);
 
+    string path;
+
+    // set the main path for the output file
+    #ifdef ROS
+        path = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
+    #else
+        ROS_INFO_STREAM("Unable to find the ROS package\n");
+        promptAndExit(1);
+    #endif
+
     // Write the message received in an output file if the output variable is true
-    if (output == true){
-        string path;
-        // set the main path for the output file
-        #ifdef ROS
-            path = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
-        #else
-            ROS_INFO_STREAM("Unable to find the ROS package\n");
-            promptAndExit(1);
-        #endif
-        
+    if (output == true){ 
         // complete the path of the output file
         path += "/data/sensorTestOutput.dat";
         
@@ -932,7 +974,6 @@ void depthCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg) {
 
 // Callback function to process the received laser sensor message
 void laserSensorMessageReceived(const sensor_msgs::LaserScan& msg) {
-
     ROS_INFO_STREAM("[MESSAGES] Printing laser sensor data received.\n");
     // Print the received message attributes
     ROS_INFO_STREAM("Frame id: " << msg.header.frame_id << "\n" );
@@ -952,17 +993,18 @@ void laserSensorMessageReceived(const sensor_msgs::LaserScan& msg) {
 
     ROS_INFO_STREAM("[END MESSAGES] Finished printing.\n");
 
+    string path;
+    
+    // set the main path for the output file
+    #ifdef ROS
+        path = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
+    #else
+        ROS_INFO_STREAM("Unable to find the ROS package\n");
+        promptAndExit(1);
+    #endif
+
     // Write the message received in an output file if the output variable is true
     if (output == true){
-        string path;
-        // set the main path for the output file
-        #ifdef ROS
-            path = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
-        #else
-            ROS_INFO_STREAM("Unable to find the ROS package\n");
-            promptAndExit(1);
-        #endif
-        
         // complete the path of the output file
         path += "/data/sensorTestOutput.dat";
         
