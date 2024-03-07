@@ -77,6 +77,7 @@ std::string getCurrentTime();
 void finalizeOutputFile(std::ofstream& out_of, const std::string& path);
 void executeTestsSequentially(const std::vector<std::string>& testNames, ros::NodeHandle& nh);
 void executeTestsInParallel(const std::vector<std::string>& testNames, ros::NodeHandle& nh);
+void switchMicrophoneChannel();
 
 void promptAndExit(int err);
 void promptAndContinue();

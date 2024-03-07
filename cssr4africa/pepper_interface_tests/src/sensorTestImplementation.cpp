@@ -22,6 +22,7 @@ int totalSamples = 0;
 bool output = true;
 int timeDuration = 10;
 bool saveVideo = true;
+std::string currentChannel = "frontLeft";
 
 /* Test functions */
 void backSonar(ros::NodeHandle nh){
@@ -322,60 +323,65 @@ void stereoCamera(ros::NodeHandle nh){
 
     cv::destroyWindow("Stereo Camera");
 }
-void microphone(ros::NodeHandle nh){
-    // find the respective topic
-    string topicName = extractTopic("Microphone");
-    int sampleRate = 48000;
 
-    // check if the topic name is empty
+void microphone(ros::NodeHandle nh) {
+    std::string topicName = extractTopic("Microphone");
+
     if (topicName.empty()) {
         ROS_WARN_STREAM("No valid topic found for Microphone. Skipping this sensor test.");
-        return;                                                        // Exit the function early if no valid topic is found
+        return;
     }
 
-    ROS_INFO_STREAM("Start " << topicName << " Subscribe Test \n"  ); // Print the topic name
+    ROS_INFO_STREAM("Start " << topicName << " Subscribe Test\n");
     ros::Duration(1).sleep();
 
-    #ifdef ROS
-        outFile.open(ros::package::getPath(ROS_PACKAGE_NAME) + "/data/microphone.wav", std::ios::binary);
-    #else
-        ROS_INFO_STREAM("Unable to open the output file microphone.wav\n");
-        promptAndExit(1);
-    #endif
+#ifdef ROS
+    outFile.open(ros::package::getPath(ROS_PACKAGE_NAME) + "/data/microphone.wav", std::ios::binary);
+#else
+    ROS_INFO_STREAM("Unable to open the output file microphone.wav\n");
+    promptAndExit(1);
+#endif
 
-    writeWavHeader(outFile, sampleRate, 0);
+    ros::Subscriber sub = nh.subscribe(topicName, 1000, microphoneMessageReceived);
     
-    ros::Subscriber sub = nh.subscribe(topicName, 1, microphoneMessageReceived);
-    
-    // Listen for incoming messages and execute the callback function
-    ros::Rate rate(30); 
-    ros::Time startTime = ros::Time::now();                     // start now
-    ros::Duration waitTime = ros::Duration(timeDuration);       
-    ros::Time endTime = startTime + waitTime;                   
-    
-    while(ros::ok() && ros::Time::now() < endTime) {
-        ros::spinOnce();
-        rate.sleep();
+    for (int i = 0; i < 4; ++i) { // Four channels to record
+        ros::Time startTime = ros::Time::now();
+        ros::Time endTime = startTime + ros::Duration(timeDuration);
+
+        while (ros::ok() && ros::Time::now() < endTime) {
+            ros::spinOnce();
+        }
+
+        switchMicrophoneChannel(); // Switch to the next channel
     }
-
-    outFile.seekp(0, std::ios::beg);
-    writeWavHeader(outFile, sampleRate, totalSamples);
 
     outFile.close();
     ROS_INFO_STREAM("Microphone test finished\n");
-
-    playAndDeleteFile();
 }
 
 // callback function to process the received microphone message
 void microphoneMessageReceived(const naoqi_driver::AudioCustomMsg& msg) {
-    if (!outFile.is_open()){
+    if (currentChannel.empty() || !outFile.is_open()) {
         return;
     }
 
-    for (const auto& sample : msg.micLeft){
-        outFile.write(reinterpret_cast<const char*>(&sample), sizeof(sample));
-        totalSamples++;
+    const std::vector<int16_t>* channelData = nullptr;
+
+    if (currentChannel == "frontLeft") {
+        channelData = &msg.frontLeft;
+    } else if (currentChannel == "frontRight") {
+        channelData = &msg.frontRight;
+    } else if (currentChannel == "backLeft") {
+        channelData = &msg.backLeft;
+    } else if (currentChannel == "backRight") {
+        channelData = &msg.backRight;
+    }
+
+    if (channelData) {
+        for (const auto& sample : *channelData) {
+            outFile.write(reinterpret_cast<const char*>(&sample), sizeof(sample));
+            totalSamples++;
+        }
     }
 }
 
@@ -439,7 +445,6 @@ void stereoCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg) {
     cv::imshow("Stereo Camera", img);
     cv::waitKey(30);
 }
-
 #endif
 
 // Callback function to process the received odometry message
@@ -738,7 +743,8 @@ void frontCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg) {
     int imgWidth = msg->width;
     int imgHeight = msg->height;
 
-    cv::videoWriter videoWriter;
+    cv::VideoWriter videoWriter;
+    string path;
 
     // Print the received image attributes
     ROS_INFO("[MESSAGE] Image received has a width: %d and height: %d", imgWidth, imgHeight);
@@ -763,8 +769,18 @@ void frontCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg) {
             promptAndExit(1);
         }
 
-        // write on the output file
-        videoWriter.write(msg);
+        // convert the sensor message to cv::Mat and write it to the file
+        cv_bridge::CvImagePtr cv_ptr;
+
+        try{
+            //  convert to BGR image
+            cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
+            videoWriter.write(cv_ptr->image);
+        }
+        catch(const cv_bridge::Exception& e){
+            ROS_ERROR("cv_bridge exception: %s", e.what());
+            return;
+        }   
 
         // close the output file
         videoWriter.release();
@@ -806,7 +822,7 @@ void frontCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg) {
     //  convert to BGR image
     cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
     cv::Mat img = cv_ptr->image;
-    cv::imshow("Front Camera", img)
+    cv::imshow("Front Camera", img);
     cv::waitKey(30);
 }
 
@@ -816,7 +832,8 @@ void bottomCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg) {
     int imgWidth = msg->width;
     int imgHeight = msg->height;
 
-    cv::videoWriter videoWriter;
+    cv::VideoWriter videoWriter;
+    string path;
 
     // Print the received image attributes
     ROS_INFO("[MESSAGE] Image received has a width: %d and height: %d", imgWidth, imgHeight);
@@ -829,7 +846,6 @@ void bottomCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg) {
         promptAndExit(1);
     #endif
 
-    string path;
 
     if (saveVideo == true){
         // complete the path of the output file
@@ -843,8 +859,20 @@ void bottomCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg) {
             promptAndExit(1);
         }
 
-        // write on the output file
-        videoWriter.write(msg);
+        // convert the sensor message to cv::Mat and write it to the file
+        cv_bridge::CvImagePtr cv_ptr;
+
+        try{
+            //  convert to BGR image
+            cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
+            videoWriter.write(cv_ptr->image);
+        }
+        catch(const cv_bridge::Exception& e){
+            ROS_ERROR("cv_bridge exception: %s", e.what());
+            return;
+        }
+
+        // close the output file
         videoWriter.release();
 
         // set the output to false so that only the first received message will be written to the output file
@@ -954,13 +982,10 @@ void depthCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg) {
     cv::Mat img = cv_ptr->image;
 
     double min = 0;
-
     double max = 1000;
 
     cv::Mat img_scaled_8u;
     cv::Mat color_img;
-    
-
     cv::Mat(cv_ptr->image-min).convertTo(img_scaled_8u, CV_8UC1, 255. / (max - min));
 
     if(img_scaled_8u.type() ==  CV_8UC1){
@@ -1279,6 +1304,19 @@ std::string extractMode(){
     return modeValue;
 }
 
+// This function updates the global variable for the current microphone channel to record.
+void switchMicrophoneChannel() {
+    if (currentChannel == "frontLeft") {
+        currentChannel = "frontRight";
+    } else if (currentChannel == "frontRight") {
+        currentChannel = "backLeft";
+    } else if (currentChannel == "backLeft") {
+        currentChannel = "backRight";
+    } else {
+        currentChannel = ""; // Finished recording all channels
+    }
+}
+
 // Write a WAV header to the output file
 void writeWavHeader(std::ofstream& file, int sampleRate, int numSamples) {
     int byteRate = sampleRate * 2; // 16-bit mono = 2 bytes per sample
@@ -1307,7 +1345,7 @@ void writeWavHeader(std::ofstream& file, int sampleRate, int numSamples) {
 
 void playAndDeleteFile() {
     // use True/False to delete the file after playing
-    bool deleteFile = true;
+    bool deleteFile = false;
     
     // check if the file exists
     std::string fileName = ros::package::getPath(ROS_PACKAGE_NAME) + "/data/microphone.wav";
