@@ -18,11 +18,12 @@
 #include "pepper_interface_tests/sensorTest.h"
 
 std::ofstream outFile;
-int totalSamples = 0;
 bool output = true;
 int timeDuration = 10;
 bool saveVideo = true;
-std::string currentChannel = "frontLeft";
+
+int totalSamples = 0;
+std::string currentChannel = "backLeft";
 
 /* Test functions */
 void backSonar(ros::NodeHandle nh){
@@ -326,6 +327,7 @@ void stereoCamera(ros::NodeHandle nh){
 
 void microphone(ros::NodeHandle nh) {
     std::string topicName = extractTopic("Microphone");
+    int sampleRate = 48000;
 
     if (topicName.empty()) {
         ROS_WARN_STREAM("No valid topic found for Microphone. Skipping this sensor test.");
@@ -335,16 +337,19 @@ void microphone(ros::NodeHandle nh) {
     ROS_INFO_STREAM("Start " << topicName << " Subscribe Test\n");
     ros::Duration(1).sleep();
 
-#ifdef ROS
-    outFile.open(ros::package::getPath(ROS_PACKAGE_NAME) + "/data/microphone.wav", std::ios::binary);
-#else
-    ROS_INFO_STREAM("Unable to open the output file microphone.wav\n");
-    promptAndExit(1);
-#endif
+    #ifdef ROS
+        outFile.open(ros::package::getPath(ROS_PACKAGE_NAME) + "/data/microphone.wav", std::ios::binary);
+    #else
+        ROS_INFO_STREAM("Unable to open the output file microphone.wav\n");
+        promptAndExit(1);
+    #endif
 
     ros::Subscriber sub = nh.subscribe(topicName, 1000, microphoneMessageReceived);
     
     for (int i = 0; i < 4; ++i) { // Four channels to record
+        // print the channel being recorded
+        ROS_INFO_STREAM("Recording channel " << currentChannel << "\n");
+        
         ros::Time startTime = ros::Time::now();
         ros::Time endTime = startTime + ros::Duration(timeDuration);
 
@@ -353,10 +358,16 @@ void microphone(ros::NodeHandle nh) {
         }
 
         switchMicrophoneChannel(); // Switch to the next channel
+
     }
+
+    outFile.seekp(0, std::ios::beg);
+    writeWavHeader(outFile, sampleRate, totalSamples);
 
     outFile.close();
     ROS_INFO_STREAM("Microphone test finished\n");
+
+    playAndDeleteFile();
 }
 
 // callback function to process the received microphone message
@@ -1306,12 +1317,12 @@ std::string extractMode(){
 
 // This function updates the global variable for the current microphone channel to record.
 void switchMicrophoneChannel() {
-    if (currentChannel == "frontLeft") {
-        currentChannel = "frontRight";
-    } else if (currentChannel == "frontRight") {
-        currentChannel = "backLeft";
-    } else if (currentChannel == "backLeft") {
+    if (currentChannel == "backLeft") {
         currentChannel = "backRight";
+    } else if (currentChannel == "backRight") {
+        currentChannel = "frontLeft";
+    } else if (currentChannel == "frontLeft") {
+        currentChannel = "FrontRight";
     } else {
         currentChannel = ""; // Finished recording all channels
     }
