@@ -17,17 +17,19 @@
 
 #include "pepper_interface_tests/sensorTest.h"
 
-
+/* Global variables to handle the output file */ 
 bool output;
 std::ofstream outputFile;
 int timeDuration = 10;
-bool saveVideo = true;
 std::string outputFilePath;
 
+/* Global variables to handle the audio file */
 std::ofstream outAudio;
 int totalSamples = 0;
 std::string currentChannel = "backLeft";
 
+/* Gloabal variables to handle the video file */
+bool saveVideo = true;
 cv::VideoWriter videoWriter;
 bool isVideoWriterInitialized = false;
 
@@ -67,7 +69,7 @@ void frontSonar(ros::NodeHandle nh){
 
     // check if the topic name is empty
     if (topicName.empty()) {
-        ROS_WARN_STREAM("No valid topic found for FrontCamera. Skipping this sensor test.");
+        ROS_WARN_STREAM("No valid topic found for FrontSonar. Skipping this sensor test.");
         return; // Exit the function early if no valid topic is found
     }
 
@@ -499,11 +501,12 @@ void stereoCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg) {
     cv::imshow("Stereo Camera", img);
     cv::waitKey(30);
 }    
-
 #endif
 
 // Callback function to process the received joint state message
 void jointStateMessageReceived(const sensor_msgs::JointState& msg) {
+    string path;
+
     ROS_INFO_STREAM("[MESSAGES] Printing joint state data received.\n");
     // Print the received message attributes
     ROS_INFO_STREAM("Header: " << msg.header << "\n" );
@@ -531,25 +534,24 @@ void jointStateMessageReceived(const sensor_msgs::JointState& msg) {
     }
     ROS_INFO_STREAM("[END MESSAGES] Finished printing.\n");
 
+        
+    // set the main path for the output file
+    #ifdef ROS
+        path = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
+    #else
+        ROS_INFO_STREAM("Unable to find the ROS package\n");
+        promptAndExit(1);
+    #endif
+
     // Write the message received in an output file if the output variable is true
     if (output == true){
-        string path;
-        
-        // set the main path for the output file
-        #ifdef ROS
-            path = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
-        #else
-            ROS_INFO_STREAM("Unable to find the ROS package\n");
-            promptAndExit(1);
-        #endif
-        
         // complete the path of the output file
-        path += "/data/sensorTestOutput.dat";
+        outputFilePath = path + "/data/sensorTestOutput.dat";
         
         // open the output file
-        outputFile.open(path.c_str(), ofstream::app);
+        outputFile.open(outputFilePath.c_str(), ofstream::app);
         if (!outputFile.is_open()){
-            printf("Unable to open the output file %s\n", path.c_str());
+            printf("Unable to open the output file %s\n", outputFilePath.c_str());
             promptAndExit(1);
         }
 
@@ -590,6 +592,8 @@ void jointStateMessageReceived(const sensor_msgs::JointState& msg) {
 }
 
 void odomMessageReceived(const nav_msgs::Odometry& msg){
+    string path;
+
     ROS_INFO_STREAM("[MESSAGES] Printing odometry data received.\n");
     // Print the received message attributes
     ROS_INFO_STREAM("Header: " << msg.header << "\n" );
@@ -597,25 +601,26 @@ void odomMessageReceived(const nav_msgs::Odometry& msg){
     ROS_INFO_STREAM("Pose: " << msg.pose << "\n" );
     ROS_INFO_STREAM("Twist: " << msg.twist << "\n" );
     ROS_INFO_STREAM("[END MESSAGES] Finished printing.\n");
+    
+    // set the main path for the output file
+    #ifdef ROS
+        path = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
+    #else
+        ROS_INFO_STREAM("Unable to find the ROS package\n");
+        promptAndExit(1);
+    #endif
+        
 
     // Write the message received in an output file if the output variable is true
     if (output == true){
-        string path;
-        // set the main path for the output file
-        #ifdef ROS
-            path = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
-        #else
-            ROS_INFO_STREAM("Unable to find the ROS package\n");
-            promptAndExit(1);
-        #endif
         
         // complete the path of the output file
-        path += "/data/sensorTestOutput.dat";
+        outputFilePath = path + "/data/sensorTestOutput.dat";
         
         // open the output file
-        outputFile.open(path.c_str(), ofstream::app);
+        outputFile.open(outputFilePath.c_str(), ofstream::app);
         if (!outputFile.is_open()){
-            printf("Unable to open the output file %s\n", path.c_str());
+            printf("Unable to open the output file %s\n", outputFilePath.c_str());
             promptAndExit(1);
         }
 
@@ -637,6 +642,8 @@ void odomMessageReceived(const nav_msgs::Odometry& msg){
 }
 
 void imuMessageReceived(const sensor_msgs::Imu& msg) {
+    string path;
+
     ROS_INFO_STREAM("[MESSAGES] Printing IMU data received.\n");
     // Print the received message attributes
     ROS_INFO_STREAM("Header: " << msg.header << "\n" );
@@ -645,24 +652,24 @@ void imuMessageReceived(const sensor_msgs::Imu& msg) {
     ROS_INFO_STREAM("Linear acceleration: " << msg.linear_acceleration << "\n" );
     ROS_INFO_STREAM("[END MESSAGES] Finished printing.\n");
 
+    // set the main path for the output file
+    #ifdef ROS
+        path = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
+    #else
+        ROS_INFO_STREAM("Unable to find the ROS package\n");
+        promptAndExit(1);
+    #endif
+    
     // Write the message received in an output file if the output variable is true
     if (output == true){
-        string path;
-        // set the main path for the output file
-        #ifdef ROS
-            path = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
-        #else
-            ROS_INFO_STREAM("Unable to find the ROS package\n");
-            promptAndExit(1);
-        #endif
         
         // complete the path of the output file
-        path += "/data/sensorTestOutput.dat";
+        outputFilePath = path + "/data/sensorTestOutput.dat";
         
         // open the output file
-        outputFile.open(path.c_str(), ofstream::app);
+        outputFile.open(outputFilePath.c_str(), ofstream::app);
         if (!outputFile.is_open()){
-            printf("Unable to open the output file %s\n", path.c_str());
+            printf("Unable to open the output file %s\n", outputFilePath.c_str());
             promptAndExit(1);
         }
 
@@ -686,6 +693,8 @@ void imuMessageReceived(const sensor_msgs::Imu& msg) {
 
 // Callback function to process the received sonar message
 void backSonarMessageReceived(const sensor_msgs::Range& msg) {
+    string path;
+
     // Print a message indicating that sonar data is being printed
     ROS_INFO_STREAM("[MESSAGES] Printing back sonar data received.\n");
 
@@ -696,24 +705,23 @@ void backSonarMessageReceived(const sensor_msgs::Range& msg) {
     ROS_INFO_STREAM("Range value: " << msg.range << "\n" );                 // Print the received range value reported by the sonar sensor
     ROS_INFO_STREAM("[END MESSAGES] Finished printing.\n");                 // Print a message indicating the end of printing sonar data
     
+    // set the main path for the output file
+    #ifdef ROS
+        path = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
+    #else
+        ROS_INFO_STREAM("Unable to find the ROS package\n");
+        promptAndExit(1);
+    #endif
+
     // Write the message received in an output file if the output variable is true
     if (output == true){
-        string path;
-        // set the main path for the output file
-        #ifdef ROS
-            path = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
-        #else
-            ROS_INFO_STREAM("Unable to find the ROS package\n");
-            promptAndExit(1);
-        #endif
-
         // complete the path of the output file
-        path += "/data/sensorTestOutput.dat";
+        outputFilePath = path + "/data/sensorTestOutput.dat";
         
         // open the output file
-        outputFile.open(path.c_str(), ofstream::app);
+        outputFile.open(outputFilePath.c_str(), ofstream::app);
         if (!outputFile.is_open()){
-            printf("Unable to open the output file %s\n", path.c_str());
+            printf("Unable to open the output file %s\n", outputFilePath.c_str());
             promptAndExit(1);
         }
         
@@ -737,6 +745,8 @@ void backSonarMessageReceived(const sensor_msgs::Range& msg) {
 
 // Callback function to process the received front sonar message
 void frontSonarMessageReceived(const sensor_msgs::Range& msg) {
+    string path;
+
     // Print a message indicating that sonar data is being printed
     ROS_INFO_STREAM("[MESSAGES] Printing front sonar data received.\n");
 
@@ -747,25 +757,23 @@ void frontSonarMessageReceived(const sensor_msgs::Range& msg) {
     ROS_INFO_STREAM("Range value: " << msg.range << "\n" );                 // Print the received range value reported by the sonar sensor
     ROS_INFO_STREAM("[END MESSAGES] Finished printing.\n");                 // Print a message indicating the end of printing sonar data
 
+    // set the main path for the output file
+    #ifdef ROS
+        path = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
+    #else
+        ROS_INFO_STREAM("Unable to find the ROS package\n");
+        promptAndExit(1);
+    #endif
+
     // Write the message received in an output file if the output variable is true
     if (output == true){
-        string path;
-
-        // set the main path for the output file
-        #ifdef ROS
-            path = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
-        #else
-            ROS_INFO_STREAM("Unable to find the ROS package\n");
-            promptAndExit(1);
-        #endif
-        
         // complete the path of the output file
-        path += "/data/sensorTestOutput.dat";
+        outputFilePath = path + "/data/sensorTestOutput.dat";
         
         // open the output file
-        outputFile.open(path.c_str(), ofstream::app);
+        outputFile.open(outputFilePath.c_str(), ofstream::app);
         if (!outputFile.is_open()){
-            printf("Unable to open the output file %s\n", path.c_str());
+            printf("Unable to open the output file %s\n", outputFilePath.c_str());
             promptAndExit(1);
         }
         
@@ -1003,6 +1011,8 @@ void depthCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg) {
 
 // Callback function to process the received laser sensor message
 void laserSensorMessageReceived(const sensor_msgs::LaserScan& msg) {
+    string path;
+    
     ROS_INFO_STREAM("[MESSAGES] Printing laser sensor data received.\n");
     // Print the received message attributes
     ROS_INFO_STREAM("Frame id: " << msg.header.frame_id << "\n" );
@@ -1019,10 +1029,8 @@ void laserSensorMessageReceived(const sensor_msgs::LaserScan& msg) {
         ROS_INFO_STREAM(rng);
     }
     ROS_INFO_STREAM("\n");
-
     ROS_INFO_STREAM("[END MESSAGES] Finished printing.\n");
 
-    string path;
     
     // set the main path for the output file
     #ifdef ROS
@@ -1314,7 +1322,7 @@ void switchMicrophoneChannel() {
     } else if (currentChannel == "backRight") {
         currentChannel = "frontLeft";
     } else if (currentChannel == "frontLeft") {
-        currentChannel = "FrontRight";
+        currentChannel = "frontRight";
     } else {
         currentChannel = ""; // Finished recording all channels
     }
