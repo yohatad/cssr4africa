@@ -17,18 +17,25 @@
 
 #include "pepper_interface_tests/sensorTest.h"
 
-std::ofstream outFile;
-bool output = true;
+
+bool output;
+std::ofstream outputFile;
 int timeDuration = 10;
 bool saveVideo = true;
+std::string outputFilePath;
 
+std::ofstream outAudio;
 int totalSamples = 0;
 std::string currentChannel = "backLeft";
+
+cv::VideoWriter videoWriter;
+bool isVideoWriterInitialized = false;
 
 /* Test functions */
 void backSonar(ros::NodeHandle nh){
     // find the respective topic
     string topicName = extractTopic("BackSonar");
+    output = true;
 
      // Check if the topic name is empty
     if (topicName.empty()) {
@@ -56,6 +63,7 @@ void backSonar(ros::NodeHandle nh){
 void frontSonar(ros::NodeHandle nh){
     // find the respective topic
     string topicName = extractTopic("FrontSonar");
+    output = true;
 
     // check if the topic name is empty
     if (topicName.empty()) {
@@ -81,32 +89,36 @@ void frontSonar(ros::NodeHandle nh){
     rate.sleep();
 }
 
-void frontCamera(ros::NodeHandle nh){
+void frontCamera(ros::NodeHandle nh) {
     // find the respective topic
     string topicName = extractTopic("FrontCamera");
+    output = true;
 
-    // check if the topic name is empty
     if (topicName.empty()) {
         ROS_WARN_STREAM("No valid topic found for FrontCamera. Skipping this sensor test.");
-        return; // Exit the function early if no valid topic is found
+        return;
     }
 
-    ROS_INFO_STREAM("Subscribing to :" << topicName << "\n"  ); // Print the topic name
+    ROS_INFO_STREAM("Subscribing to :" << topicName << "\n");
     ros::Duration(1).sleep();
 
-    // Create an image transport subscriber
     image_transport::ImageTransport it(nh);
     image_transport::Subscriber sub = it.subscribe(topicName, 1, frontCameraMessageReceived);
 
-    // Listen for incoming messages and execute the callback function
-    ros::Rate rate(30); 
-    ros::Time startTime = ros::Time::now(); // start now
-    ros::Duration waitTime = ros::Duration(timeDuration);  
-    ros::Time endTime = startTime + waitTime;  
+    ros::Rate rate(30);
+    ros::Time startTime = ros::Time::now();
+    ros::Duration waitTime = ros::Duration(timeDuration);
+    ros::Time endTime = startTime + waitTime;
     
-    while(ros::ok() && ros::Time::now() < endTime) {
+    while (ros::ok() && ros::Time::now() < endTime) {
         ros::spinOnce();
         rate.sleep();
+    }
+
+    // Check if we have initialized the video writer and release it
+    if (isVideoWriterInitialized) {
+        videoWriter.release();
+        isVideoWriterInitialized = false;
     }
 
     cv::destroyWindow("Front Camera");
@@ -115,22 +127,33 @@ void frontCamera(ros::NodeHandle nh){
 void bottomCamera(ros::NodeHandle nh){
     // find the respective topic
     string topicName = extractTopic("BottomCamera");
+    output = true;
 
-    ROS_INFO_STREAM("Subscribing to :" << topicName << "\n"  ); // Print the topic name
+    if (topicName.empty()) {
+        ROS_WARN_STREAM("No valid topic found for BottomCamera. Skipping this sensor test.");
+        return;
+    }
+
+    ROS_INFO_STREAM("Subscribing to :" << topicName << "\n");
     ros::Duration(1).sleep();
 
-    // Create an image transport subscriber
     image_transport::ImageTransport it(nh);
     image_transport::Subscriber sub = it.subscribe(topicName, 1, bottomCameraMessageReceived);
 
-    // Listen for incoming messages and execute the callback function
-    ros::Rate rate(30); 
-    ros::Time startTime = ros::Time::now(); // start now
-    ros::Duration waitTime = ros::Duration(timeDuration);  
-    ros::Time endTime = startTime + waitTime;  
-    while(ros::ok() && ros::Time::now() < endTime) {
+    ros::Rate rate(30);
+    ros::Time startTime = ros::Time::now();
+    ros::Duration waitTime = ros::Duration(timeDuration);
+    ros::Time endTime = startTime + waitTime;
+
+    while (ros::ok() && ros::Time::now() < endTime) {
         ros::spinOnce();
         rate.sleep();
+    }
+
+    // Check if we have initialized the video writer and release it
+    if (isVideoWriterInitialized) {
+        videoWriter.release();
+        isVideoWriterInitialized = false;
     }
 
     cv::destroyWindow("Bottom Camera");
@@ -139,30 +162,33 @@ void bottomCamera(ros::NodeHandle nh){
 void depthCamera(ros::NodeHandle nh){
     // find the respective topic
     string topicName = extractTopic("DepthCamera");
+    output = true;
 
-    // check if the topic name is empty
     if (topicName.empty()) {
         ROS_WARN_STREAM("No valid topic found for DepthCamera. Skipping this sensor test.");
-        return; // Exit the function early if no valid topic is found
+        return;
     }
 
-
-    ROS_INFO_STREAM("Subscribing to :" << topicName << "\n"  ); // Print the topic name
+    ROS_INFO_STREAM("Subscribing to :" << topicName << "\n");
     ros::Duration(1).sleep();
 
-    // Create an image transport subscriber
     image_transport::ImageTransport it(nh);
     image_transport::Subscriber sub = it.subscribe(topicName, 1, depthCameraMessageReceived);
 
-    // Listen for incoming messages and execute the callback function
-    ros::Rate rate(30); 
-    ros::Time startTime = ros::Time::now(); // start now
-    ros::Duration waitTime = ros::Duration(timeDuration);  
-    ros::Time endTime = startTime + waitTime;   
-    
-    while(ros::ok() && ros::Time::now() < endTime) {
+    ros::Rate rate(30);
+    ros::Time startTime = ros::Time::now();
+    ros::Duration waitTime = ros::Duration(timeDuration);
+    ros::Time endTime = startTime + waitTime;
+
+    while (ros::ok() && ros::Time::now() < endTime) {
         ros::spinOnce();
         rate.sleep();
+    }
+
+    // Check if we have initialized the video writer and release it
+    if (isVideoWriterInitialized) {
+        videoWriter.release();
+        isVideoWriterInitialized = false;
     }
 
     cv::destroyWindow("Depth Camera");
@@ -171,6 +197,7 @@ void depthCamera(ros::NodeHandle nh){
 void laserSensor(ros::NodeHandle nh){
     // find the respective topic
     string topicName = extractTopic("Laser");
+    output = true;
 
     // check if the topic name is empty
     if (topicName.empty()) {
@@ -198,6 +225,7 @@ void laserSensor(ros::NodeHandle nh){
 void odom(ros::NodeHandle nh){
     // find the respective topic
     string topicName = extractTopic("Odometry");
+    output = true;
 
     // check if the topic name is empty
     if (topicName.empty()) {
@@ -225,6 +253,7 @@ void odom(ros::NodeHandle nh){
 void imu(ros::NodeHandle nh){
     // find the respective topic
     string topicName = extractTopic("IMU");
+    output = true;
 
     // check if the topic name is empty
     if (topicName.empty()) {
@@ -252,6 +281,7 @@ void imu(ros::NodeHandle nh){
 void jointState(ros::NodeHandle nh){
     // find the respective topic
     string topicName = extractTopic("JointState");
+    output = true;
 
     // check if the topic name is empty
     if (topicName.empty()) {
@@ -297,6 +327,7 @@ void speech(ros::NodeHandle nh){
 void stereoCamera(ros::NodeHandle nh){
     // find the respective topic
     string topicName = extractTopic("StereoCamera");
+    output = true;
 
     // check if the topic name is empty
     if (topicName.empty()) {
@@ -304,22 +335,27 @@ void stereoCamera(ros::NodeHandle nh){
         return; // Exit the function early if no valid topic is found
     }
 
-    ROS_INFO_STREAM("Subscribing to :" << topicName << "\n"  ); // Print the topic name
+    ROS_INFO_STREAM("Start " << topicName << " Subscribe Test \n"  ); // Print the topic name
     ros::Duration(1).sleep();
 
-    // Create an image transport subscriber
     image_transport::ImageTransport it(nh);
     image_transport::Subscriber sub = it.subscribe(topicName, 1, stereoCameraMessageReceived);
 
     // Listen for incoming messages and execute the callback function
-    ros::Rate rate(30); 
+    ros::Rate rate(30);
     ros::Time startTime = ros::Time::now(); // start now
-    ros::Duration waitTime = ros::Duration(timeDuration);  
-    ros::Time endTime = startTime + waitTime;  
-    
-    while(ros::ok() && ros::Time::now() < endTime) {
+    ros::Duration waitTime = ros::Duration(timeDuration);
+    ros::Time endTime = startTime + waitTime;
+
+    while (ros::ok() && ros::Time::now() < endTime) {
         ros::spinOnce();
         rate.sleep();
+    }
+
+    // Check if we have initialized the video writer and release it
+    if (isVideoWriterInitialized) {
+        videoWriter.release();
+        isVideoWriterInitialized = false;
     }
 
     cv::destroyWindow("Stereo Camera");
@@ -338,7 +374,7 @@ void microphone(ros::NodeHandle nh) {
     ros::Duration(1).sleep();
 
     #ifdef ROS
-        outFile.open(ros::package::getPath(ROS_PACKAGE_NAME) + "/data/microphone.wav", std::ios::binary);
+        outAudio.open(ros::package::getPath(ROS_PACKAGE_NAME) + "/data/microphone.wav", std::ios::binary);
     #else
         ROS_INFO_STREAM("Unable to open the output file microphone.wav\n");
         promptAndExit(1);
@@ -361,10 +397,10 @@ void microphone(ros::NodeHandle nh) {
 
     }
 
-    outFile.seekp(0, std::ios::beg);
-    writeWavHeader(outFile, sampleRate, totalSamples);
+    outAudio.seekp(0, std::ios::beg);
+    writeWavHeader(outAudio, sampleRate, totalSamples);
 
-    outFile.close();
+    outAudio.close();
     ROS_INFO_STREAM("Microphone test finished\n");
 
     playAndDeleteFile();
@@ -372,7 +408,7 @@ void microphone(ros::NodeHandle nh) {
 
 // callback function to process the received microphone message
 void microphoneMessageReceived(const naoqi_driver::AudioCustomMsg& msg) {
-    if (currentChannel.empty() || !outFile.is_open()) {
+    if (currentChannel.empty() || !outAudio.is_open()) {
         return;
     }
 
@@ -390,7 +426,7 @@ void microphoneMessageReceived(const naoqi_driver::AudioCustomMsg& msg) {
 
     if (channelData) {
         for (const auto& sample : *channelData) {
-            outFile.write(reinterpret_cast<const char*>(&sample), sizeof(sample));
+            outAudio.write(reinterpret_cast<const char*>(&sample), sizeof(sample));
             totalSamples++;
         }
     }
@@ -398,67 +434,75 @@ void microphoneMessageReceived(const naoqi_driver::AudioCustomMsg& msg) {
 
 // Callback function to process the received stereo camera image message
 void stereoCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg) {
+    // Extract the path of the ROS package
+    string path;
+    string videoPath;
+
+    #ifdef ROS
+        path = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
+    #else
+        ROS_INFO_STREAM("Unable to find the ROS package\n");
+        promptAndExit(1);
+    #endif
+
     // Extract image attributes from the received message
     int imgWidth = msg->width;
     int imgHeight = msg->height;
 
-    // Print the received image attributes
     ROS_INFO("[MESSAGE] Image received has a width: %d and height: %d", imgWidth, imgHeight);
 
-    // Write the message received in an output file if the output variable is true
-    if (output == true){
-        string path;
-        // set the main path for the output file
-        #ifdef ROS
-            path = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
-        #else
-            ROS_INFO_STREAM("Unable to find the ROS package\n");
-            promptAndExit(1);
-        #endif
-        
-        // complete the path of the output file
-        path    += "/data/sensorTestOutput.dat";
-        
-        // open the output file
-        std::ofstream out_of;
-        out_of.open(path.c_str(), ofstream::app);
-        if (!out_of.is_open()){
-            printf("Unable to open the output file %s\n", path.c_str());
+    if (output == true) {
+        // Set the path for the text output file
+        outputFilePath = path + "/data/sensorTestOutput.dat";
+
+        // Set the path for the video file the first time the output is true
+        if (!isVideoWriterInitialized) {
+            videoPath = path + "/data/stereoCameraOutput.mp4";
+        }
+
+        outputFile.open(outputFilePath.c_str(), std::ofstream::app);
+        if (!outputFile.is_open()) {
+            printf("Unable to open the output file %s\n", outputFilePath.c_str());
             promptAndExit(1);
         }
 
-        // write on the output file
-        out_of << "[TESTING] ---- STEREO CAMERA ----\n\n";
-        out_of << "[MESSAGES] Printing stereo camera data information received.\n";
-        out_of << "Image Width: " << imgWidth << "\n";
-        out_of << "Image Height: " << imgHeight << "\n";
-        out_of << "[END MESSAGES] Finished printing.\n\n";
+        outputFile << "[TESTING] ---- STEREO CAMERA ----\n\n";
+        outputFile << "[MESSAGES] Printing stereo camera data information received.\n";
+        outputFile << "Image Width: " << imgWidth << "\n";
+        outputFile << "Image Height: " << imgHeight << "\n";
+        outputFile << "[END MESSAGES] Finished printing.\n\n";
 
-        // close the output file
-        out_of.close();
-
-        // set the output to false so that only the first received message will be written to the output file
+        outputFile.close();
         output = false;
     }
 
-    // create an image pointer
+    if (!isVideoWriterInitialized) {
+        // Initialize video writer with the path set for video output
+        videoWriter.open(videoPath, cv::VideoWriter::fourcc('m', 'p', '4', 'v'), 2, cv::Size(imgWidth, imgHeight), true);
+        
+        if (!videoWriter.isOpened()) {
+            ROS_ERROR_STREAM("Failed to initialize video writer with path: " << videoPath);
+            promptAndExit(1);
+        }
+        
+        isVideoWriterInitialized = true;
+    }
+
     cv_bridge::CvImagePtr cv_ptr;
-
-    try{
-        //  convert to BGR image
-        cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
-    }
-    catch(const cv_bridge::Exception& e){
-        ROS_ERROR("cv_bridge exception: %s", e.what());
-    }
-
+    cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
+    
     cv::Mat img = cv_ptr->image;
+
+    // Write frame to video
+    videoWriter.write(img);
+
     cv::imshow("Stereo Camera", img);
     cv::waitKey(30);
-}
+}    
+
 #endif
 
-// Callback function to process the received odometry message
+// Callback function to process the received joint state message
 void jointStateMessageReceived(const sensor_msgs::JointState& msg) {
     ROS_INFO_STREAM("[MESSAGES] Printing joint state data received.\n");
     // Print the received message attributes
@@ -503,17 +547,16 @@ void jointStateMessageReceived(const sensor_msgs::JointState& msg) {
         path += "/data/sensorTestOutput.dat";
         
         // open the output file
-        std::ofstream out_of;
-        out_of.open(path.c_str(), ofstream::app);
-        if (!out_of.is_open()){
+        outputFile.open(path.c_str(), ofstream::app);
+        if (!outputFile.is_open()){
             printf("Unable to open the output file %s\n", path.c_str());
             promptAndExit(1);
         }
 
         // write on the output file
-        out_of << "[TESTING] ---- JOINT STATE ----\n\n";
-        out_of << "[MESSAGES] Printing joint state data received.\n";
-        out_of << "Header: " << msg.header << "\n" ;
+        outputFile << "[TESTING] ---- JOINT STATE ----\n\n";
+        outputFile << "[MESSAGES] Printing joint state data received.\n";
+        outputFile << "Header: " << msg.header << "\n" ;
         for (size_t i = 0; i < msg.name.size(); ++i) {
         std::cout << "Name: " << msg.name[i] << "\n"
                   << "Position: ";
@@ -536,10 +579,10 @@ void jointStateMessageReceived(const sensor_msgs::JointState& msg) {
         }
         std::cout << "\n\n";
     }
-        out_of << "[END MESSAGES] Finished printing.\n\n";
+        outputFile << "[END MESSAGES] Finished printing.\n\n";
         
         // close the output file
-        out_of.close();
+        outputFile.close();
 
         // set the output to false so that only the first received message will be written to the output file
         output = false;
@@ -570,24 +613,23 @@ void odomMessageReceived(const nav_msgs::Odometry& msg){
         path += "/data/sensorTestOutput.dat";
         
         // open the output file
-        std::ofstream out_of;
-        out_of.open(path.c_str(), ofstream::app);
-        if (!out_of.is_open()){
+        outputFile.open(path.c_str(), ofstream::app);
+        if (!outputFile.is_open()){
             printf("Unable to open the output file %s\n", path.c_str());
             promptAndExit(1);
         }
 
         // write on the output file
-        out_of << "[TESTING] ---- ODOMETRY ----\n\n";
-        out_of << "[MESSAGES] Printing odometry data received.\n";
-        out_of << "Header: " << msg.header << "\n" ;
-        out_of << "Child frame id: " << msg.child_frame_id << "\n" ;
-        out_of << "Pose: " << msg.pose << "\n" ;
-        out_of << "Twist: " << msg.twist << "\n" ;
-        out_of << "[END MESSAGES] Finished printing.\n\n";
+        outputFile << "[TESTING] ---- ODOMETRY ----\n\n";
+        outputFile << "[MESSAGES] Printing odometry data received.\n";
+        outputFile << "Header: " << msg.header << "\n" ;
+        outputFile << "Child frame id: " << msg.child_frame_id << "\n" ;
+        outputFile << "Pose: " << msg.pose << "\n" ;
+        outputFile << "Twist: " << msg.twist << "\n" ;
+        outputFile << "[END MESSAGES] Finished printing.\n\n";
         
         // close the output file
-        out_of.close();
+        outputFile.close();
 
         // set the output to false so that only the first received message will be written to the output file
         output = false;
@@ -618,24 +660,23 @@ void imuMessageReceived(const sensor_msgs::Imu& msg) {
         path += "/data/sensorTestOutput.dat";
         
         // open the output file
-        std::ofstream out_of;
-        out_of.open(path.c_str(), ofstream::app);
-        if (!out_of.is_open()){
+        outputFile.open(path.c_str(), ofstream::app);
+        if (!outputFile.is_open()){
             printf("Unable to open the output file %s\n", path.c_str());
             promptAndExit(1);
         }
 
         // write on the output file
-        out_of << "[TESTING] ---- IMU ----\n\n";
-        out_of << "[MESSAGES] Printing IMU data received.\n";
-        out_of << "Header: " << msg.header << "\n" ;
-        out_of << "Orientation: " << msg.orientation << "\n" ;
-        out_of << "Angular velocity: " << msg.angular_velocity << "\n" ;
-        out_of << "Linear acceleration: " << msg.linear_acceleration << "\n" ;
-        out_of << "[END MESSAGES] Finished printing.\n\n";
+        outputFile << "[TESTING] ---- IMU ----\n\n";
+        outputFile << "[MESSAGES] Printing IMU data received.\n";
+        outputFile << "Header: " << msg.header << "\n" ;
+        outputFile << "Orientation: " << msg.orientation << "\n" ;
+        outputFile << "Angular velocity: " << msg.angular_velocity << "\n" ;
+        outputFile << "Linear acceleration: " << msg.linear_acceleration << "\n" ;
+        outputFile << "[END MESSAGES] Finished printing.\n\n";
         
         // close the output file
-        out_of.close();
+        outputFile.close();
 
         // set the output to false so that only the first received message will be written to the output file
         output = false;
@@ -670,25 +711,24 @@ void backSonarMessageReceived(const sensor_msgs::Range& msg) {
         path += "/data/sensorTestOutput.dat";
         
         // open the output file
-        std::ofstream out_of;
-        out_of.open(path.c_str(), ofstream::app);
-        if (!out_of.is_open()){
+        outputFile.open(path.c_str(), ofstream::app);
+        if (!outputFile.is_open()){
             printf("Unable to open the output file %s\n", path.c_str());
             promptAndExit(1);
         }
         
         // write on the output file
-        out_of << "[TESTING] ---- BACK SONAR ----\n\n";
-        out_of << "[MESSAGES] Printing back sonar data received.\n";
-        out_of << "Frame id: " << msg.header.frame_id << "\n";
-        out_of << "Field of view: " << msg.field_of_view << "\n";
-        out_of << "Minimum range value: " << msg.min_range << "\n";
-        out_of << "Maximum range value: " << msg.max_range << "\n";
-        out_of << "Range value: " << msg.range << "\n";
-        out_of << "[END MESSAGES] Finished printing.\n\n";
+        outputFile << "[TESTING] ---- BACK SONAR ----\n\n";
+        outputFile << "[MESSAGES] Printing back sonar data received.\n";
+        outputFile << "Frame id: " << msg.header.frame_id << "\n";
+        outputFile << "Field of view: " << msg.field_of_view << "\n";
+        outputFile << "Minimum range value: " << msg.min_range << "\n";
+        outputFile << "Maximum range value: " << msg.max_range << "\n";
+        outputFile << "Range value: " << msg.range << "\n";
+        outputFile << "[END MESSAGES] Finished printing.\n\n";
 
         // close the output file
-        out_of.close();
+        outputFile.close();
 
         // set the output to false so that only the first received message will be written to the output file
         output = false;
@@ -723,226 +763,241 @@ void frontSonarMessageReceived(const sensor_msgs::Range& msg) {
         path += "/data/sensorTestOutput.dat";
         
         // open the output file
-        std::ofstream out_of;
-        out_of.open(path.c_str(), ofstream::app);
-        if (!out_of.is_open()){
+        outputFile.open(path.c_str(), ofstream::app);
+        if (!outputFile.is_open()){
             printf("Unable to open the output file %s\n", path.c_str());
             promptAndExit(1);
         }
         
         // write on the output file
-        out_of << "[TESTING] ---- FRONT SONAR ----\n\n";
-        out_of << "[MESSAGES] Printing front sonar data received.\n";
-        out_of << "Frame id: " << msg.header.frame_id << "\n";
-        out_of << "Field of view: " << msg.field_of_view << "\n";
-        out_of << "Minimum range value: " << msg.min_range << "\n";
-        out_of << "Maximum range value: " << msg.max_range << "\n";
-        out_of << "Range value: " << msg.range << "\n";
-        out_of << "[END MESSAGES] Finished printing.\n\n";
+        outputFile << "[TESTING] ---- FRONT SONAR ----\n\n";
+        outputFile << "[MESSAGES] Printing front sonar data received.\n";
+        outputFile << "Frame id: " << msg.header.frame_id << "\n";
+        outputFile << "Field of view: " << msg.field_of_view << "\n";
+        outputFile << "Minimum range value: " << msg.min_range << "\n";
+        outputFile << "Maximum range value: " << msg.max_range << "\n";
+        outputFile << "Range value: " << msg.range << "\n";
+        outputFile << "[END MESSAGES] Finished printing.\n\n";
 
         // close the output file
-        out_of.close();
+        outputFile.close();
 
         // set the output to false so that only the first received message will be written to the output file
         output = false;
     }
 }
 
-// Callback function to process the received front camera image message
 void frontCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg) {
+    // Extract the path of the ROS package
+    string path;
+    string videoPath;
+        
+    #ifdef ROS
+        path = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
+    #else
+        ROS_INFO_STREAM("Unable to find the ROS package\n");
+        promptAndExit(1);
+    #endif
+   
     // Extract image attributes from the received message
     int imgWidth = msg->width;
     int imgHeight = msg->height;
 
-    // Print the received image attributes
     ROS_INFO("[MESSAGE] Image received has a width: %d and height: %d", imgWidth, imgHeight);
-    
-    // Write the message received in an output file if the output variable is true
-    if (output == true){
-        string path;
 
-        // set the main path for the output file
-        #ifdef ROS
-            path = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
-        #else
-            ROS_INFO_STREAM("Unable to find the ROS package\n");
-            promptAndExit(1);
-        #endif
-        
-        // complete the path of the output file
-        path += "/data/sensorTestOutput.dat";
-        
-        // open the output file
-        std::ofstream out_of;
-        out_of.open(path.c_str(), ofstream::app);
-        if (!out_of.is_open()){
-            printf("Unable to open the output file %s\n", path.c_str());
+    if (output == true) {
+        // Set the path for the text output file
+        outputFilePath = path + "/data/sensorTestOutput.dat";
+
+        // Set the path for the video file the first time the output is true
+        if (!isVideoWriterInitialized) {
+            videoPath = path + "/data/frontCameraOutput.mp4";
+        }
+
+        outputFile.open(outputFilePath.c_str(), std::ofstream::app);
+        if (!outputFile.is_open()) {
+            printf("Unable to open the output file %s\n", outputFilePath.c_str());
             promptAndExit(1);
         }
 
-        // write on the output file
-        out_of << "[TESTING] ---- FRONT CAMERA ----\n\n";
-        out_of << "[MESSAGES] Printing front camera data information received.\n";
-        out_of << "Image Width: " << imgWidth << "\n";
-        out_of << "Image Height: " << imgHeight << "\n";
-        out_of << "[END MESSAGES] Finished printing.\n\n";
+        outputFile << "[TESTING] ---- FRONT CAMERA ----\n\n";
+        outputFile << "[MESSAGES] Printing front camera data information received.\n";
+        outputFile << "Image Width: " << imgWidth << "\n";
+        outputFile << "Image Height: " << imgHeight << "\n";
+        outputFile << "[END MESSAGES] Finished printing.\n\n";
 
-        // close the output file
-        out_of.close();
-
-        // set the output to false so that only the first received message will be written to the output file
+        outputFile.close();
         output = false;
     }
 
-    cv_bridge::CvImagePtr cv_ptr;
+    if (!isVideoWriterInitialized) {
+        // Initialize video writer with the path set for video output
+        videoWriter.open(videoPath, cv::VideoWriter::fourcc('m', 'p', '4', 'v'), 2, cv::Size(imgWidth, imgHeight), true);
+        
+        if (!videoWriter.isOpened()) {
+            ROS_ERROR_STREAM("Failed to initialize video writer with path: " << videoPath);
+            promptAndExit(1);
+        }
+        
+        isVideoWriterInitialized = true;
+    }
 
-    //  convert to BGR image
+    cv_bridge::CvImagePtr cv_ptr;
     cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
     
     cv::Mat img = cv_ptr->image;
 
-    cv::imshow("Front Camera", img);
+    // Write frame to video
+    videoWriter.write(img);
 
+    cv::imshow("Front Camera", img);
     cv::waitKey(30);
 }
 
 // Callback function to process the received bottom camera image message
 void bottomCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg) {
+    // Extract the path of the ROS package
+    string path;
+    string videoPath;
+
+    #ifdef ROS
+        path = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
+    #else
+        ROS_INFO_STREAM("Unable to find the ROS package\n");
+        promptAndExit(1); 
+    #endif
+
     // Extract image attributes from the received message
     int imgWidth = msg->width;
     int imgHeight = msg->height;
 
-    // Print the received image attributes
     ROS_INFO("[MESSAGE] Image received has a width: %d and height: %d", imgWidth, imgHeight);
 
-    // Write the message received in an output file if the output variable is true
-    if (output == true){
-        string path;
-        // set the main path for the output file
-        #ifdef ROS
-            path = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
-        #else
-            ROS_INFO_STREAM("Unable to find the ROS package\n");
-            promptAndExit(1);
-        #endif
-        
-        // complete the path of the output file
-        path += "/data/sensorTestOutput.dat";
-        
-        // open the output file
-        std::ofstream out_of;
-        out_of.open(path.c_str(), ofstream::app);
-        if (!out_of.is_open()){
-            printf("Unable to open the output file %s\n", path.c_str());
+    if (output == true) {
+        // Set the path for the text output file
+        outputFilePath = path + "/data/sensorTestOutput.dat";
+
+        // Set the path for the video file the first time the output is true
+        if (!isVideoWriterInitialized) {
+            videoPath = path + "/data/bottomCameraOutput.mp4";
+        }
+
+        outputFile.open(outputFilePath.c_str(), std::ofstream::app);
+        if (!outputFile.is_open()) {
+            printf("Unable to open the output file %s\n", outputFilePath.c_str());
             promptAndExit(1);
         }
-        
-        // write on the output file
-        out_of << "[TESTING] ---- BOTTOM CAMERA ----\n\n";
-        out_of << "[MESSAGES] Printing bottom camera data information received.\n";
-        out_of << "Image Width: " << imgWidth << "\n";
-        out_of << "Image Height: " << imgHeight << "\n";
-        out_of << "[END MESSAGES] Finished printing.\n\n";
 
-        // close the output file
-        out_of.close();
+        outputFile << "[TESTING] ---- BOTTOM CAMERA ----\n\n";
+        outputFile << "[MESSAGES] Printing bottom camera data information received.\n";
+        outputFile << "Image Width: " << imgWidth << "\n";
+        outputFile << "Image Height: " << imgHeight << "\n";
+        outputFile << "[END MESSAGES] Finished printing.\n\n";
 
-        // set the output to false so that only the first received message will be written to the output file
+        outputFile.close();
         output = false;
     }
 
-    // create an image pointer
-    cv_bridge::CvImagePtr cv_ptr;
+    if (!isVideoWriterInitialized) {
+        // Initialize video writer with the path set for video output
+        videoWriter.open(videoPath, cv::VideoWriter::fourcc('m', 'p', '4', 'v'), 2, cv::Size(imgWidth, imgHeight), true);
+        
+        if (!videoWriter.isOpened()) {
+            ROS_ERROR_STREAM("Failed to initialize video writer with path: " << videoPath);
+            promptAndExit(1);
+        }
+        
+        isVideoWriterInitialized = true;
+    }
 
-    try{
-        //  convert to BGR image
-        cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
-    }
-    catch(const cv_bridge::Exception& e){
-        ROS_ERROR("cv_bridge exception: %s", e.what());
-    }
+    cv_bridge::CvImagePtr cv_ptr;
+    cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
 
     cv::Mat img = cv_ptr->image;
 
-    cv::imshow("Bottom Camera", img);
+    // Write frame to video
+    videoWriter.write(img);
 
+    cv::imshow("Bottom Camera", img);
     cv::waitKey(30);
 }
 
-
-
 // Callback function to process the received depth camera image message
 void depthCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg) {
+    //Extract the path of the ROS package
+    string path;
+    string videoPath;
+
+    #ifdef ROS
+        path = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
+    #else
+        ROS_INFO_STREAM("Unable to find the ROS package\n");
+        promptAndExit(1);
+    #endif
+
     // Extract image attributes from the received message
     int imgWidth = msg->width;
     int imgHeight = msg->height;
 
-    // Print the received image attributes
     ROS_INFO("[MESSAGE] Image received has a width: %d and height: %d", imgWidth, imgHeight);
 
-    // Write the message received in an output file if the output variable is true
-    if (output == true){
-        string path;
-        // set the main path for the output file
-        #ifdef ROS
-            path = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
-        #else
-            ROS_INFO_STREAM("Unable to find the ROS package\n");
-            promptAndExit(1);
-        #endif
-        
-        // complete the path of the output file
-        path += "/data/sensorTestOutput.dat";
-        
-        // open the output file
-        std::ofstream out_of;
-        out_of.open(path.c_str(), ofstream::app);
-        if (!out_of.is_open()){
-            printf("Unable to open the output file %s\n", path.c_str());
+    if (output == true) {
+        // Set the path for the text output file
+        outputFilePath = path + "/data/sensorTestOutput.dat";
+
+        // Set the path for the video file the first time the output is true
+        if (!isVideoWriterInitialized) {
+            videoPath = path + "/data/depthCameraOutput.mp4";
+        }
+
+        outputFile.open(outputFilePath.c_str(), std::ofstream::app);
+        if (!outputFile.is_open()) {
+            printf("Unable to open the output file %s\n", outputFilePath.c_str());
             promptAndExit(1);
         }
 
-        // write on the output file
-        out_of << "[TESTING] ---- DEPTH CAMERA ----\n\n";
-        out_of << "[MESSAGES] Printing depth camera data information received.\n";
-        out_of << "Image Width: " << imgWidth << "\n";
-        out_of << "Image Height: " << imgHeight << "\n";
-        out_of << "[END MESSAGES] Finished printing.\n\n";
+        outputFile << "[TESTING] ---- DEPTH CAMERA ----\n\n";
+        outputFile << "[MESSAGES] Printing depth camera data information received.\n";
+        outputFile << "Image Width: " << imgWidth << "\n";
+        outputFile << "Image Height: " << imgHeight << "\n";
+        outputFile << "[END MESSAGES] Finished printing.\n\n";
 
-        // close the output file
-        out_of.close();
-
-        // set the output to false so that only the first received message will be written to the output file
+        outputFile.close();
         output = false;
     }
+
+    if (!isVideoWriterInitialized) {
+        // Initialize video writer with the path set for video output
+        videoWriter.open(videoPath, cv::VideoWriter::fourcc('m', 'p', '4', 'v'), 2, cv::Size(imgWidth, imgHeight), true);
+        
+        if (!videoWriter.isOpened()) {
+            ROS_ERROR_STREAM("Failed to initialize video writer with path: " << videoPath);
+            promptAndExit(1);
+        }
+        
+        isVideoWriterInitialized = true;
+    }
+
     cv_bridge::CvImagePtr cv_ptr;
+    cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::TYPE_16UC1);
 
-    try{
-        cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::TYPE_16UC1);
-    }
-    catch(const cv_bridge::Exception& e){
-        ROS_ERROR("tutorialROSOpenCV::main.cpp::cv_bridge exception: %s", e.what());
-    }
-
-    //Copy the image.data to imageBuf.
     cv::Mat img = cv_ptr->image;
 
     double min = 0;
-
     double max = 1000;
 
     cv::Mat img_scaled_8u;
-    cv::Mat color_img;
-    
-
     cv::Mat(cv_ptr->image-min).convertTo(img_scaled_8u, CV_8UC1, 255. / (max - min));
+    cv::Mat color_img;
 
     if(img_scaled_8u.type() ==  CV_8UC1){
-       cv::cvtColor(img_scaled_8u, color_img, CV_GRAY2RGB); 
+        cv::cvtColor(img_scaled_8u, color_img, CV_GRAY2RGB); 
     }
 
-    cv::imshow("Depth Camera", color_img);
+    // Write frame to video
+    videoWriter.write(color_img);
 
+    cv::imshow("Depth Camera", color_img);
     cv::waitKey(30);
 }
 
@@ -983,29 +1038,28 @@ void laserSensorMessageReceived(const sensor_msgs::LaserScan& msg) {
         path += "/data/sensorTestOutput.dat";
         
         // open the output file
-        std::ofstream out_of;
-        out_of.open(path.c_str(), ofstream::app);
-        if (!out_of.is_open()){
+        outputFile.open(path.c_str(), ofstream::app);
+        if (!outputFile.is_open()){
             printf("Unable to open the output file %s\n", path.c_str());
             promptAndExit(1);
         }
 
         // write on the output file
-        out_of << "[TESTING] ---- LASER SENSOR ----\n\n";
-        out_of << "[MESSAGES] Printing laser sensor data received.\n";
-        out_of << "Frame id: " << msg.header.frame_id << "\n" ;
-        out_of << "Start angle of the scan: " << msg.angle_min << "\n" ;
-        out_of << "End angle of the scan: " << msg.angle_max << "\n" ;
-        out_of << "Angular distance between measurements: " << msg.angle_increment << "\n" ;
-        out_of << "Time between measurements: " << msg.time_increment << "\n" ;
-        out_of << "Time between scans: " << msg.scan_time << "\n" ;
-        out_of << "Minimum range value: " << msg.range_min << "\n" ;
-        out_of << "Maximum range value: " << msg.range_max << "\n" ;
-        out_of << "Range data: (size: " << msg.ranges.size() << ") \n" ;
-        out_of << "[END MESSAGES] Finished printing.\n\n";
+        outputFile << "[TESTING] ---- LASER SENSOR ----\n\n";
+        outputFile << "[MESSAGES] Printing laser sensor data received.\n";
+        outputFile << "Frame id: " << msg.header.frame_id << "\n" ;
+        outputFile << "Start angle of the scan: " << msg.angle_min << "\n" ;
+        outputFile << "End angle of the scan: " << msg.angle_max << "\n" ;
+        outputFile << "Angular distance between measurements: " << msg.angle_increment << "\n" ;
+        outputFile << "Time between measurements: " << msg.time_increment << "\n" ;
+        outputFile << "Time between scans: " << msg.scan_time << "\n" ;
+        outputFile << "Minimum range value: " << msg.range_min << "\n" ;
+        outputFile << "Maximum range value: " << msg.range_max << "\n" ;
+        outputFile << "Range data: (size: " << msg.ranges.size() << ") \n" ;
+        outputFile << "[END MESSAGES] Finished printing.\n\n";
         
         // close the output file
-        out_of.close();
+        outputFile.close();
 
         // set the output to false so that only the first received message will be written to the output file
         output = false;
@@ -1321,26 +1375,26 @@ void playAndDeleteFile() {
     }
 }
 
-void initializeOutputFile(std::ofstream& out_of, const std::string& path) { 
-    out_of.open(path, std::ofstream::app);
-    if (!out_of.is_open()) {
+void initializeOutputFile(std::ofstream& outputFile, const std::string& path) { 
+    outputFile.open(path, std::ofstream::app);
+    if (!outputFile.is_open()) {
         std::cerr << "Unable to open the output file " << path << "\n";
         throw std::runtime_error("Failed to open output file.");
     }
 
-    out_of << "[TESTING] ############ SENSORS ############\n\n";
+    outputFile << "[TESTING] ############ SENSORS ############\n\n";
     
     // Assuming getCurrentTime() is implemented elsewhere
-    out_of << "[START TIME] " << getCurrentTime() << "\n";
+    outputFile << "[START TIME] " << getCurrentTime() << "\n";
     
     // Explicit close is not required but can be kept for clarity or error checking
-    out_of.close();
+    outputFile.close();
 }
 
-void finalizeOutputFile(std::ofstream& out_of, const std::string& path) {
-    out_of.open(path, std::ofstream::app);
-    out_of << "[END TIME] " << getCurrentTime() << "\n\n";
-    out_of.close();
+void finalizeOutputFile(std::ofstream& outputFile, const std::string& path) {
+    outputFile.open(path, std::ofstream::app);
+    outputFile << "[END TIME] " << getCurrentTime() << "\n\n";
+    outputFile.close();
 }
 
 std::string getCurrentTime() {
