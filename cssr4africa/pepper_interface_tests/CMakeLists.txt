@@ -11,6 +11,7 @@ option(SIMULATOR "Build for simulator without naoqi_driver and PEPPER_ROBOT defi
 
 # Conditionally find naoqi_driver unless building for the simulator
 if(NOT SIMULATOR)
+  message(STATUS "Building for Pepper robot")
   find_package(catkin REQUIRED COMPONENTS roscpp
   roslib
   cv_bridge
@@ -22,6 +23,7 @@ if(NOT SIMULATOR)
   naoqi_driver) 
   add_definitions(-DPEPPER_ROBOT)
 else()
+  message(STATUS "Building for simulator")
   find_package(catkin REQUIRED COMPONENTS
   roscpp
   roslib
