@@ -754,55 +754,21 @@ void frontCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg) {
     int imgWidth = msg->width;
     int imgHeight = msg->height;
 
-    cv::VideoWriter videoWriter;
-    string path;
-
     // Print the received image attributes
     ROS_INFO("[MESSAGE] Image received has a width: %d and height: %d", imgWidth, imgHeight);
-
-    // set the main path for the output file
-    #ifdef ROS
-        path = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
-    #else
-        ROS_INFO_STREAM("Unable to find the ROS package\n");
-        promptAndExit(1);
-    #endif
-
-    if (saveVideo == true){
-        // complete the path of the output file
-        path += "/data/frontcamera.mp4";
-
-        // open the output file
-        videoWriter.open(path, cv::VideoWriter::fourcc('m', 'p', '4', 'v'), 30, cv::Size(imgWidth, imgHeight));
-
-        if (!videoWriter.isOpened()){
-            printf("Unable to open the output file %s\n", path.c_str());
-            promptAndExit(1);
-        }
-
-        // convert the sensor message to cv::Mat and write it to the file
-        cv_bridge::CvImagePtr cv_ptr;
-
-        try{
-            //  convert to BGR image
-            cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
-            videoWriter.write(cv_ptr->image);
-        }
-        catch(const cv_bridge::Exception& e){
-            ROS_ERROR("cv_bridge exception: %s", e.what());
-            return;
-        }   
-
-        // close the output file
-        videoWriter.release();
-
-        // set the output to false so that only the first received message will be written to the output file
-        saveVideo = false;
-    }  
+    
     // Write the message received in an output file if the output variable is true
     if (output == true){
         string path;
 
+        // set the main path for the output file
+        #ifdef ROS
+            path = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
+        #else
+            ROS_INFO_STREAM("Unable to find the ROS package\n");
+            promptAndExit(1);
+        #endif
+        
         // complete the path of the output file
         path += "/data/sensorTestOutput.dat";
         
@@ -832,8 +798,11 @@ void frontCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg) {
 
     //  convert to BGR image
     cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
+    
     cv::Mat img = cv_ptr->image;
+
     cv::imshow("Front Camera", img);
+
     cv::waitKey(30);
 }
 
@@ -843,55 +812,20 @@ void bottomCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg) {
     int imgWidth = msg->width;
     int imgHeight = msg->height;
 
-    cv::VideoWriter videoWriter;
-    string path;
-
     // Print the received image attributes
     ROS_INFO("[MESSAGE] Image received has a width: %d and height: %d", imgWidth, imgHeight);
 
-    // set the main path for the output file
-    #ifdef ROS
-        path = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
-    #else
-        ROS_INFO_STREAM("Unable to find the ROS package\n");
-        promptAndExit(1);
-    #endif
-
-
-    if (saveVideo == true){
-        // complete the path of the output file
-        path += "/data/bottomcamera.mp4";
-
-        // open the output file
-        videoWriter.open(path, cv::VideoWriter::fourcc('m', 'p', '4', 'v'), 30, cv::Size(imgWidth, imgHeight));
-
-        if (!videoWriter.isOpened()){
-            printf("Unable to open the output file %s\n", path.c_str());
-            promptAndExit(1);
-        }
-
-        // convert the sensor message to cv::Mat and write it to the file
-        cv_bridge::CvImagePtr cv_ptr;
-
-        try{
-            //  convert to BGR image
-            cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
-            videoWriter.write(cv_ptr->image);
-        }
-        catch(const cv_bridge::Exception& e){
-            ROS_ERROR("cv_bridge exception: %s", e.what());
-            return;
-        }
-
-        // close the output file
-        videoWriter.release();
-
-        // set the output to false so that only the first received message will be written to the output file
-        saveVideo = false;
-    }
-
     // Write the message received in an output file if the output variable is true
-    if (output == true){        
+    if (output == true){
+        string path;
+        // set the main path for the output file
+        #ifdef ROS
+            path = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
+        #else
+            ROS_INFO_STREAM("Unable to find the ROS package\n");
+            promptAndExit(1);
+        #endif
+        
         // complete the path of the output file
         path += "/data/sensorTestOutput.dat";
         
@@ -929,7 +863,9 @@ void bottomCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg) {
     }
 
     cv::Mat img = cv_ptr->image;
+
     cv::imshow("Bottom Camera", img);
+
     cv::waitKey(30);
 }
 
@@ -944,18 +880,17 @@ void depthCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg) {
     // Print the received image attributes
     ROS_INFO("[MESSAGE] Image received has a width: %d and height: %d", imgWidth, imgHeight);
 
-    string path;
-
-    // set the main path for the output file
-    #ifdef ROS
-        path = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
-    #else
-        ROS_INFO_STREAM("Unable to find the ROS package\n");
-        promptAndExit(1);
-    #endif
-
     // Write the message received in an output file if the output variable is true
-    if (output == true){ 
+    if (output == true){
+        string path;
+        // set the main path for the output file
+        #ifdef ROS
+            path = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
+        #else
+            ROS_INFO_STREAM("Unable to find the ROS package\n");
+            promptAndExit(1);
+        #endif
+        
         // complete the path of the output file
         path += "/data/sensorTestOutput.dat";
         
@@ -993,10 +928,13 @@ void depthCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg) {
     cv::Mat img = cv_ptr->image;
 
     double min = 0;
+
     double max = 1000;
 
     cv::Mat img_scaled_8u;
     cv::Mat color_img;
+    
+
     cv::Mat(cv_ptr->image-min).convertTo(img_scaled_8u, CV_8UC1, 255. / (max - min));
 
     if(img_scaled_8u.type() ==  CV_8UC1){
