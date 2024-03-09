@@ -25,14 +25,14 @@ def udp_ros_client():
 
             audio = np.frombuffer(data, dtype=np.int16)
 
-            backLeft    = audio[0:nbOfSamplesByChannel].tolist()
-            backRight   = audio[nbOfSamplesByChannel:nbOfSamplesByChannel*2].tolist()
+            rearLeft    = audio[0:nbOfSamplesByChannel].tolist()
+            rearRight   = audio[nbOfSamplesByChannel:nbOfSamplesByChannel*2].tolist()
             frontLeft   = audio[nbOfSamplesByChannel*2:nbOfSamplesByChannel*3].tolist()
             frontRight  = audio[nbOfSamplesByChannel*3:nbOfSamplesByChannel*4].tolist()
 
             msg = AudioCustomMsg()
-            msg.backLeft = backLeft
-            msg.backRight = backRight
+            msg.rearLeft = rearLeft
+            msg.rearRight = rearRight
             msg.frontLeft = frontLeft
             msg.frontRight = frontRight
             pub.publish(msg)

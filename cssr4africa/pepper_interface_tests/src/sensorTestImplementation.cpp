@@ -26,7 +26,7 @@ std::string outputFilePath;
 /* Global variables to handle the audio file */
 std::ofstream outAudio;
 int totalSamples = 0;
-std::string currentChannel = "backLeft";
+std::string currentChannel = "rearLeft";
 
 /* Gloabal variables to handle the video file */
 bool saveVideo = true;
@@ -376,9 +376,9 @@ void microphone(ros::NodeHandle nh) {
     ros::Duration(1).sleep();
 
     #ifdef ROS
-        outAudio.open(ros::package::getPath(ROS_PACKAGE_NAME) + "/data/microphone.wav", std::ios::binary);
+        outAudio.open(ros::package::getPath(ROS_PACKAGE_NAME) + "/data/microphoneOutput.wav", std::ios::binary);
     #else
-        ROS_INFO_STREAM("Unable to open the output file microphone.wav\n");
+        ROS_INFO_STREAM("Unable to open the output file microphoneOutput.wav\n");
         promptAndExit(1);
     #endif
 
@@ -420,10 +420,10 @@ void microphoneMessageReceived(const naoqi_driver::AudioCustomMsg& msg) {
         channelData = &msg.frontLeft;
     } else if (currentChannel == "frontRight") {
         channelData = &msg.frontRight;
-    } else if (currentChannel == "backLeft") {
-        channelData = &msg.backLeft;
-    } else if (currentChannel == "backRight") {
-        channelData = &msg.backRight;
+    } else if (currentChannel == "rearLeft") {
+        channelData = &msg.rearLeft;
+    } else if (currentChannel == "rearRight") {
+        channelData = &msg.rearRight;
     }
 
     if (channelData) {
@@ -1317,9 +1317,9 @@ std::string extractMode(){
 
 // This function updates the global variable for the current microphone channel to record.
 void switchMicrophoneChannel() {
-    if (currentChannel == "backLeft") {
-        currentChannel = "backRight";
-    } else if (currentChannel == "backRight") {
+    if (currentChannel == "rearLeft") {
+        currentChannel = "rearRight";
+    } else if (currentChannel == "rearRight") {
         currentChannel = "frontLeft";
     } else if (currentChannel == "frontLeft") {
         currentChannel = "frontRight";
@@ -1359,7 +1359,7 @@ void playAndDeleteFile() {
     bool deleteFile = false;
     
     // check if the file exists
-    std::string fileName = ros::package::getPath(ROS_PACKAGE_NAME) + "/data/microphone.wav";
+    std::string fileName = ros::package::getPath(ROS_PACKAGE_NAME) + "/data/microphoneOutput.wav";
 
     // check if the file exists
     std::ifstream file(fileName);
