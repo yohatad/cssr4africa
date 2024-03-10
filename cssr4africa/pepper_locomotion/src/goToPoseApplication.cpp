@@ -94,14 +94,14 @@ main(int argc, char **argv)
 
    if (debug)
       printf("Subscribing to odom\n");
-   ros::Subscriber sub = nh.subscribe("/naoqi_driver/odom", 1000, &odomMessageReceived);
+   ros::Subscriber sub = nh.subscribe("/pepper/odom", 1000, &odomMessageReceived);
 
    /* Create a publisher object for velocity commands */
    /* ----------------------------------------------- */
 
    if (debug)
       printf("publishing to cmd_vel\n");
-   ros::Publisher pub = nh.advertise<geometry_msgs::Twist>("/cmd_vel", 1000);
+   ros::Publisher pub = nh.advertise<geometry_msgs::Twist>("/pepper/cmd_vel", 1000);
    ros::Rate rate(publish_rate); // Publish  at this rate (in Hz)  until the node is shut down
 
    /* construct the full path and filename */   // --------- This part would have made package name extraction autonmatic, but its currently generating errors

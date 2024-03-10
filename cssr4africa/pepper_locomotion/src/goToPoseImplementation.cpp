@@ -345,7 +345,7 @@ Use the divide and conquer algorithm to drive the robot to a given pose
 
 void goToPoseDQ(float x, float y, float theta, locomotionParameterDataType locomotionParameterData, ros::Publisher pub, ros::Rate rate) {
 
-   bool                 debug = false;
+   bool                 debug = true;
   
    geometry_msgs::Twist msg; 
 
