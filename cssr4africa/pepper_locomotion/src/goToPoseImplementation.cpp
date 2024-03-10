@@ -375,7 +375,17 @@ void goToPoseDQ(float x, float y, float theta, locomotionParameterDataType locom
    goal_theta = theta;
 
    mode = ORIENTING;  // divide and conquer always starts by adjusing the heading
+
+   // open a file to write the odometry data to
+   FILE *fp;
    
+   // the file is located pepper_rob_ws/cssr4africa/cssr_system/pepper_locomotion/data/odometry_data.txt'
+   fp = fopen("/home/yoha/workspace/pepper_rob_ws/src/cssr4africa/pepper_locomotion/data/odometry_data.txt", "w");
+   if (fp == NULL)
+   {
+      printf("Error opening file!\n");
+      exit(1);
+   }   
    do {
 
       /* get the current pose */
@@ -456,6 +466,12 @@ void goToPoseDQ(float x, float y, float theta, locomotionParameterDataType locom
                  //printf("Goal, heading, theta: %5.3f, %5.3f, %5.3f\n", goal_theta, goal_direction, current_theta);
                  printf("Error:                %5.3f, %5.3f\n", position_error, angle_error);
                  printf("velocity command:     %5.3f, %5.3f\n", msg.linear.x, msg.angular.z);
+               //   Log the odometry data to the file
+               fprintf(fp, "Ramping up velocity\n");
+               fprintf(fp, "Current pose:         %5.3f %5.3f %5.3f\n", current_x, current_y, current_theta);
+               fprintf(fp, "Goal, heading, theta: %5.3f, %5.3f, %5.3f\n", goal_theta, goal_direction, current_theta);
+               fprintf(fp, "Error:                %5.3f, %5.3f\n", position_error, angle_error);
+               fprintf(fp, "velocity command:     %5.3f, %5.3f\n", msg.linear.x, msg.angular.z);
               }
 	      
 	      pub.publish(msg);              // Publish the message
@@ -474,6 +490,12 @@ void goToPoseDQ(float x, float y, float theta, locomotionParameterDataType locom
          //printf("Goal, heading, theta: %5.3f, %5.3f, %5.3f\n", goal_theta, goal_direction, current_theta);
          printf("Error:                %5.3f, %5.3f\n", position_error, angle_error);
 	 printf("velocity command:     %5.3f, %5.3f\n\n", msg.linear.x, msg.angular.z);
+   //  Log the odometry data to the file
+   fprintf(fp, "Going\n");
+   fprintf(fp, "Current pose:         %5.3f %5.3f %5.3f\n", current_x, current_y, current_theta);
+   fprintf(fp, "Goal, heading, theta: %5.3f, %5.3f, %5.3f\n", goal_theta, goal_direction, current_theta);
+   fprintf(fp, "Error:                %5.3f, %5.3f\n", position_error, angle_error);
+   fprintf(fp, "velocity command:     %5.3f, %5.3f\n", msg.linear.x, msg.angular.z);
       }
 	    
       pub.publish(msg);              // Publish the message
@@ -527,6 +549,13 @@ void goToPoseDQ(float x, float y, float theta, locomotionParameterDataType locom
          //printf("Goal, heading, theta: %5.3f, %5.3f, %5.3f\n", goal_theta, goal_direction, current_theta);
          printf("Error:                %5.3f, %5.3f\n", position_error, angle_error);
          printf("velocity command:     %5.3f, %5.3f\n\n", msg.linear.x, msg.angular.z);
+         // Log the odometry data to the file
+         fprintf(fp, "Orienting\n");
+         fprintf(fp, "Current pose:         %5.3f %5.3f %5.3f\n", current_x, current_y, current_theta);
+         fprintf(fp, "Goal, heading, theta: %5.3f, %5.3f, %5.3f\n", goal_theta, goal_direction, current_theta);
+         fprintf(fp, "Error:                %5.3f, %5.3f\n", position_error, angle_error);
+         fprintf(fp, "velocity command:     %5.3f, %5.3f\n", msg.linear.x, msg.angular.z);
+
      }
 	    
      pub.publish(msg);              // Publish the message
@@ -541,6 +570,10 @@ void goToPoseDQ(float x, float y, float theta, locomotionParameterDataType locom
    msg.linear.x = 0;
    pub.publish(msg);              // Publish the message
    rate.sleep(); // Wait until it's time for another iteration
+
+   // Close the file
+   fclose(fp);
+
  
  }
 

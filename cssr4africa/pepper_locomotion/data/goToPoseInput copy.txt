@@ -4,3 +4,4 @@ goto1     		1.0     0.0      1.5708
 goto1     		1.0     1.0      1.5708
 goto1     		0.0     1.0      1.5708
 goto1     		0.0     0.0      0
+testlinearodom  1       0        0
