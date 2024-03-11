@@ -206,7 +206,6 @@ void rHand(ros::NodeHandle& nh){
         ROS_INFO_STREAM("[END] " << jointNames[i] << " test.");
     }
 
-    // calc_velocity(homePosition, maxPosition, minPosition, duration);
 
     ROS_INFO_STREAM("[PUT DOWN RIGHT HAND] Moving to the Home position");
     moveToPosition(rightHandClient, jointNames, duration, "home", homePosition);
@@ -225,12 +224,12 @@ void lArm(ros::NodeHandle& nh){
     std::vector<double> position(5, 0.0);
     
     // Maximum and minimum positions for each joint
-    std::vector<double> maxPosition = {2.0857,  0.0087,  -1.5620, -2.0857,  -1.8239};
-    std::vector<double> minPosition = {-2.0857, 1.5620 , -0.0087,  2.0857,   1.8239};
+    std::vector<double> maxPosition = {-2.0857, 1.5620 , -0.0087,  2.0857,   1.8239};
+    std::vector<double> minPosition = {2.0857,  0.0087,  -1.5620, -2.0857,  -1.8239};
     std::vector<double> homePosition = {1.7625, 0.09970, -0.1334, -1.7150,  0.06592};
 
     std::vector<std::vector<double>> velocities = {{1.5, 1.5, 0.1},{1.2, 0.8, 0.15},{0.1, 0.9, 1.2},{2.1, 1.5, 0.2},{1.8, 1.8, 1.9}};
-    std::vector<std::vector<double>> duration = calculateDuration(homePosition, maxPosition, minPosition, velocities);
+    std::vector<std::vector<double>> duration = calculateDuration(homePosition, minPosition, maxPosition, velocities);
 
     ROS_INFO_STREAM("----------[START LEFT ARM CONTROL TEST]-----------");
 
@@ -239,21 +238,20 @@ void lArm(ros::NodeHandle& nh){
         ROS_INFO_STREAM("[START] " << jointNames[i] << " test.");
 
         ROS_INFO_STREAM("Moving to the Minimum position");
-        position[i] = minPosition[i];
+        position[i] = maxPosition[i];
         moveToPosition(leftArmClient, jointNames, duration[i][0], "min", position);
 
         ROS_INFO_STREAM("Moving to the Maximum position");
-        position[i] = maxPosition[i];
+        position[i] = minPosition[i];
         moveToPosition(leftArmClient, jointNames, duration[i][1], "max", position);
 
         ROS_INFO_STREAM("Moving to the Mid-range position");
-        position[i] = (maxPosition[i] + minPosition[i]) / 2.0;
+        position[i] = (minPosition[i] + maxPosition[i]) / 2.0;
         moveToPosition(leftArmClient, jointNames, duration[i][2], "mid", position);
 
         ROS_INFO_STREAM("[END] " << jointNames[i] << " test.");
     }
 
-    // calc_velocity(homePosition, maxPosition, minPosition, duration);
 
     ROS_INFO_STREAM("[PUT DOWN LEFT ARM] Moving to the Home position");
     double homeDuration = 2.0;
@@ -300,7 +298,6 @@ void lHand(ros::NodeHandle& nh){
         ROS_INFO_STREAM("[END] " << jointNames[i] << " test.");
     }
 
-    // calc_velocity(homePosition, maxPosition, minPosition, duration);
 
     ROS_INFO_STREAM("[PUT DOWN LEFT HAND] Moving to the Home position");
     moveToPosition(leftHandClient, jointNames, duration, "home", homePosition);
@@ -348,7 +345,6 @@ void leg(ros::NodeHandle& nh){
         ROS_INFO_STREAM("[END] " << jointNames[i] << " test.");
     }
 
-    // calc_velocity(homePosition, maxPosition, minPosition, duration);
 
     ROS_INFO_STREAM("[PUT DOWN LEG] Moving to the Home position");
     double homeDuration = 2.0;
