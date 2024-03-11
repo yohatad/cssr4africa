@@ -1,7 +1,7 @@
 /* actuatorTestImplementation.cpp
 *
 * Author: Yohannes Tadesse Haile and Mihirteab Taye Hordofa 
-* Date: January 11, 2024
+* Date: March 10, 2024
 * Version: v1.0
 *
 * Copyright (C) 2023 CSSR4Africa Consortium
@@ -12,6 +12,17 @@
 * Website: www.cssr4africa.org
 *
 * This program comes with ABSOLUTELY NO WARRANTY.
+*/
+
+
+/*  Description:
+*  This file contains the implementation of the actuator tests for the Pepper robot.  The tests are designed to test the 
+* head, arms, hands, legs and wheels of the robot. The tests are implemented using the ROS actionlib library.
+* The test will move the robot's head, arms, hands, legs and wheels to the maximum position, then to the minimum position,
+* then to the mid-range position. 
+
+* For the wheels, the tests will publish a position on the cmd_moveto topic to move the robot forward, backward and 
+* do 90 degree turns both clockwise and counter-clockwise.
 */
 
 

@@ -1,7 +1,7 @@
 /* sensorTestImplementation.cpp
 *
 * Author: Yohannes Tadesse Haile and Mihirteab Taye Hordofa 
-* Date: January 11, 2024
+* Date: March 10, 2024
 * Version: v1.0
 *
 * Copyright (C) 2023 CSSR4Africa Consortium
@@ -17,23 +17,22 @@
 
 #include "pepper_interface_tests/sensorTest.h"
 
-/* Global variables to handle the output file */ 
+// Global variables to handle the output file 
 bool output;
 std::ofstream outputFile;
 int timeDuration = 10;
 std::string outputFilePath;
 
-/* Global variables to handle the audio file */
+// Global variables to handle the audio file 
 std::ofstream outAudio;
 int totalSamples = 0;
 std::string currentChannel = "rearLeft";
 
-/* Gloabal variables to handle the video file */
+// Gloabal variables to handle the video file 
 bool saveVideo = true;
 cv::VideoWriter videoWriter;
 bool isVideoWriterInitialized = false;
 
-/* Test functions */
 void backSonar(ros::NodeHandle nh){
     // find the respective topic
     string topicName = extractTopic("BackSonar");
@@ -1395,7 +1394,6 @@ void initializeOutputFile(std::ofstream& outputFile, const std::string& path) {
     // Assuming getCurrentTime() is implemented elsewhere
     outputFile << "[START TIME] " << getCurrentTime() << "\n";
     
-    // Explicit close is not required but can be kept for clarity or error checking
     outputFile.close();
 }
 
