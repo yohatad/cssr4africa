@@ -28,7 +28,7 @@ std::ofstream outAudio;
 int totalSamples = 0;
 std::string currentChannel = "rearLeft";
 
-// Gloabal variables to handle the video file 
+// Global variables to handle the video file 
 bool saveVideo = true;
 cv::VideoWriter videoWriter;
 bool isVideoWriterInitialized = false;
