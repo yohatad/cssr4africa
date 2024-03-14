@@ -223,7 +223,7 @@ void Motion::writeJoints(const std::vector <double> &joint_commands)
   }
   catch(const std::exception& e)
   {
-    ROS_ERROR("Motion: Failed to set joints nagles! \n\tTrace: %s", e.what());
+    ROS_ERROR("Motion: Failed to set joints angles! \n\tTrace: %s", e.what());
   }
 }
 
