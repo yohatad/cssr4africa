@@ -781,8 +781,6 @@ void executeTestsInParallel(const std::vector<std::string>& testNames, ros::Node
             threads.push_back(std::thread(lHand, std::ref(nh)));
         } else if (testName == "leg") {
             threads.push_back(std::thread(leg, std::ref(nh)));
-        } else if (testName == "wheels") {
-            threads.push_back(std::thread(wheels, std::ref(nh)));
         } else {
             std::cerr << "Unknown test provided: " << testName << ". Exiting...\n";
         }

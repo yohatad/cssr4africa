@@ -5,6 +5,7 @@ BottomCamera        /pepper/camera/bottom/image_raw
 DepthCamera         /pepper/camera/depth/image_raw
 LaserSensor         /pepper/laser_2
 JointState          /joint_states
+Odometry            /pepper/odom
 Head                /pepper/Head_controller/follow_joint_trajectory
 RArm                /pepper/RightArm_controller/follow_joint_trajectory
 LArm                /pepper/LeftArm_controller/follow_joint_trajectory
