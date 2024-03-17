@@ -1,32 +1,30 @@
 #ifndef SENSOR_TEST_H
 #define SENSOR_TEST_H
 
-# include <ros/ros.h>
-# include <ros/package.h>
-# include <sensor_msgs/CameraInfo.h>
-# include <sensor_msgs/Range.h>
-# include <sensor_msgs/JointState.h>
-# include <sensor_msgs/LaserScan.h>
-# include <sensor_msgs/Imu.h>
-# include <image_transport/image_transport.h>
-# include <opencv2/highgui/highgui.hpp>
-# include <cv_bridge/cv_bridge.h>
-# include <nav_msgs/Odometry.h>
-# include <std_msgs/String.h>
-
-
-# include <thread>
-# include <fstream>
-# include <string>
-# include <unordered_map>
-# include <boost/algorithm/string.hpp>
-# include <ctime>
-# include <iostream>
-# include <vector>
-# include <cstdlib>
-# include <filesystem>
+#include <ros/ros.h>
+#include <ros/package.h>
+#include <sensor_msgs/CameraInfo.h>
+#include <sensor_msgs/Range.h>
+#include <sensor_msgs/JointState.h>
+#include <sensor_msgs/LaserScan.h>
+#include <sensor_msgs/Imu.h>
+#include <image_transport/image_transport.h>
+#include <opencv2/highgui/highgui.hpp>
+#include <cv_bridge/cv_bridge.h>
+#include <nav_msgs/Odometry.h>
+#include <std_msgs/String.h>
+#include <thread>
+#include <fstream>
+#include <string>
+#include <unordered_map>
+#include <boost/algorithm/string.hpp>
+#include <ctime>
+#include <iostream>
+#include <vector>
+#include <cstdlib>
+#include <filesystem>
 #ifdef PEPPER_ROBOT
-# include <naoqi_driver/AudioCustomMsg.h>
+#include <naoqi_driver/AudioCustomMsg.h>
 #endif // DEBUG
 
 using namespace boost;

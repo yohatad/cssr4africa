@@ -18,28 +18,63 @@
 /*  Description:
 *  This file contains the implementation of the actuator tests for the Pepper robot.  The tests are designed to test the 
 * head, arms, hands, legs and wheels of the robot. The tests are implemented using the ROS actionlib library.
-* The test will move the robot's head, arms, hands, legs and wheels to the maximum position, then to the minimum position,
+* The test will move the robot's head, arms, hands, legs and wheels to the minimum position, then to the maximum position,
 * then to the mid-range position. 
 
-* For the wheels, the tests will publish a position on the cmd_moveto topic to move the robot forward, backward and 
+* For the wheels, the tests will publish a position on the cmd_vel topic to move the robot forward, backward and 
 * do 90 degree turns both clockwise and counter-clockwise.
 */
 
 
 # include "pepper_interface_tests/actuatorTest.h"
 
-ControlClientPtr createClient(const std::string& TopicName) {
-    ControlClientPtr actionClient(new ControlClient(TopicName, true));
+// Global variables to hold positions
+double startX, startTheta, currentX, currentTheta;
+bool isStartPositionSaved = false;
+ros::Publisher pub;
+
+enum Robotstate{
+    MOVE_FORWARD,
+    MOVE_BACKWARD,
+    ROTATE_CLOCKWISE,
+    ROTATE_COUNTER_CLOCKWISE,
+    STOP
+};
+
+Robotstate state = MOVE_FORWARD;
+
+// Signal handler to stop the robot
+void signalHandler(int signum) {
+    ROS_WARN("Interrupt signal (%d) received. Stopping the robot.", signum);
+
+    // Publish zero velocities
+    geometry_msgs::Twist stopMsg;
+    stopMsg.linear.x = 0.0;
+    stopMsg.angular.z = 0.0;
+    
+    // Publish the stop message multiple times
+    ros::Rate rate(10);  
+    for (int i = 0; i < 30; ++i) {  // Continue for ~3 seconds
+        pub.publish(stopMsg);
+        rate.sleep();
+    }
+
+    // Terminate ROS node
+    ros::shutdown();
+}
+
+ControlClientPtr createClient(const std::string& topicName) {
+    ControlClientPtr actionClient(new ControlClient(topicName, true));
     int maxIterations = 5;
 
     for (int iterations = 0; iterations < maxIterations; ++iterations) {
         if (actionClient->waitForServer(ros::Duration(5.0))) {
             return actionClient;
         }
-        ROS_DEBUG("Waiting for the %s controller to come up", TopicName.c_str());
+        ROS_DEBUG("Waiting for the %s controller to come up", topicName.c_str());
     }
 
-    throw std::runtime_error("Error creating action client for " + TopicName + " controller: Server not available");
+    throw std::runtime_error("Error creating action client for " + topicName + " controller: Server not available");
 }
 
 
@@ -354,108 +389,115 @@ void leg(ros::NodeHandle& nh){
     ROS_INFO_STREAM("----------[END LEG CONTROL TEST]-----------");
 }
 
-// Function to publish a velocity command to a joint
-void publishPosition(ros::Publisher &pub, geometry_msgs::Twist &msg, ros::Rate &rate, double duration) {
-    ros::Time startTime = ros::Time::now();
-    ros::Duration waitTime = ros::Duration(duration); 
-    ros::Time endTime = startTime + waitTime;
-    // Publish the trajectory for 1 seconds
-    while(ros::ok() && ros::Time::now() < endTime) {
-        pub.publish(msg);
-        rate.sleep();
+// Function to convert quaternion to yaw
+double getYawFromQuaternion(const geometry_msgs::Quaternion& quat) {
+    tf::Quaternion q(quat.x, quat.y, quat.z, quat.w);
+    tf::Matrix3x3 m(q);
+    double roll, pitch, yaw;
+    m.getRPY(roll, pitch, yaw);
+    return yaw;
+}
+
+void odomCallback(const nav_msgs::Odometry::ConstPtr& msg) {
+    if (!isStartPositionSaved) {
+        // Save the starting position and yaw
+        startX = currentX = msg->pose.pose.position.x; 
+        startTheta = currentTheta = getYawFromQuaternion(msg->pose.pose.orientation);
+        isStartPositionSaved = true;
+    } else {
+        // Update the current position and yaw
+        currentX = msg->pose.pose.position.x;
+        currentTheta = getYawFromQuaternion(msg->pose.pose.orientation);
     }
 }
 
 void wheels(ros::NodeHandle& nh){
-    // Find the respective topic
     std::string wheelTopic = extractTopic("Wheels");
-   
-    // Create a publisher to publish geometry_msgs::Twist messages on the /pepper/cmd_moveto topic
-    ros::Publisher pub = nh.advertise<geometry_msgs::Twist>(wheelTopic, 1000, true);
+    std::string odomTopic = extractTopic("Odometry");
 
-    // Set the publishing rate to 50 Hz
-    ros::Rate rate(50); 
+    double distance;
+    double angle;
 
-    // Create a Twist message object
+    pub = nh.advertise<geometry_msgs::Twist>(wheelTopic, 1000);
+    ros::Rate rate(10);
+
+    signal(SIGINT, signalHandler);
+
+    ros::Subscriber sub = nh.subscribe(odomTopic, 1000, odomCallback);
+
     geometry_msgs::Twist msg;
-   
-    ROS_INFO_STREAM("-------[START WHEEL CONTROL TEST]--------");
-    /* [1] THIS SECTION PUBLISHES A LINEAR VELOCITY ON THE CMD MOVETO TOPIC */
-    ROS_INFO_STREAM("[LINEAR VELOCITY START] Publishing linear position on the cmd moveto started.");
-   
-   // Publish a fixed positive linear velocity
-    ROS_INFO_STREAM("[POSITIVE VELOCITY] Publishing a fixed position value");
-    msg.linear.x = 1.0;
 
-    // Publish the positive velocity 
-    publishPosition(pub, msg, rate, 1);
+    ROS_INFO_STREAM("----------[START WHEEL CONTROL TEST]-----------");
 
-    // Reset linear velocity to 0
-    ROS_INFO_STREAM("[ZERO VELOCITY] Publishing 0 velocity value.");
-    msg.linear.x = 0.0;
+    bool shutdownInitiated = false;
 
-    // Publish 0 velocity 
-    publishPosition(pub, msg, rate, 1);
+    while(ros::ok()){
+        ros::spinOnce();
 
-    // Publish a fixed negative linear velocity
-    ROS_INFO_STREAM("[NEGATIVE VELOCITY] Publishing a fixed negative velocity value");
-    msg.linear.x = -1.0;
+        double distance = currentX - startX;
+        double angle = currentTheta - startTheta;
 
-    // Publish the negative velocity 
-    publishPosition(pub, msg, rate, 2);
+        std::cout<<"Distance: "<<distance<<", Angle: "<<angle<<std::endl;
 
-    // Reset linear velocity to 0
-    ROS_INFO_STREAM("[ZERO VELOCITY] Publishing 0 velocity value.");
-    msg.linear.x = 0.0;
-
-    // Publish 0 velocity 
-    publishPosition(pub, msg, rate, 2);
-    
-    ROS_INFO_STREAM("[LINEAR VELOCITY END] Publishing linear velocity ended.");
-    
-    /* [2] THIS SECTION PUBLISHES AN ANGULAR VELOCITY ON THE CMD VEL TOPIC */
-    ROS_INFO_STREAM("[ANGULAR VELOCITY START] Publishing angular velocity on the cmd vel started.");
-    
-    // Initialize the message with 0 angular velocity
-    ROS_INFO_STREAM("[ZERO VELOCITY] Publishing 0 velocity value.");
-    msg.angular.z = 0.0;
-
-    // Publish 0 velocity 
-    publishPosition(pub, msg, rate, 2);
-
-    // Publish a fixed positive angular velocity
-    ROS_INFO_STREAM("[POSITIVE VELOCITY] Publishing a fixed positive velocity value");
-    msg.angular.z = 1.57;
-
-    // Publish the positive velocity 
-    publishPosition(pub, msg, rate, 4);
-
-    // Reset angular velocity to 0
-    ROS_INFO_STREAM("[ZERO VELOCITY] Publishing 0 velocity value.");
-    msg.angular.z = 0.0;
-
-    // Publish 0 velocity 
-    publishPosition(pub, msg, rate, 1);
-
-    // Publish a fixed negative angular velocity
-    ROS_INFO_STREAM("[NEGATIVE VELOCITY] Publishing a fixed negative velocity value");
-    msg.angular.z = -1.57;
-
-    // Publish the negative velocity 
-    publishPosition(pub, msg, rate, 4);
-
-    // Reset angular velocity to 0
-    ROS_INFO_STREAM("[ZERO VELOCITY] Publishing 0 velocity value.");
-    msg.angular.z = 0.0;
-
-    // Publish 0 velocity 
-    publishPosition(pub, msg, rate, 4);
-    
-    ROS_INFO_STREAM("[ANGULAR VELOCITY END] Publishing angular velocity ended.");
-        
-    // Print success message
-    ROS_INFO_STREAM("[SUCCESS] Wheel control test completed.");
-    ROS_INFO_STREAM("                                       ");
+        switch(state){
+            case MOVE_FORWARD:
+                msg.linear.x = 0.2;
+                msg.angular.z = 0.0;
+                pub.publish(msg);
+                if (fabs(currentX - startX) >= 1.0){
+                    startX = currentX;
+                    startTheta = currentTheta;
+                    state = MOVE_BACKWARD;
+                }
+                break;
+            
+            case MOVE_BACKWARD:
+                msg.linear.x = -0.2;
+                msg.angular.z = 0.0;
+                pub.publish(msg);
+                if (fabs(currentX - startX) >= 1.0){
+                    startX = currentX;
+                    startTheta = currentTheta;
+                    state = ROTATE_CLOCKWISE;
+                }
+                break;
+            
+            case ROTATE_CLOCKWISE:
+                msg.linear.x = 0.0;
+                msg.angular.z = 0.2;
+                pub.publish(msg);
+                if (fabs(currentTheta - startTheta) >= 1.57){
+                    startX = currentX;
+                    startTheta = currentTheta;
+                    state = ROTATE_COUNTER_CLOCKWISE;
+                }
+                break;
+            
+            case ROTATE_COUNTER_CLOCKWISE:
+                msg.linear.x = 0.0;
+                msg.angular.z = -0.2;
+                pub.publish(msg);
+                if (fabs(currentTheta - startTheta) >= 1.57){
+                    state = STOP;
+                    shutdownInitiated = true; // Indicate that shutdown should occur after STOP.
+                }
+                break;
+            
+            case STOP:
+                msg.linear.x = 0.0;
+                msg.angular.z = 0.0;
+                pub.publish(msg);
+                if(shutdownInitiated) {
+                    // Wait for a short duration before shutdown to ensure message delivery.
+                    ros::Duration(1.0).sleep();
+                    ROS_INFO_STREAM("----------[END WHEEL CONTROL TEST]-----------");
+                    ros::shutdown();
+                }
+                break;
+        }
+            
+        rate.sleep();   
+    }
 }
 
 
