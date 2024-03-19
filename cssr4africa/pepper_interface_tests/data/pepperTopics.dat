@@ -4,12 +4,12 @@ FrontCamera         /naoqi_driver/camera/front/image_raw
 BottomCamera        /naoqi_driver/camera/bottom/image_raw
 DepthCamera         /naoqi_driver/camera/depth/image_raw
 StereoCamera        /naoqi_driver/camera/stereo/image_raw
+Laser               /naoqi_driver/laser
 Microphone          /naoqi_driver/audio
 JointState          /joint_states
 Odometry            /naoqi_driver/odom
 IMU                 /naoqi_driver/imu/base
 Speech              /speech
-Laser               /naoqi_driver/laser
 Head                /pepper_dcm/Head_controller/follow_joint_trajectory
 RArm                /pepper_dcm/RightArm_controller/follow_joint_trajectory
 LArm                /pepper_dcm/LeftArm_controller/follow_joint_trajectory

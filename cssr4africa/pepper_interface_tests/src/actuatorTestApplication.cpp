@@ -38,7 +38,7 @@
 * RHand  | true
 * LHand  | true
 * Leg    | true
-* Wheels | true
+* Wheels | false
 
 ...
 * Subscribed Topics and Message Types
@@ -53,7 +53,7 @@
 * /pepper_dcm/RightHand_controller/follow_joint_trajectory      trajectory_msgs/JointTrajectory
 * /pepper_dcm/LeftHand_controller/follow_joint_trajectory       trajectory_msgs/JointTrajectory
 * /pepper_dcm/Pelvis_controller/follow_joint_trajectory         trajectory_msgs/JointTrajectory
-* /pepper_dcm/cmd_moveto                                        geometry_msgs/Twist
+* /cmd_vel                                                      geometry_msgs/Twist
 
 * /pepper/Head_controller/follow_joint_trajectory               trajectory_msgs/JointTrajectory
 * /pepper/RightArm_controller/follow_joint_trajectory           trajectory_msgs/JointTrajectory
@@ -82,7 +82,7 @@
 *
 * Author: Yohannes Tadesse Haile, Carnegie Mellon University Africa
 * Email: yohanneh@andrew.cmu.edu
-* Date: January 11, 2024
+* Date: March 19, 2024
 * Version: v1.0
 *
 */
