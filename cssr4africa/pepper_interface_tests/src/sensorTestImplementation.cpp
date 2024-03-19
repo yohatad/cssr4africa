@@ -1090,7 +1090,7 @@ string extractTopic(string key){
     bool debug = false;   // used to turn debug message on
     
     std::string configFileName      = "sensorTestConfiguration.ini";        // configuration filename
-    std::string configPath;                                                 // configuration path
+    std::string packagePath;                                                // ROS package path
     std::string configPathFile;                                             // configuration path and filename
     
     std::string platformKey         = "platform";                           // platform key 
@@ -1102,23 +1102,21 @@ string extractTopic(string key){
     std::string simulatorTopicValue;                                        // simulator topic value
     
     std::string topicFileName;                                              // topic filename
-    std::string topicPath;                                                  // topic filename path
     std::string topicPathFile;                                              // topic with path and file 
 
     std::string topic_value = "";                                           // topic value
 
     // Construct the full path of the configuration file
     #ifdef ROS
-        configPath = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
+        packagePath = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
     #else
         printf("ROS_PACKAGE_NAME is not defined. Please define the ROS_PACKAGE_NAME environment variable.\n");
         promptAndExit(1);
     #endif
 
     // set configuration path
-    configPath += "/config/";
-    configPathFile = configPath;
-    configPathFile += configFileName;
+    configPathFile = packagePath + "/config/" + configFileName;
+
 
     if (debug) printf("Config file is %s\n", configPathFile.c_str());
 
@@ -1153,18 +1151,8 @@ string extractTopic(string key){
     
     if (debug) printf("Topic file: %s\n", topicFileName.c_str());
 
-    // Construct the full path of the topic file
-    #ifdef ROS
-        topicPath = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
-    #else
-        printf("ROS_PACKAGE_NAME is not defined. Please define the ROS_PACKAGE_NAME environment variable.\n");
-        promptAndExit(1);
-    #endif
-
-    // set topic path    
-    topicPath += "/data/";
-    topicPathFile = topicPath;
-    topicPathFile += topicFileName;
+    // set the topic path and file
+    topicPathFile = packagePath + "/config/" + topicFileName;
 
     if (debug) printf("Topic file is %s\n", topicPathFile.c_str());
 
@@ -1199,7 +1187,7 @@ string extractTopic(string key){
 std::vector<std::string> extractTests(std::string set){
     bool debug = false;   // used to turn debug message on
     
-    std::string inputFileName;                         // input filename
+    std::string inputFileName = "sensorTestInput.ini";  // input filename
     std::string inputPath;                             // input path
     std::string inputPathFile;                         // input path and filename
     
@@ -1216,9 +1204,7 @@ std::vector<std::string> extractTests(std::string set){
     #endif
 
     // set input path
-    inputPath       += "/config/";
-    inputPathFile    = inputPath;
-    inputPathFile   += "sensorTestInput.ini";
+    inputPathFile = inputPath + "/config/" + inputFileName;
 
     if (debug) printf("Input file is %s\n", inputPathFile.c_str());
 
@@ -1258,7 +1244,7 @@ std::string extractMode(){
     bool debug = false;   // used to turn debug message on
 
     std::string configFileName = "sensorTestConfiguration.ini";     // configuration filename
-    std::string configPath;                                         // configuration path
+    std::string packagePath;                                        // ROS package path
     std::string configPathFile;                                     // configuration path and filename
 
     std::string modeKey        = "mode";                            // mode key
@@ -1267,15 +1253,13 @@ std::string extractMode(){
 
     // Construct the full path of the configuration file
     #ifdef ROS
-        configPath = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
+        packagePath = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
     #else
         printf("ROS_PACKAGE_NAME is not defined. Please define the ROS_PACKAGE_NAME environment variable.\n");
     #endif
 
     // set configuration path
-    configPath += "/config/";
-    configPathFile = configPath;
-    configPathFile += configFileName;
+    configPathFile = packagePath + "/config/" + configFileName;
 
     if (debug) printf("Config file is %s\n", configPathFile.c_str());
 

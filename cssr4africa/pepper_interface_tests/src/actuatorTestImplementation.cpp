@@ -16,19 +16,18 @@
 
 
 /*  Description:
-*  This file contains the implementation of the actuator tests for the Pepper robot.  The tests are designed to test the 
-* head, arms, hands, legs and wheels of the robot. The tests are implemented using the ROS actionlib library.
-* The test will move the robot's head, arms, hands, legs and wheels to the minimum position, then to the maximum position,
-* then to the mid-range position. 
+* This file contains the implementation of the actuator tests for the Pepper robot.  The tests are designed 
+* to test the head, arms, hands, legs and wheels of the robot. The tests are implemented using the ROS actionlib 
+* library.The test will move the robot's head, arms, hands, legs and wheels to the minimum position, then to the 
+* maximum position, then to the mid-range position. 
 
 * For the wheels, the tests will publish a position on the cmd_vel topic to move the robot forward, backward and 
 * do 90 degree turns both clockwise and counter-clockwise.
 */
 
-
 # include "pepper_interface_tests/actuatorTest.h"
 
-// Global variables to hold positions
+// Global variables to hold positions for the wheels
 double startX, startTheta, currentX, currentTheta;
 bool isStartPositionSaved = false;
 ros::Publisher pub;
@@ -122,9 +121,9 @@ void head(ros::NodeHandle& nh) {
     std::vector<std::string> jointNames = {"HeadPitch", "HeadYaw"};
     std::vector<double> position(2, 0.0);
     
-    // Maximum and minimum positions for each joint
-    std::vector<double> maxPosition = {0.4451, 2.0857};
+    // Minimum and maximum positions for each joint
     std::vector<double> minPosition = {-0.7068, -2.0857};
+    std::vector<double> maxPosition = {0.4451, 2.0857};
     std::vector<double> homePosition = {-0.2, 0.012271};
     
     std::vector<std::vector<double>> velocities = {{1.5, 1.5, 1.5},{1.2, 1.2, 1.2}};
@@ -132,7 +131,7 @@ void head(ros::NodeHandle& nh) {
     
     ROS_INFO_STREAM("----------[START HEAD CONTROL TEST]-----------");
 
-    // For each joint, move to the maximum position, then to the minimum position, then to the mid-range position
+    // For each joint, move to the minimum position, then to the maximum position, then to the mid-range position
     for (int i = 0; i < jointNames.size(); ++i) {
         ROS_INFO_STREAM("[START] " << jointNames[i] << " test.");
 
@@ -177,7 +176,7 @@ void rArm(ros::NodeHandle& nh){
 
     ROS_INFO_STREAM("----------[START RIGHT ARM CONTROL TEST]-----------");
 
-    // For each joint, move to the maximum position, then to the minimum position, then to the mid-range position
+    // For each joint, move to the minimum position, then to the maximum position, then to the mid-range position
     for (int i = 0; i < jointNames.size(); ++i) {
         ROS_INFO_STREAM("[START] " << jointNames[i] << " test.");
 
@@ -222,7 +221,7 @@ void rHand(ros::NodeHandle& nh){
 
     ROS_INFO_STREAM("----------[START RIGHT HAND CONTROL TEST]-----------");
 
-    // For each joint, move to the maximum position, then to the minimum position, then to the mid-range position
+    // For each joint, move to the minimum position, then to the maximum position, then to the mid-range position
     for (int i = 0; i < jointNames.size(); ++i) {
         ROS_INFO_STREAM("[START] " << jointNames[i] << " test.");
 
@@ -268,7 +267,7 @@ void lArm(ros::NodeHandle& nh){
 
     ROS_INFO_STREAM("----------[START LEFT ARM CONTROL TEST]-----------");
 
-    // For each joint, move to the maximum position, then to the minimum position, then to the mid-range position
+    // For each joint, move to the minimum position, then to the maximum position, then to the mid-range position
     for (int i = 0; i < jointNames.size(); ++i) {
         ROS_INFO_STREAM("[START] " << jointNames[i] << " test.");
 
@@ -314,7 +313,7 @@ void lHand(ros::NodeHandle& nh){
 
     ROS_INFO_STREAM("----------[START LEFT HAND CONTROL TEST]-----------");
 
-    // For each joint, move to the maximum position, then to the minimum position, then to the mid-range position
+    // For each joint, move to the minimum position, then to the maximum position, then to the mid-range position
     for (int i = 0; i < jointNames.size(); ++i) {
         ROS_INFO_STREAM("[START] " << jointNames[i] << " test.");
 
@@ -361,7 +360,7 @@ void leg(ros::NodeHandle& nh){
 
     ROS_INFO_STREAM("----------[START LEG CONTROL TEST]-----------");
 
-    // For each joint, move to the maximum position, then to the minimum position, then to the mid-range position
+    // For each joint, move to the minimum position, then to the maximum position, then to the mid-range position
     for (int i = 0; i < jointNames.size(); ++i) {
         ROS_INFO_STREAM("[START] " << jointNames[i] << " test.");
 
@@ -500,14 +499,12 @@ void wheels(ros::NodeHandle& nh){
     }
 }
 
-
-
 /* Extract topic names for the respective simulator or physical robot */
 std::string extractTopic(std::string key){
     bool debug = false;   // used to turn debug message on
     
     std::string configFileName      = "actuatorTestConfiguration.ini";  // configuration filename
-    std::string configPath;                                             // configuration path
+    std::string packagePath;                                            // ROS package path
     std::string configPathFile;                                         // configuration path and filename
     
     std::string platformKey         = "platform";                       // platform key 
@@ -520,23 +517,20 @@ std::string extractTopic(std::string key){
     std::string mode;                                                   // mode value
     
     std::string topicFileName;                                          // topic filename
-    std::string topicPath;                                              // topic filename path
     std::string topicPathFile;                                          // topic with path and file 
 
     std::string topic_value          = "";                              // topic value with empty string as default
 
     // Construct the full path of the configuration file
     #ifdef ROS
-        configPath = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
+        packagePath = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
     #else
         printf("ROS_PACKAGE_NAME is not defined. Please define the ROS_PACKAGE_NAME environment variable.\n");
         promptAndExit(1);
     #endif
 
     // set configuration path
-    configPath      += "/config/";
-    configPathFile   = configPath;
-    configPathFile  += configFileName;
+    configPathFile  = packagePath + "/config/" + configFileName;
 
     if (debug) printf("Config file is %s\n", configPathFile.c_str());
 
@@ -574,18 +568,7 @@ std::string extractTopic(std::string key){
     
     if (debug) printf("Topic file: %s\n", topicFileName.c_str());
 
-    // Construct the full path of the topic file
-    #ifdef ROS
-        topicPath = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
-    #else
-        printf("ROS_PACKAGE_NAME is not defined. Please define the ROS_PACKAGE_NAME environment variable.\n");
-        promptAndExit(1);
-    #endif
-
-    // set topic path    
-    topicPath       += "/data/";
-    topicPathFile    = topicPath;
-    topicPathFile   += topicFileName;
+    topicPathFile = packagePath + "/data/" + topicFileName;
 
     if (debug) printf("Topic file is %s\n", topicPathFile.c_str());
 
@@ -621,7 +604,7 @@ std::string extractMode(){
     bool debug = false;   // used to turn debug message on
     
     std::string configFileName  = "actuatorTestConfiguration.ini";          // configuration filename
-    std::string configPath;                                                 // configuration path
+    std::string packagePath;                                                // ROS package path
     std::string configPathFile;                                             // configuration path and filename
     
     std::string modeKey         = "mode";                                   // mode key 
@@ -630,15 +613,13 @@ std::string extractMode(){
     
     // Construct the full path of the configuration file
     #ifdef ROS
-        configPath = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
+        packagePath = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
     #else
         printf("ROS_PACKAGE_NAME is not defined. Please define the ROS_PACKAGE_NAME environment variable.\n");
     #endif
 
     // set configuration path
-    configPath += "/config/";
-    configPathFile = configPath;
-    configPathFile += configFileName;
+    configPathFile  = packagePath + "/config/" + configFileName;
 
     if (debug) printf("Config file is %s\n", configPathFile.c_str());
 
@@ -681,8 +662,8 @@ std::string extractMode(){
 std::vector<std::string> extractTests(std::string test){
     bool debug = false;                                         // used to turn debug message on
     
-    std::string inputFileName;                                  // input filename
-    std::string inputPath;                                      // input path
+    std::string inputFileName = "actuatorTestInput.ini";        // input filename
+    std::string packagePath;                                    // ROS package path
     std::string inputPathFile;                                  // input path and filename
     
     std::vector<std::string> testName;
@@ -690,15 +671,13 @@ std::vector<std::string> extractTests(std::string test){
 
     // Construct the full path of the input file
     #ifdef ROS
-        inputPath = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
+        packagePath = ros::package::getPath(ROS_PACKAGE_NAME).c_str();
     #else
         printf("ROS_PACKAGE_NAME is not defined. Please define the ROS_PACKAGE_NAME environment variable.\n");
         promptAndExit(1);
     #endif
     
-    inputPath       += "/config/";
-    inputPathFile    = inputPath;
-    inputPathFile   += "actuatorTestInput.ini";
+    inputPathFile = packagePath + "/config/" + inputFileName;
 
     if (debug) printf("Input file is %s\n", inputPathFile.c_str());
 

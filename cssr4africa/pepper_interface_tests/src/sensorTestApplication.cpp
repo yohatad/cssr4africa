@@ -76,7 +76,12 @@
 ...
 * Output Data Files
 *
-* sensorTestOutput.dat
+* sensorTestOutput.dat, 
+* frontCameraOutput.mp4,
+* bottomCameraOutput.mp4,
+* depthCameraOutput.mp4,
+* stereoCameraOutput.mp4,
+* microphoneOutput.wav
 ...
 * Configuration Files
 *
