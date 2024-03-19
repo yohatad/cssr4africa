@@ -15,6 +15,11 @@ add_message_files(
   AudioCustomMsg.msg
 )
 
+add_service_files(
+  FILES
+  messageService.srv
+)
+
 # Generate added messages and services
 generate_messages(
   DEPENDENCIES
