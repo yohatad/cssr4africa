@@ -99,9 +99,6 @@ private:
   //! @brief publish the base_footprint
   void publishBaseFootprint(const ros::Time &ts);
 
-  //! @brief check HW and Naoqi joints names
-  std::vector <bool> checkJoints();
-
   //! @brief read joints values
   void readJoints();
 
@@ -206,9 +203,6 @@ private:
 
   /** hardware interface joints names */
   std::vector <std::string> hw_joints_;
-
-  /** hardware interface enabled joints */
-  std::vector <bool> hw_enabled_;
 
   /** hardware interface joints angles to apply */
   std::vector <double> hw_commands_;

@@ -67,8 +67,7 @@ void Robot::stopService() {
         motion_->rest();
 
     //set stiffness for the whole body
-    //setStiffness(0.0f);
-    motion_->setStiffnessArms(0.0f, 2.0f);
+    setStiffness(0.0f);
   }
 
   is_connected_ = false;
@@ -121,6 +120,7 @@ bool Robot::initializeControllers(const std::vector <std::string> &joints)
 
   return true;
 }
+
 
 // The entry point from outside
 bool Robot::connect()
@@ -186,8 +186,6 @@ bool Robot::connect()
   motion_->init(qi_joints_);
   if (use_dcm_)
     dcm_->init(qi_joints_);
-
-  hw_enabled_ = checkJoints();
 
   //read joints names to initialize the joint_states topic
   joint_states_topic_.header.frame_id = "base_link";
@@ -324,10 +322,10 @@ void Robot::controllerLoop()
 
     stiffness_pub_.publish(stiffness_);
 
+    readJoints();
+
     if (!diagnostics_->publish())
       stopService();
-
-    readJoints();
 
     //motion_->stiffnessInterpolation(diagnostics_->getForcedJoints(), 0.3f, 2.0f);
 
@@ -412,42 +410,21 @@ void Robot::publishBaseFootprint(const ros::Time &ts)
                                                                  base_link_frame, "base_footprint"));
 }
 
-std::vector <bool> Robot::checkJoints()
-{
-  std::vector <bool> hw_enabled;
-  hw_enabled.reserve(hw_joints_.size());
-  hw_enabled.resize(hw_joints_.size(), false);
-
-  //store joints angles
-  std::vector<std::string>::iterator hw_j = hw_joints_.begin();
-  std::vector<std::string>::iterator qi_j = qi_joints_.begin();
-  std::vector<bool>::iterator hw_enabled_j = hw_enabled.begin();
-
-  for(; hw_j != hw_joints_.end(); ++hw_j, ++hw_enabled_j)
-  {
-    if (*hw_j == *qi_j)
-    {
-      *hw_enabled_j = true;
-      ++qi_j;
-    }
-  }
-  return hw_enabled;
-}
-
 void Robot::readJoints()
 {
   //read memory keys for joint/position/sensor
   std::vector<float> qi_joints_positions = memory_->getListData();
 
   //store joints angles
+  std::vector<std::string>::iterator hw_j = hw_joints_.begin();
   std::vector<double>::iterator hw_command_j = hw_commands_.begin();
   std::vector<double>::iterator hw_angle_j = hw_angles_.begin();
   std::vector<float>::iterator qi_position_j = qi_joints_positions.begin();
-  std::vector<bool>::iterator hw_enabled_j = hw_enabled_.begin();
+  std::vector<std::string>::iterator qi_j = qi_joints_.begin();
 
-  for(; hw_command_j != hw_commands_.end(); ++hw_command_j, ++hw_angle_j, ++hw_enabled_j)
+  for(; hw_command_j != hw_commands_.end(); ++hw_command_j, ++hw_angle_j, ++hw_j)
   {
-    if (!*hw_enabled_j)
+    if (*hw_j != *qi_j)
       continue;
 
     *hw_angle_j = *qi_position_j;
@@ -455,6 +432,7 @@ void Robot::readJoints()
     *hw_command_j = *qi_position_j;
 
     //increment qi iterators
+    ++qi_j;
     ++qi_position_j;
   }
 }
@@ -473,23 +451,26 @@ void Robot::writeJoints()
 {
   // Check if there is some change in joints values
   bool changed(false);
-  std::vector<double>::iterator hw_angle_j = hw_angles_.begin();
-  std::vector<double>::iterator hw_command_j = hw_commands_.begin();
-  std::vector<double>::iterator qi_command_j = qi_commands_.begin();
-  std::vector<bool>::iterator hw_enabled_j = hw_enabled_.begin();
-  for(int i=0; hw_command_j != hw_commands_.end(); ++i, ++hw_command_j, ++hw_angle_j, ++hw_enabled_j)
+  std::vector<std::string>::iterator qi_j = qi_joints_.begin();
+  std::vector<std::string>::iterator hw_j = hw_joints_.begin();
+  std::vector<double>::iterator it_now = hw_angles_.begin();
+  std::vector<double>::iterator it_command = hw_commands_.begin();
+  std::vector<double>::iterator it_qi_command = qi_commands_.begin();
+  for(int i=0; it_command != hw_commands_.end(); ++i, ++it_command, ++it_now, ++hw_j)
   {
-    if (!*hw_enabled_j)
-      continue;
+    if (*hw_j == *qi_j)
+    {
+      *it_qi_command = *it_command;
+      ++qi_j;
+      ++it_qi_command;
+    }
 
-    *qi_command_j = *hw_command_j;
-    ++qi_command_j;
-
-    double diff = std::fabs(*hw_command_j - *hw_angle_j);
+    double diff = fabs(*it_command - *it_now);
     if(diff > joint_precision_)
     {
       //ROS_INFO_STREAM(" joint " << i << " : diff=" << diff);
       changed = true;
+      break;
     }
   }
 
