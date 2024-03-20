@@ -388,15 +388,6 @@ void leg(ros::NodeHandle& nh){
     ROS_INFO_STREAM("----------[END LEG CONTROL TEST]-----------");
 }
 
-// Function to convert quaternion to yaw
-double getYawFromQuaternion(const geometry_msgs::Quaternion& quat) {
-    tf::Quaternion q(quat.x, quat.y, quat.z, quat.w);
-    tf::Matrix3x3 m(q);
-    double roll, pitch, yaw;
-    m.getRPY(roll, pitch, yaw);
-    return yaw;
-}
-
 // Main control function
 void wheels(ros::NodeHandle& nh) {
     std::string wheelTopic = extractTopic("Wheels");
@@ -418,14 +409,12 @@ void wheels(ros::NodeHandle& nh) {
 
         ros::Duration elapsedTime = ros::Time::now() - startTime;
 
-        std::cout << "Elapsed Time: " << elapsedTime.toSec() << " seconds" << std::endl;
-
         switch (state) {
             case MOVE_FORWARD:
                 msg.linear.x = 0.2;
                 msg.angular.z = 0.0;
                 pub.publish(msg);
-                if (elapsedTime.toSec() >= 5.0) { // Move forward for 5 seconds
+                if (elapsedTime.toSec() >= 3.0) { // Move forward for 3 seconds
                     startTime = ros::Time::now();
                     state = MOVE_BACKWARD;
                 }
@@ -435,7 +424,7 @@ void wheels(ros::NodeHandle& nh) {
                 msg.linear.x = -0.2;
                 msg.angular.z = 0.0;
                 pub.publish(msg);
-                if (elapsedTime.toSec() >= 5.0) { // Move backward for 5 seconds
+                if (elapsedTime.toSec() >= 3.0) { // Move backward for 3 seconds
                     startTime = ros::Time::now();
                     state = ROTATE_CLOCKWISE;
                 }
@@ -445,7 +434,7 @@ void wheels(ros::NodeHandle& nh) {
                 msg.linear.x = 0.0;
                 msg.angular.z = 0.2;
                 pub.publish(msg);
-                if (elapsedTime.toSec() >= 5.0) { // Rotate clockwise for 5 seconds
+                if (elapsedTime.toSec() >= 6.0) { // Rotate clockwise for 6 seconds
                     startTime = ros::Time::now();
                     state = ROTATE_COUNTER_CLOCKWISE;
                 }
@@ -455,7 +444,7 @@ void wheels(ros::NodeHandle& nh) {
                 msg.linear.x = 0.0;
                 msg.angular.z = -0.2;
                 pub.publish(msg);
-                if (elapsedTime.toSec() >= 5.0) { // Rotate counter-clockwise for 5 seconds
+                if (elapsedTime.toSec() >= 6.0) { // Rotate counter-clockwise for 6 seconds
                     state = STOP;
                     shutdownInitiated = true; 
                 }
