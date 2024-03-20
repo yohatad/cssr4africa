@@ -432,7 +432,7 @@ void wheels(ros::NodeHandle& nh) {
 
             case ROTATE_CLOCKWISE:
                 msg.linear.x = 0.0;
-                msg.angular.z = 0.2;
+                msg.angular.z = 0.3;
                 pub.publish(msg);
                 if (elapsedTime.toSec() >= 6.0) { // Rotate clockwise for 6 seconds
                     startTime = ros::Time::now();
@@ -442,7 +442,7 @@ void wheels(ros::NodeHandle& nh) {
 
             case ROTATE_COUNTER_CLOCKWISE:
                 msg.linear.x = 0.0;
-                msg.angular.z = -0.2;
+                msg.angular.z = -0.3;
                 pub.publish(msg);
                 if (elapsedTime.toSec() >= 6.0) { // Rotate counter-clockwise for 6 seconds
                     state = STOP;
