@@ -5,13 +5,17 @@
 #include <ros/package.h>
 #include <actionlib/client/simple_action_client.h>
 #include <control_msgs/FollowJointTrajectoryAction.h>
+#include <geometry_msgs/Twist.h>
+#include <nav_msgs/Odometry.h>
+#include <tf/tf.h>
+
 #include <thread>
 #include <fstream>
 #include <string>
 #include <boost/algorithm/string.hpp>
-#include <geometry_msgs/Twist.h>
 #include <vector>
-#include <cmath>   
+#include <cmath>
+#include <signal.h>  
 
 #define ROS
 typedef actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction> ControlClient;
@@ -23,11 +27,12 @@ std::string extractMode();
 std::vector<std::string> extractTests(std::string set);
 void promptAndExit(int status);
 void promptAndContinue();
+void signalHandler(int signum);
+
 void moveToPosition(ControlClientPtr& client, const std::vector<std::string>& jointNames, double duration, 
                     const std::string& positionName, std::vector<double> positions);
 void executeTestsSequentially(const std::vector<std::string>& testNames, ros::NodeHandle& nh);
 void executeTestsInParallel(const std::vector<std::string>& testNames, ros::NodeHandle& nh);
-void publishPosition(ros::Publisher &pub, geometry_msgs::Twist &msg, ros::Rate &rate);
 
 std::vector<std::vector<double>> calculateDuration(std::vector<double> homePosition, std::vector<double> maxPosition, std::vector<double> minPosition, std::vector<std::vector<double>> velocity);
 
