@@ -414,7 +414,7 @@ void wheels(ros::NodeHandle& nh) {
                 msg.linear.x = 0.2;
                 msg.angular.z = 0.0;
                 pub.publish(msg);
-                if (elapsedTime.toSec() >= 3.0) { // Move forward for 3 seconds
+                if (elapsedTime.toSec() >= 5.0) { // Move forward for 3 seconds
                     startTime = ros::Time::now();
                     state = MOVE_BACKWARD;
                 }
@@ -424,7 +424,7 @@ void wheels(ros::NodeHandle& nh) {
                 msg.linear.x = -0.2;
                 msg.angular.z = 0.0;
                 pub.publish(msg);
-                if (elapsedTime.toSec() >= 3.0) { // Move backward for 3 seconds
+                if (elapsedTime.toSec() >= 5.0) { // Move backward for 3 seconds
                     startTime = ros::Time::now();
                     state = ROTATE_CLOCKWISE;
                 }
