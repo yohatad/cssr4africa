@@ -33,8 +33,6 @@ void moveToPosition(ControlClientPtr& client, const std::vector<std::string>& jo
                     const std::string& positionName, std::vector<double> positions);
 void executeTestsSequentially(const std::vector<std::string>& testNames, ros::NodeHandle& nh);
 void executeTestsInParallel(const std::vector<std::string>& testNames, ros::NodeHandle& nh);
-void odomCallback(const nav_msgs::Odometry::ConstPtr& msg);
-double getYawFromQuaternion(const geometry_msgs::Quaternion& quat);
 
 std::vector<std::vector<double>> calculateDuration(std::vector<double> homePosition, std::vector<double> maxPosition, std::vector<double> minPosition, std::vector<std::vector<double>> velocity);
 

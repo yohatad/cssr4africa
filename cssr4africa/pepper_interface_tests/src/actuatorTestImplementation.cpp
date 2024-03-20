@@ -27,9 +27,9 @@
 
 # include "pepper_interface_tests/actuatorTest.h"
 
-// Global variables to hold positions for the wheels
-double startX, startTheta, currentX, currentTheta;
-bool isStartPositionSaved = false;
+// Global variables for the wheels
+bool shutdownInitiated = false;
+ros::Time startTime;
 ros::Publisher pub;
 
 enum Robotstate{
@@ -397,105 +397,83 @@ double getYawFromQuaternion(const geometry_msgs::Quaternion& quat) {
     return yaw;
 }
 
-void odomCallback(const nav_msgs::Odometry::ConstPtr& msg) {
-    if (!isStartPositionSaved) {
-        // Save the starting position and yaw
-        startX = currentX = msg->pose.pose.position.x; 
-        startTheta = currentTheta = getYawFromQuaternion(msg->pose.pose.orientation);
-        isStartPositionSaved = true;
-    } else {
-        // Update the current position and yaw
-        currentX = msg->pose.pose.position.x;
-        currentTheta = getYawFromQuaternion(msg->pose.pose.orientation);
-    }
-}
-
-void wheels(ros::NodeHandle& nh){
+// Main control function
+void wheels(ros::NodeHandle& nh) {
     std::string wheelTopic = extractTopic("Wheels");
-    std::string odomTopic = extractTopic("Odometry");
-
-    double distance;
-    double angle;
 
     pub = nh.advertise<geometry_msgs::Twist>(wheelTopic, 1000);
     ros::Rate rate(10);
 
     signal(SIGINT, signalHandler);
 
-    ros::Subscriber sub = nh.subscribe(odomTopic, 1000, odomCallback);
-
     geometry_msgs::Twist msg;
 
     ROS_INFO_STREAM("----------[START WHEEL CONTROL TEST]-----------");
 
-    bool shutdownInitiated = false;
+    // Initialize the start time
+    startTime = ros::Time::now();
 
-    while(ros::ok()){
+    while (ros::ok()) {
         ros::spinOnce();
 
-        double distance = currentX - startX;
-        double angle = currentTheta - startTheta;
+        ros::Duration elapsedTime = ros::Time::now() - startTime;
 
-        std::cout<<"Distance: "<<distance<<", Angle: "<<angle<<std::endl;
+        std::cout << "Elapsed Time: " << elapsedTime.toSec() << " seconds" << std::endl;
 
-        switch(state){
+        switch (state) {
             case MOVE_FORWARD:
                 msg.linear.x = 0.2;
                 msg.angular.z = 0.0;
                 pub.publish(msg);
-                if (fabs(currentX - startX) >= 1.0){
-                    startX = currentX;
-                    startTheta = currentTheta;
+                if (elapsedTime.toSec() >= 5.0) { // Move forward for 5 seconds
+                    startTime = ros::Time::now();
                     state = MOVE_BACKWARD;
                 }
                 break;
-            
+
             case MOVE_BACKWARD:
                 msg.linear.x = -0.2;
                 msg.angular.z = 0.0;
                 pub.publish(msg);
-                if (fabs(currentX - startX) >= 1.0){
-                    startX = currentX;
-                    startTheta = currentTheta;
+                if (elapsedTime.toSec() >= 5.0) { // Move backward for 5 seconds
+                    startTime = ros::Time::now();
                     state = ROTATE_CLOCKWISE;
                 }
                 break;
-            
+
             case ROTATE_CLOCKWISE:
                 msg.linear.x = 0.0;
                 msg.angular.z = 0.2;
                 pub.publish(msg);
-                if (fabs(currentTheta - startTheta) >= 1.57){
-                    startX = currentX;
-                    startTheta = currentTheta;
+                if (elapsedTime.toSec() >= 5.0) { // Rotate clockwise for 5 seconds
+                    startTime = ros::Time::now();
                     state = ROTATE_COUNTER_CLOCKWISE;
                 }
                 break;
-            
+
             case ROTATE_COUNTER_CLOCKWISE:
                 msg.linear.x = 0.0;
                 msg.angular.z = -0.2;
                 pub.publish(msg);
-                if (fabs(currentTheta - startTheta) >= 1.57){
+                if (elapsedTime.toSec() >= 5.0) { // Rotate counter-clockwise for 5 seconds
                     state = STOP;
-                    shutdownInitiated = true; // Indicate that shutdown should occur after STOP.
+                    shutdownInitiated = true; 
                 }
                 break;
-            
+
             case STOP:
                 msg.linear.x = 0.0;
                 msg.angular.z = 0.0;
                 pub.publish(msg);
-                if(shutdownInitiated) {
-                    // Wait for a short duration before shutdown to ensure message delivery.
+                if (shutdownInitiated) {
                     ros::Duration(1.0).sleep();
                     ROS_INFO_STREAM("----------[END WHEEL CONTROL TEST]-----------");
                     ros::shutdown();
                 }
                 break;
         }
-            
-        rate.sleep();   
+
+        rate.sleep();
     }
 }
 

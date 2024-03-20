@@ -47,7 +47,7 @@ void backSonar(ros::NodeHandle nh){
     ROS_INFO_STREAM("Subscribing to : " << topicName << "\n" ); // Print the topic name
     ros::Duration(1).sleep();
 
-    // Subscribe to the /pepper/sonarback topic and associate it with the callback function
+    // Subscribe to the backsonar topic and associate it with the callback function
     ros::Subscriber sub = nh.subscribe(topicName, 1, backSonarMessageReceived);
 
     // Listen for incoming messages and execute the callback function
