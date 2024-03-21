@@ -4,6 +4,7 @@
   <arg name="robot_port"        default="9559" />
   <arg name="roscore_ip"        default="127.0.0.1" />
   <arg name="network_interface" default="eth0" />
+  <arg name="namespace" default="naoqi_driver" />
 
  	<!-- Call Robot publisher -->
   <include file="$(find pepper_description)/launch/pepper_upload.launch" />
@@ -25,5 +26,10 @@
     <param name="use_dcm"             value="false" />
     <param name="max_stiffness"       value="0.9" />
   </node>
+
+  <!-- Launch naoqi_driver_node -->
+  <node pkg="naoqi_driver" type="naoqi_driver_node" name="$(arg namespace)" required="true"
+    args="--qi-url=tcp://$(arg robot_ip):$(arg robot_port) --roscore_ip=$(arg roscore_ip) --network_interface=$(arg network_interface) --namespace=$(arg namespace)"
+    output="screen" />
 	
 </launch>
