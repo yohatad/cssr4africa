@@ -4,7 +4,7 @@
   <arg name="robot_port"        default="9559" />
   <arg name="roscore_ip"        default="127.0.0.1" />
   <arg name="network_interface" default="eth0" />
-  <arg name="namespace" default="naoqi_driver" />
+  <arg name="namespace"         default="naoqi_driver" />
 
  	<!-- Call Robot publisher -->
   <include file="$(find pepper_description)/launch/pepper_upload.launch" />

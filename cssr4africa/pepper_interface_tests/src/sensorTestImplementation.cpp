@@ -44,10 +44,10 @@ void backSonar(ros::NodeHandle nh){
         return; // Exit the function early if no valid topic is found
     }
 
-    ROS_INFO_STREAM("Subscribing to : " << topicName << "\n" ); // Print the topic name
+    ROS_INFO_STREAM("Subscribing to : " << topicName << "\n" ); 
     ros::Duration(1).sleep();
 
-    // Subscribe to the backsonar topic and associate it with the callback function
+    // Subscribe to the back sonar topic and associate it with the callback function
     ros::Subscriber sub = nh.subscribe(topicName, 1, backSonarMessageReceived);
 
     // Listen for incoming messages and execute the callback function
@@ -72,10 +72,10 @@ void frontSonar(ros::NodeHandle nh){
         return; // Exit the function early if no valid topic is found
     }
 
-    ROS_INFO_STREAM("Subscribing to :" << topicName << "\n"  ); // Print the topic name
+    ROS_INFO_STREAM("Subscribing to :" << topicName << "\n"  ); 
     ros::Duration(1).sleep();
 
-    // Create an image transport subscriber
+    // create a subscriber to the front sonar topic and associate it with the callback function
     ros::Subscriber sub = nh.subscribe(topicName, 1, frontSonarMessageReceived);
 
     // Listen for incoming messages and execute the callback function
@@ -206,12 +206,11 @@ void laserSensor(ros::NodeHandle nh){
         return; // Exit the function early if no valid topic is found
     }
 
-    ROS_INFO_STREAM("Start " << topicName << " Subscribe Test \n"  ); // Print the topic name
+    ROS_INFO_STREAM("Start " << topicName << " Subscribe Test \n"  ); 
     ros::Duration(1).sleep();
     
     ros::Subscriber sub = nh.subscribe(topicName, 1, laserSensorMessageReceived);
     
-    // Listen for incoming messages and execute the callback function
     ros::Rate rate(30); 
     ros::Time startTime = ros::Time::now(); // start now
     ros::Duration waitTime = ros::Duration(timeDuration);  
@@ -234,12 +233,11 @@ void odom(ros::NodeHandle nh){
         return; // Exit the function early if no valid topic is found
     }
 
-    ROS_INFO_STREAM("Start " << topicName << " Subscribe Test \n"  ); // Print the topic name
+    ROS_INFO_STREAM("Start " << topicName << " Subscribe Test \n"  ); 
     ros::Duration(1).sleep();
     
     ros::Subscriber sub = nh.subscribe(topicName, 1, odomMessageReceived);
     
-    // Listen for incoming messages and execute the callback function
     ros::Rate rate(30); 
     ros::Time startTime = ros::Time::now();             // start now
     ros::Duration waitTime = ros::Duration(timeDuration);  
@@ -262,14 +260,13 @@ void imu(ros::NodeHandle nh){
         return; // Exit the function early if no valid topic is found
     }
 
-    ROS_INFO_STREAM("Start " << topicName << " Subscribe Test \n"  ); // Print the topic name
+    ROS_INFO_STREAM("Start " << topicName << " Subscribe Test \n"  ); 
     ros::Duration(1).sleep();
     
     ros::Subscriber sub = nh.subscribe(topicName, 1, imuMessageReceived);
     
-    // Listen for incoming messages and execute the callback function
     ros::Rate rate(30); 
-    ros::Time startTime = ros::Time::now();                         // start now
+    ros::Time startTime = ros::Time::now();                         
     ros::Duration waitTime = ros::Duration(timeDuration);  
     ros::Time endTime = startTime + waitTime;   
     
@@ -290,12 +287,11 @@ void jointState(ros::NodeHandle nh){
         return; // Exit the function early if no valid topic is found
     }
 
-    ROS_INFO_STREAM("Start " << topicName << " Subscribe Test \n"  ); // Print the topic name
+    ROS_INFO_STREAM("Start " << topicName << " Subscribe Test \n"  ); 
     ros::Duration(1).sleep();
     
     ros::Subscriber sub = nh.subscribe(topicName, 1, jointStateMessageReceived);
     
-    // Listen for incoming messages and execute the callback function
     ros::Rate rate(30); 
     ros::Time startTime = ros::Time::now(); // start now
     ros::Duration waitTime = ros::Duration(timeDuration);  
@@ -313,15 +309,15 @@ void speech(ros::NodeHandle nh){
     // Assuming extractTopic is a custom function that returns a std::string
     std::string topicName = extractTopic("Speech");
 
-    // Publish the speech message "Hello Pepper"
+    // Publish the speech message 
     ros::Publisher pub = nh.advertise<std_msgs::String>(topicName, 1);
-    ros::Duration(1).sleep(); // Wait for the connection to establish
+    ros::Duration(1).sleep();                   // Wait for the connection to establish
 
     std_msgs::String msg;
     msg.data = "This is the CSSR4Africa speaker test.";
     pub.publish(msg);
-    ros::spinOnce(); // Process incoming messages once. Not typically necessary for a publisher only.
-    ros::Duration(1).sleep(); // Ensure there's time for the message to be sent before the program potentially exits
+    ros::spinOnce();                            // Process incoming messages once. Not typically necessary for a publisher only.
+    ros::Duration(1).sleep(); 
 }
 
 
@@ -336,7 +332,7 @@ void stereoCamera(ros::NodeHandle nh){
         return; // Exit the function early if no valid topic is found
     }
 
-    ROS_INFO_STREAM("Start " << topicName << " Subscribe Test \n"  ); // Print the topic name
+    ROS_INFO_STREAM("Start " << topicName << " Subscribe Test \n"  ); 
     ros::Duration(1).sleep();
 
     image_transport::ImageTransport it(nh);
@@ -384,7 +380,7 @@ void microphone(ros::NodeHandle nh) {
     ros::Subscriber sub = nh.subscribe(topicName, 1000, microphoneMessageReceived);
     
     for (int i = 0; i < 4; ++i) { // Four channels to record
-        // print the channel being recorded
+
         ROS_INFO_STREAM("Recording channel " << currentChannel << "\n");
         
         ros::Time startTime = ros::Time::now();
@@ -749,12 +745,12 @@ void frontSonarMessageReceived(const sensor_msgs::Range& msg) {
     // Print a message indicating that sonar data is being printed
     ROS_INFO_STREAM("[MESSAGES] Printing front sonar data received.\n");
 
-    ROS_INFO_STREAM("Frame id: " << msg.header.frame_id << "\n" );          // Print the frame ID of the received message
-    ROS_INFO_STREAM("Field of view: " << msg.field_of_view << "\n" );       // Print the field of view of the sonar sensor
-    ROS_INFO_STREAM("Minimum range value: " << msg.min_range << "\n" );     // Print the minimum range value reported by the sonar sensor
-    ROS_INFO_STREAM("Maximum range value: " << msg.max_range << "\n" );     // Print the maximum range value reported by the sonar sensor
-    ROS_INFO_STREAM("Range value: " << msg.range << "\n" );                 // Print the received range value reported by the sonar sensor
-    ROS_INFO_STREAM("[END MESSAGES] Finished printing.\n");                 // Print a message indicating the end of printing sonar data
+    ROS_INFO_STREAM("Frame id: " << msg.header.frame_id << "\n" );          
+    ROS_INFO_STREAM("Field of view: " << msg.field_of_view << "\n" );       
+    ROS_INFO_STREAM("Minimum range value: " << msg.min_range << "\n" );     
+    ROS_INFO_STREAM("Maximum range value: " << msg.max_range << "\n" );     
+    ROS_INFO_STREAM("Range value: " << msg.range << "\n" );                 
+    ROS_INFO_STREAM("[END MESSAGES] Finished printing.\n");                 
 
     // set the main path for the output file
     #ifdef ROS
@@ -1188,8 +1184,8 @@ std::vector<std::string> extractTests(std::string set){
     bool debug = false;   // used to turn debug message on
     
     std::string inputFileName = "sensorTestInput.ini";  // input filename
-    std::string inputPath;                             // input path
-    std::string inputPathFile;                         // input path and filename
+    std::string inputPath;                              // input path
+    std::string inputPathFile;                          // input path and filename
     
     std::vector<std::string> testName;
     std::string flag;

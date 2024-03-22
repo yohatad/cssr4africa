@@ -78,7 +78,7 @@ ControlClientPtr createClient(const std::string& topicName) {
 
 
 void moveToPosition(ControlClientPtr& client, const std::vector<std::string>& jointNames, double duration, 
-                        const std::string& positionName, std::vector<double> positions){
+                    const std::string& positionName, std::vector<double> positions) {
     
     control_msgs::FollowJointTrajectoryGoal goal;
     trajectory_msgs::JointTrajectory& trajectory = goal.trajectory;
@@ -89,8 +89,24 @@ void moveToPosition(ControlClientPtr& client, const std::vector<std::string>& jo
     trajectory.points[0].time_from_start = ros::Duration(duration);
 
     client->sendGoal(goal);
-    client->waitForResult(ros::Duration(10.0)); // Adjust the timeout as needed
+
+    // Wait for the action to finish and check the result.
+    bool finishedBeforeTimeout = client->waitForResult(ros::Duration(10.0)); // Adjust the timeout as needed
+
+    if (finishedBeforeTimeout) {
+        actionlib::SimpleClientGoalState state = client->getState();
+        ROS_INFO("Action finished: %s", state.toString().c_str());
+
+        if (state == actionlib::SimpleClientGoalState::SUCCEEDED) {
+            ROS_INFO("Successfully moved to %s position.", positionName.c_str());
+        } else {
+            ROS_WARN("The action failed to move to %s position. State: %s", positionName.c_str(), state.toString().c_str());
+        }
+    } else {
+        ROS_WARN("The action did not finish before the timeout.");
+    }
 }
+
 
 // generate duration by taking the velocity max, min and home position (t = (max - min) / velocity)
 std::vector<std::vector<double>> calculateDuration(std::vector<double> homePosition, std::vector<double> maxPosition, std::vector<double> minPosition, std::vector<std::vector<double>> velocity){
@@ -122,9 +138,9 @@ void head(ros::NodeHandle& nh) {
     std::vector<double> position(2, 0.0);
     
     // Minimum and maximum positions for each joint
-    std::vector<double> minPosition = {-0.7068, -2.0857};
-    std::vector<double> maxPosition = {0.4451, 2.0857};
-    std::vector<double> homePosition = {-0.2, 0.012271};
+    std::vector<double> minPosition = {-0.706, -2.085};
+    std::vector<double> maxPosition = {0.445, 2.085};
+    std::vector<double> homePosition = {-0.2, 0.012};
     
     std::vector<std::vector<double>> velocities = {{1.5, 1.5, 1.5},{1.2, 1.2, 1.2}};
     std::vector<std::vector<double>> duration = calculateDuration(homePosition, maxPosition, minPosition, velocities);
@@ -135,15 +151,12 @@ void head(ros::NodeHandle& nh) {
     for (int i = 0; i < jointNames.size(); ++i) {
         ROS_INFO_STREAM("[START] " << jointNames[i] << " test.");
 
-        ROS_INFO_STREAM("Moving to the Minimum position");
         position[i] = minPosition[i];
         moveToPosition(headClient, jointNames, duration[i][0], "min", position);
 
-        ROS_INFO_STREAM("Moving to the Maximum position");
         position[i] = maxPosition[i];
         moveToPosition(headClient, jointNames, duration[i][1], "max", position);
 
-        ROS_INFO_STREAM("Moving to the Mid-range position");
         position[i] = (maxPosition[i] + minPosition[i]) / 2.0;
         moveToPosition(headClient, jointNames, duration[i][2], "mid", position);
 
@@ -166,9 +179,9 @@ void rArm(ros::NodeHandle& nh){
     std::vector<std::string> jointNames = {"RShoulderPitch", "RShoulderRoll",  "RElbowRoll", "RElbowYaw", "RWristYaw"};
     std::vector<double> position(5, 0.0);
     
-    // Maximum and minimum positions for each joint
-    std::vector<double> maxPosition = {2.0857,  -0.0087,  1.5620,  2.0857,  1.8239};
+    // Minimum and maximum positions for each joint
     std::vector<double> minPosition = {-2.0857, -1.5620 , 0.0087, -2.0857, -1.5620};
+    std::vector<double> maxPosition = {2.0857,  -0.0087,  1.5620,  2.0857,  1.8239};
     std::vector<double> homePosition = {1.7410, -0.09664, 0.09664, 1.6981, -0.05679};
   
     std::vector<std::vector<double>> velocity = {{1.5, 1.5, 0.1}, {1.2, 0.8, 0.15},{0.1, 0.8, 1.2}, {2.0, 1.5, 0.2}, {1.8, 1.8, 1.8}};
@@ -180,15 +193,12 @@ void rArm(ros::NodeHandle& nh){
     for (int i = 0; i < jointNames.size(); ++i) {
         ROS_INFO_STREAM("[START] " << jointNames[i] << " test.");
 
-        ROS_INFO_STREAM("Moving to the Minimum position");
         position[i] = minPosition[i];
         moveToPosition(rightArmClient, jointNames, duration[i][0], "min", position);
 
-        ROS_INFO_STREAM("Moving to the Maximum position");
         position[i] = maxPosition[i];
         moveToPosition(rightArmClient, jointNames, duration[i][1], "max", position);
 
-        ROS_INFO_STREAM("Moving to the Mid-range position");
         position[i] = (maxPosition[i] + minPosition[i]) / 2.0;
         moveToPosition(rightArmClient, jointNames, duration[i][2], "mid", position);
 
@@ -225,15 +235,12 @@ void rHand(ros::NodeHandle& nh){
     for (int i = 0; i < jointNames.size(); ++i) {
         ROS_INFO_STREAM("[START] " << jointNames[i] << " test.");
 
-        ROS_INFO_STREAM("Moving to the Minimum position");
         position[i] = minPosition[i];
         moveToPosition(rightHandClient, jointNames, duration, "min", position);
 
-        ROS_INFO_STREAM("Moving to the Maximum position");
         position[i] = maxPosition[i];
         moveToPosition(rightHandClient, jointNames, duration, "max", position);
 
-        ROS_INFO_STREAM("Moving to the Mid-range position");
         position[i] = (maxPosition[i] + minPosition[i]) / 2.0;
         moveToPosition(rightHandClient, jointNames, duration, "mid", position);
 
@@ -257,9 +264,9 @@ void lArm(ros::NodeHandle& nh){
     std::vector<std::string> jointNames = {"LShoulderPitch", "LShoulderRoll", "LElbowRoll", "LElbowYaw", "LWristYaw"};
     std::vector<double> position(5, 0.0);
     
-    // Maximum and minimum positions for each joint
-    std::vector<double> maxPosition = {-2.0857, 1.5620 , -0.0087,  2.0857,   1.8239};
+    // Minimum and maximum positions for each joint
     std::vector<double> minPosition = {2.0857,  0.0087,  -1.5620, -2.0857,  -1.8239};
+    std::vector<double> maxPosition = {-2.0857, 1.5620 , -0.0087,  2.0857,   1.8239};
     std::vector<double> homePosition = {1.7625, 0.09970, -0.1334, -1.7150,  0.06592};
 
     std::vector<std::vector<double>> velocities = {{1.5, 1.5, 0.1},{1.2, 0.8, 0.15},{0.1, 0.9, 1.2},{2.1, 1.5, 0.2},{1.8, 1.8, 1.9}};
@@ -271,15 +278,12 @@ void lArm(ros::NodeHandle& nh){
     for (int i = 0; i < jointNames.size(); ++i) {
         ROS_INFO_STREAM("[START] " << jointNames[i] << " test.");
 
-        ROS_INFO_STREAM("Moving to the Minimum position");
         position[i] = maxPosition[i];
         moveToPosition(leftArmClient, jointNames, duration[i][0], "min", position);
 
-        ROS_INFO_STREAM("Moving to the Maximum position");
         position[i] = minPosition[i];
         moveToPosition(leftArmClient, jointNames, duration[i][1], "max", position);
 
-        ROS_INFO_STREAM("Moving to the Mid-range position");
         position[i] = (minPosition[i] + maxPosition[i]) / 2.0;
         moveToPosition(leftArmClient, jointNames, duration[i][2], "mid", position);
 
@@ -317,15 +321,12 @@ void lHand(ros::NodeHandle& nh){
     for (int i = 0; i < jointNames.size(); ++i) {
         ROS_INFO_STREAM("[START] " << jointNames[i] << " test.");
 
-        ROS_INFO_STREAM("Moving to the Minimum position");
         position[i] = minPosition[i];
         moveToPosition(leftHandClient, jointNames, duration, "min", position);
 
-        ROS_INFO_STREAM("Moving to the Maximum position");
         position[i] = maxPosition[i];
         moveToPosition(leftHandClient, jointNames, duration, "max", position);
 
-        ROS_INFO_STREAM("Moving to the Mid-range position");
         position[i] = (maxPosition[i] + minPosition[i]) / 2.0;
         moveToPosition(leftHandClient, jointNames, duration, "mid", position);
 
@@ -349,9 +350,9 @@ void leg(ros::NodeHandle& nh){
     std::vector<double> position(3, 0.0);
     
     
-    // Maximum and minimum positions for each joint
-    std::vector<double> maxPosition = {1.0385,   0.5149,   0.5149};
+    // Minimum and maximum positions for each joint
     std::vector<double> minPosition = {-1.0385, -0.5149 , -0.5149};
+    std::vector<double> maxPosition = {1.0385,   0.5149,   0.5149};
     std::vector<double> homePosition = {-0.0107, -0.00766, 0.03221};
 
     std::vector<std::vector<double>> velocities = {{0.5, 0.5, 0.5},{0.5, 0.5, 0.5},{0.5, 0.5, 0.5}};
@@ -364,15 +365,12 @@ void leg(ros::NodeHandle& nh){
     for (int i = 0; i < jointNames.size(); ++i) {
         ROS_INFO_STREAM("[START] " << jointNames[i] << " test.");
 
-        ROS_INFO_STREAM("Moving to the Minimum position");
         position[i] = minPosition[i];
         moveToPosition(legClient, jointNames, duration[i][0], "min", position);
 
-        ROS_INFO_STREAM("Moving to the Maximum position");
         position[i] = maxPosition[i];
         moveToPosition(legClient, jointNames, duration[i][1], "max", position);
 
-        ROS_INFO_STREAM("Moving to the Mid-range position");
         position[i] = (maxPosition[i] + minPosition[i]) / 2.0;
         moveToPosition(legClient, jointNames, duration[i][2], "mid", position);
 
@@ -399,10 +397,10 @@ void wheels(ros::NodeHandle& nh) {
 
     geometry_msgs::Twist msg;
 
-    ROS_INFO_STREAM("----------[START WHEEL CONTROL TEST]-----------");
-
     // Initialize the start time
     startTime = ros::Time::now();
+
+    ROS_INFO_STREAM("----------[START WHEEL CONTROL TEST]-----------");
 
     while (ros::ok()) {
         ros::spinOnce();
@@ -414,7 +412,7 @@ void wheels(ros::NodeHandle& nh) {
                 msg.linear.x = 0.2;
                 msg.angular.z = 0.0;
                 pub.publish(msg);
-                if (elapsedTime.toSec() >= 5.0) { // Move forward for 3 seconds
+                if (elapsedTime.toSec() >= 5.0) { // Move forward for 5 seconds
                     startTime = ros::Time::now();
                     state = MOVE_BACKWARD;
                 }
@@ -424,7 +422,7 @@ void wheels(ros::NodeHandle& nh) {
                 msg.linear.x = -0.2;
                 msg.angular.z = 0.0;
                 pub.publish(msg);
-                if (elapsedTime.toSec() >= 5.0) { // Move backward for 3 seconds
+                if (elapsedTime.toSec() >= 5.0) { // Move backward for 5 seconds
                     startTime = ros::Time::now();
                     state = ROTATE_CLOCKWISE;
                 }
@@ -465,7 +463,6 @@ void wheels(ros::NodeHandle& nh) {
         rate.sleep();
     }
 }
-
 /* Extract topic names for the respective simulator or physical robot */
 std::string extractTopic(std::string key){
     bool debug = false;   // used to turn debug message on
