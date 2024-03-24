@@ -30,18 +30,18 @@
 
 * Key | Value
 * --- | ---
-* BackSonar     |   True
-* FrontSonar    |   True    
-* BottomCamera  |   True
-* FrontCamera   |   True
-* DepthCamera   |   True
-* StereoCamera  |   True
-* LaserSensor   |   True
-* Microphone    |   True
-* JointState    |   True
-* Odometry      |   True
-* IMU           |   True
-* Speech        |   True
+* BackSonar     |   true
+* FrontSonar    |   true    
+* BottomCamera  |   true
+* FrontCamera   |   true
+* DepthCamera   |   true
+* StereoCamera  |   true
+* LaserSensor   |   true
+* Microphone    |   true
+* JointState    |   true
+* Odometry      |   true
+* IMU           |   true
+* Speech        |   true
 ...
 * Subscribed Topics and Message Types
 *
@@ -50,13 +50,11 @@
 * /naoqi_driver/camera/front/image_raw          sensor_msgs/Image
 * /naoqi_driver/camera/bottom/image_raw         sensor_msgs/Image
 * /naoqi_driver/camera/depth/image_raw          sensor_msgs/Image
-* /naoqi_driver/camera/stereo/image_raw         sensor_msgs/Image
-* /pepper/laser_2                               sensor_msgs/LaserScan
-* /pepper/microphone/naoqi_microphone           naoqi_driver/AudioCustomMsg
-* /pepper/joint_states                          sensor_msgs/JointState
-* /pepper/odom                                  nav_msgs/Odometry
-* /pepper/imu                                   sensor_msgs/Imu
-* /pepper/naoqi_speech/speech                   std_msgs/String
+* /naoqi_driver/laser                           sensor_msgs/LaserScan
+* /naoqi_driver/audio                           naoqi_driver/AudioCustomMsg
+* /naoqi_driver/joint_states                    sensor_msgs/JointState
+* /naoqi_driver/odom                            nav_msgs/Odometry
+* /naoqi_driver/imu                             sensor_msgs/Imu
 
 * /pepper/sonar_back                            sensor_msgs/Range
 * /pepper/sonar_front                           sensor_msgs/Range
@@ -64,10 +62,12 @@
 * /pepper/camera/bottom/image_raw               sensor_msgs/Image
 * /pepper/camera/depth/image_raw                sensor_msgs/Image
 * /pepper/laser_2                               sensor_msgs/LaserScan
+* /joint_states                                 sensor_msgs/JointState
+* /pepper/odom                                  nav_msgs/Odometry
 ...
 * Published Topics and Message Types
+* /naoqi_driver/speech                          std_msgs/String
 *
-* None
 ...
 * Input Data Files
 *
@@ -76,7 +76,12 @@
 ...
 * Output Data Files
 *
-* sensorTestOutput.dat
+* sensorTestOutput.dat, 
+* frontCameraOutput.mp4,
+* bottomCameraOutput.mp4,
+* depthCameraOutput.mp4,
+* stereoCameraOutput.mp4,
+* microphoneOutput.wav
 ...
 * Configuration Files
 *
@@ -90,11 +95,10 @@
 *
 * Author: Yohannes Tadesse Haile, Carnegie Mellon University Africa
 * Email: yohanneh@andrew.cmu.edu
-* Date: January 11, 2024
+* Date: March 19, 2024
 * Version: v1.0
 *
 */
-
 
 # include "pepper_interface_tests/sensorTest.h"
 
