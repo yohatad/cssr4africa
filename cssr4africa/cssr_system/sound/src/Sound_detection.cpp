@@ -18,6 +18,11 @@ const float distance_between_ears = 0.07;
 const float sampling_rate = 48000;
 const int bufferSize = 4096;
 
+// Print the highest sum_square_leftSound and sum_square_rightSound
+// compare to the previous sum_square_leftSound and sum_square_rightSound
+double prev_sum_square_leftSound = 0;
+double prev_sum_square_rightSound = 0;  
+
 void Itd(float data1[], float data2[]){
     
     float ans[2 * bufferSize];
@@ -28,10 +33,12 @@ void Itd(float data1[], float data2[]){
     for (int i = 0; i < bufferSize; i++) {
         sum_square_leftSound += data1[i] * data1[i];
         sum_square_rightSound += data2[i] * data2[i];
-    }
+    }   
 
-    float threshold = 1000;
-    if (sum_square_leftSound < threshold || sum_square_rightSound < threshold) {
+    float leftThreshold = 2.66608e+07;
+    float rightThreshold = 4.77235e+07;
+
+    if (sum_square_leftSound < leftThreshold || sum_square_rightSound < rightThreshold) {
         std::cout << "azimuth: 0 degree (Front)" << std::endl;
         return;
     }

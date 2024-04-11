@@ -70,7 +70,8 @@
         "hash_map": "cpp",
         "hash_set": "cpp",
         "future": "cpp",
-        "shared_mutex": "cpp"
+        "shared_mutex": "cpp",
+        "filesystem": "cpp"
     },
     "python.autoComplete.extraPaths": [
         "/home/yoha/workspace/pepper_rob_ws/devel/lib/python3/dist-packages",
