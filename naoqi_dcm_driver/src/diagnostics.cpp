@@ -170,7 +170,7 @@ bool Diagnostics::publish()
     if (temperature < temperature_warn_level_)
     {
       status.level = diagnostic_msgs::DiagnosticStatus::OK;
-      status.message = "OK";
+      status.message = "OK";      
     }
     else if (temperature < temperature_error_level_)
     {
