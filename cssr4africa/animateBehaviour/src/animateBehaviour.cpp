@@ -24,18 +24,19 @@ int main(int argc, char **argv) {
     // Load data based on the platform
     loadDataBasedOnPlatform(platform);
 
-    ros::ServiceServer service = nh.advertiseService("animateBehaviour/set_activation", setActivation);
+    // ros::ServiceServer service = nh.advertiseService("animateBehaviour/set_activation", setActivation);
 
-    ROS_INFO("animateBehaviour node started. Waiting for activation...");
+    // ROS_INFO("animateBehaviour node started. Waiting for activation...");
 
     ros::Rate loop_rate(10);
+    
     while (ros::ok()) {
-        if (isActive) {
-            ROS_INFO_THROTTLE(60, "animateBehaviour is active.");
-            animateBehaviour(behaviour, nh); // Call with the loaded behaviour
-        } else {
-            ROS_INFO_ONCE("animateBehaviour node is inactive. Activate to start animating.");
-        }
+        // if (isActive) {
+        //     ROS_INFO_THROTTLE(60, "animateBehaviour is active.");
+        animateBehaviour(behaviour, nh); // Call with the loaded behaviour
+        // } else {
+        //     ROS_INFO_ONCE("animateBehaviour node is inactive. Activate to start animating.");
+        // }
         ros::spinOnce();
         loop_rate.sleep();
     }

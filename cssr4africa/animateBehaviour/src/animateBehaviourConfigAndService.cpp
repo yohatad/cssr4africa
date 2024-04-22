@@ -31,7 +31,7 @@ ControlClientPtr createClient(const std::string& topicName) {
 
     // Exponential backoff parameters
     int maxAttempts = 5;
-    double waitTime = 2.0; // Initial wait time in seconds
+    double waitTime = 5.0; // Initial wait time in seconds
     double backoffMultiplier = 2.0;
 
     for (int attempt = 1; attempt <= maxAttempts; ++attempt) {
@@ -102,7 +102,7 @@ std::string loadConfiguration(const std::string& filename) {
 void loadDataBasedOnPlatform(const std::string& platform) {
     std::string dataFilePath = ros::package::getPath("cssr_system") + "/data/";
     // Select the appropriate data file based on the platform
-    if (platform == "pepper") {
+    if (platform == "robot") {
         dataFilePath += "pepperTopics.dat";
     } else if (platform == "simulator") {
         dataFilePath += "simulatorTopics.dat";
@@ -166,6 +166,7 @@ void initRandomSeed() {
  */
 void moveToPosition(ControlClientPtr& client, const std::vector<std::string>& jointNames,
                     const std::string& positionName, std::vector<double> positions) {
+    
     control_msgs::FollowJointTrajectoryGoal goal;
     trajectory_msgs::JointTrajectory& trajectory = goal.trajectory;
 
@@ -176,28 +177,27 @@ void moveToPosition(ControlClientPtr& client, const std::vector<std::string>& jo
     trajectory.points.resize(1);
     trajectory.points[0].positions = positions;
     trajectory.points[0].time_from_start = ros::Duration(5.0); // Set the time from the start to 5 seconds
+
+    // print out the trajectory points for debugging
+    ROS_INFO("Moving to %s position with the following joint positions:", positionName.c_str());
     
     // Send the goal to the action server
     client->sendGoal(goal);
 
-    // Wait for the action to finish within a timeout period of 30 seconds
-    bool finishedBeforeTimeout = client->waitForResult(ros::Duration(30.0));
+    // Wait for the action to finish and check the result.
+    bool finishedBeforeTimeout = client->waitForResult(ros::Duration(10.0)); // Adjust the timeout as needed
 
-    // Retrieve the state of the action to check if it succeeded or failed
-    actionlib::SimpleClientGoalState state = client->getState();
-    ROS_INFO("Action finished: %s", state.toString().c_str());
+    if (finishedBeforeTimeout) {
+        actionlib::SimpleClientGoalState state = client->getState();
+        ROS_INFO("Action finished: %s", state.toString().c_str());
 
-    // Handle different outcomes based on the state of the action
-    if (state == actionlib::SimpleClientGoalState::SUCCEEDED) {
-        ROS_INFO("Successfully moved to %s position.", positionName.c_str());
-    } else {
-        ROS_ERROR("The action failed to move to %s position. State: %s", positionName.c_str(), state.toString().c_str());
-        // Provide additional feedback based on specific failure states
-        if (state == actionlib::SimpleClientGoalState::REJECTED) {
-            ROS_WARN("Goal was rejected by the server. Check if goal is valid and server is correctly configured.");
-        } else if (state == actionlib::SimpleClientGoalState::ABORTED) {
-            ROS_WARN("Goal was aborted.");
+        if (state == actionlib::SimpleClientGoalState::SUCCEEDED) {
+            ROS_INFO("Successfully moved to %s position.", positionName.c_str());
+        } else {
+            ROS_WARN("The action failed to move to %s position. State: %s", positionName.c_str(), state.toString().c_str());
         }
+    } else {
+        ROS_WARN("The action did not finish before the timeout.");
     }
 }
 
@@ -330,7 +330,8 @@ void lArm(ros::NodeHandle& nh, std::string leftArmTopic, int start, int end) {
     ControlClientPtr leftArmClient = createClient(leftArmTopic);
     
     // Initialize the position with default values for the left arm's joints
-    std::vector<double> position = {1.7625, 0.09970, 0, 0, 0.06592};
+    std::vector<double> position = {1.7625, 0.09970, -0.1334, -1.7150, 0.06592};
+    
     // Define maximum and minimum positions for the left arm's joints
     std::vector<double> maxPosition = {2.0857, 1.5620, -0.0087, 2.0857, 1.8239}; 
     std::vector<double> minPosition = {-2.0857, 0.0087, -1.5620, -2.0857, -1.8239};
@@ -341,10 +342,14 @@ void lArm(ros::NodeHandle& nh, std::string leftArmTopic, int start, int end) {
     // Move the specified joints to random target positions within the allowed range
     for (int i = start; i < end; ++i) {
         std::vector<double> targetPosition = calculateTargetPosition(homePosition, maxPosition, minPosition);
-        position[i] = targetPosition[i]; 
+        position[i] = targetPosition[i];
+        
+        for (size_t i = 0; i < targetPosition.size(); ++i) {
+            ROS_INFO("Calculated target position for joint %s: %.4f", lArmJointNames[i].c_str(), position[i]);
+        }
         moveToPosition(leftArmClient, lArmJointNames, "random", position);
-    }
     
+    }    
     // Move the arm to the home position after control test
     ROS_INFO_STREAM("[PUT DOWN LARM] MOVING TO THE HOME POSITION");
     moveToPosition(leftArmClient, lArmJointNames, "home", homePosition);
@@ -380,7 +385,12 @@ void lHand(ros::NodeHandle& nh, std::string leftHandTopic, int start, int end) {
     for (int i = start; i < end; ++i) {
         ROS_INFO_STREAM("[START] " << lhandJointNames[i] << " test."); 
         std::vector<double> targetPosition = calculateTargetPosition(homePosition, maxPosition, minPosition);
-        position[i] = targetPosition[i]; 
+        position[i] = targetPosition[i];
+
+        for (size_t i = 0; i < targetPosition.size(); ++i) {
+            ROS_INFO("Calculated target position for joint %s: %.4f", lhandJointNames[i].c_str(), position[i]);
+        }
+
         moveToPosition(leftHandClient, lhandJointNames, "random", position); 
         ROS_INFO_STREAM("[END] " << lhandJointNames[i] << " test."); 
     }
@@ -515,13 +525,13 @@ void subtleBodyMovement(ros::NodeHandle& nh) {
         
         // Launch threads for simultaneous control of left and right arms and legs
         std::thread lArmThread(lArm, std::ref(nh), leftArmTopic, 2, static_cast<int>(lArmJointNames.size()) - 1);
-        std::thread rArmThread(rArm, std::ref(nh), rightArmTopic, 2, static_cast<int>(rArmJointNames.size()) - 1);
-        std::thread legThread(leg, std::ref(nh), legTopic, 0, static_cast<int>(legJointNames.size()));
+        // std::thread rArmThread(rArm, std::ref(nh), rightArmTopic, 2, static_cast<int>(rArmJointNames.size()) - 1);
+        // std::thread legThread(leg, std::ref(nh), legTopic, 0, static_cast<int>(legJointNames.size()));
 
         // Wait for all limb control threads to complete
         lArmThread.join();
-        rArmThread.join();
-        legThread.join();
+        // rArmThread.join();
+        // legThread.join();
     }
     // Handle physical robot platform: Control arms, hands, and legs simultaneously
     else if (configParams["platform"] == "robot") {
@@ -532,19 +542,22 @@ void subtleBodyMovement(ros::NodeHandle& nh) {
         std::string leftHandTopic = topicData["LHand"];
         std::string legTopic = topicData["Leg"];
 
+        // lArm(nh, leftArmTopic, 0, static_cast<int>(lArmJointNames.size()));
+        lHand(nh, leftHandTopic, 0, static_cast<int>(lhandJointNames.size()));
+
         // Launch threads for simultaneous control of left and right arms and hands, and legs
-        std::thread lArmThread(lArm, std::ref(nh), leftArmTopic, 0, static_cast<int>(lArmJointNames.size()));
-        std::thread rArmThread(rArm, std::ref(nh), rightArmTopic, 0, static_cast<int>(rArmJointNames.size()));
-        std::thread lHandThread(lHand, std::ref(nh), leftHandTopic, 0, static_cast<int>(lhandJointNames.size()));
-        std::thread rHandThread(rHand, std::ref(nh), rightHandTopic, 0, static_cast<int>(rhandJointNames.size()));
-        std::thread legThread(leg, std::ref(nh), legTopic, 0, static_cast<int>(legJointNames.size()));
+        // std::thread lArmThread(lArm, std::ref(nh), leftArmTopic, 0, static_cast<int>(lArmJointNames.size()));
+        // std::thread rArmThread(rArm, std::ref(nh), rightArmTopic, 0, static_cast<int>(rArmJointNames.size()));
+        // std::thread lHandThread(lHand, std::ref(nh), leftHandTopic, 0, static_cast<int>(lhandJointNames.size()));
+        // std::thread rHandThread(rHand, std::ref(nh), rightHandTopic, 0, static_cast<int>(rhandJointNames.size()));
+        // std::thread legThread(leg, std::ref(nh), legTopic, 0, static_cast<int>(legJointNames.size()));
         
         // Wait for all limb control threads to complete
-        lArmThread.join();
-        rArmThread.join();
-        lHandThread.join();
-        rHandThread.join();
-        legThread.join();
+        // lArmThread.join();
+        // rArmThread.join();
+        // lHandThread.join();
+        // rHandThread.join();
+        // legThread.join();
     }
 
     ROS_INFO("Subtle body movement function ended");
@@ -596,10 +609,10 @@ void flexiMovement(ros::NodeHandle& nh) {
  */
 void animateBehaviour(const std::string& behaviour, ros::NodeHandle& nh) 
 {
-    if (!isActive) {
-        ROS_INFO("Animation behavior is inactive.");
-        return; // Exit if the animation behavior is not active
-    }
+    // if (!isActive) {
+    //     ROS_INFO("Animation behavior is inactive.");
+    //     return; // Exit if the animation behavior is not active
+    // }
 
     ROS_INFO("[animateBehaviour] Invoked with behaviour: %s", behaviour.c_str());
 
