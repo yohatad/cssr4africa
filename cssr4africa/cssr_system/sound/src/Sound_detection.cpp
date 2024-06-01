@@ -153,9 +153,6 @@ void audiocallback(const naoqi_driver::AudioCustomMsg& msg) {
 
     // Perform ITD
     double value = Itd(data1, data2);
-    
-    // 
-      
 }
 
 
