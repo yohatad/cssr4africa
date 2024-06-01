@@ -55,8 +55,6 @@ private:
   ros::Subscriber sub_cmd_vel_;
   ros::Subscriber sub_joint_angles_;
 
-
-
 }; // class Teleop
 
 } // subscriber
