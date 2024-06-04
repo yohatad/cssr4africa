@@ -29,7 +29,7 @@ int totalSamples = 0;
 std::string currentChannel = "rearLeft";
 
 // Global variables to handle the video file 
-bool saveVideo = true;
+bool saveVideo = false;
 cv::VideoWriter videoWriter;
 bool isVideoWriterInitialized = false;
 
