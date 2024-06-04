@@ -72,71 +72,15 @@ double Itd(float data1[], float data2[]){
         double azimuth = std::asin(z) * (180.0 / M_PI);
 
         if (location >= bufferSize / 2 + 1) {
-            std::cout << "azimuth: " << azimuth << " degree (Left)" << std::endl;
             return -azimuth;
         }
         else {
-            std::cout << "azimuth: " << azimuth << " degree (Right)" << std::endl;
             return azimuth;
         }
     }
     else {
-        std::cout << "azimuth: 0 degree (Front)" << std::endl;
         return 0;
     }
-}
-
-ControlClientPtr createClient(const std::string& topicName) {
-    ControlClientPtr actionClient(new ControlClient(topicName, true));
-    int maxIterations = 5;
-
-    for (int iterations = 0; iterations < maxIterations; ++iterations) {
-        if (actionClient->waitForServer(ros::Duration(5.0))) {
-            return actionClient;
-        }
-        ROS_DEBUG("Waiting for the %s controller to come up", topicName.c_str());
-    }
-
-    throw std::runtime_error("Error creating action client for " + topicName + " controller: Server not available");
-}
-
-void moveToPosition(ControlClientPtr& client, const std::vector<std::string>& jointNames, double duration, 
-                    std::vector<double> positions) {
-    
-    control_msgs::FollowJointTrajectoryGoal goal;
-    trajectory_msgs::JointTrajectory& trajectory = goal.trajectory;
-    trajectory.joint_names = jointNames;
-    trajectory.points.resize(1);
-
-    trajectory.points[0].positions = positions;
-    trajectory.points[0].time_from_start = ros::Duration(duration);
-
-    client->sendGoal(goal);
-
-    // Wait for the action to finish and check the result.
-    bool finishedBeforeTimeout = client->waitForResult(ros::Duration(10.0)); // Adjust the timeout as needed
-
-    if (finishedBeforeTimeout) {
-        actionlib::SimpleClientGoalState state = client->getState();
-        ROS_INFO("Action finished: %s", state.toString().c_str());
-
-        if (state == actionlib::SimpleClientGoalState::SUCCEEDED) {
-            ROS_INFO("Successfully moved to the position");
-        } else {
-            ROS_WARN("The action failed to move to the position. State: %s", state.toString().c_str());
-        }
-    } else {
-        ROS_WARN("The action did not finish before the timeout.");
-    }
-}
-
-void moveHeadToPosition(ros::NodeHandle& nh){
-    ControlClientPtr headClient = createClient(topicName);
-    std::vector<std::string> jointNames = {"HeadYaw", "HeadPitch"};
-    std::vector<double> positions(2, 0.0);
-
-    // Move the head to the center position 
-    moveToPosition(headClient, jointNames, 1.0, positions);
 }
 
 void audiocallback(const naoqi_driver::AudioCustomMsg& msg) {
@@ -153,6 +97,7 @@ void audiocallback(const naoqi_driver::AudioCustomMsg& msg) {
 
     // Perform ITD
     double value = Itd(data1, data2);
+    std::cout<<"The value of the ITD is "<<value<<std::endl;
 }
 
 
