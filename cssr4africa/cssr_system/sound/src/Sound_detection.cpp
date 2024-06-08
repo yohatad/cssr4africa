@@ -12,34 +12,20 @@
 #include "sound.h"
 #include <vector>
 #include <ros/ros.h>
-#include <deque>
-#include <algorithm>
-#include <map>
 
 const float speed_of_sound = 346;
 const float distance_between_ears = 0.07;
 const float sampling_rate = 48000;
 const int bufferSize = 4096;
 
-const int windowSize = 5;  // Number of values to consider for the mode
-
+const int windowSize = 3;  // Number of values to consider for the mode
 std::vector<double> itd_values;  // Vector to store ITD values
 
 double itd_value;
 bool value_received = false;
 
-const int N = 10;
-double buffered_ITD[N];
-double Prev_ITD = 0;
-// const int UPDATE_FREQUENCY_MS = 500; // Update frequency in milliseconds
-// const double THRESHOLD = 0.05; // Threshold to trigger movement
-
-// Print the highest sum_square_leftSound and sum_square_rightSound
-// compare to the previous sum_square_leftSound and sum_square_rightSound
 double prev_sum_square_leftSound = 0;
 double prev_sum_square_rightSound = 0; 
-
-std::string topicName = "/pepper_dcm/Head_controller/follow_joint_trajectory";
 
 double Itd(float data1[], float data2[]){
     
@@ -91,22 +77,52 @@ double Itd(float data1[], float data2[]){
     }
 }
 
+float calculate_rms(const std::vector<int16_t>& data, int bufferSize) {
+    float sum = 0.0;
+    for (int i = 0; i < bufferSize; ++i) {
+        sum += data[i] * data[i];
+    }
+    return std::sqrt(sum / bufferSize);
+}
+
 void audiocallback(const naoqi_driver::AudioCustomMsg& msg) {
-    const std::vector<int16_t>* frontLeft = &msg.frontLeft;
-    const std::vector<int16_t>* frontRight = &msg.frontRight;
+    const std::vector<int16_t>* frontLeft   =  &msg.frontLeft;
+    const std::vector<int16_t>* frontRight  =  &msg.frontRight;
+    const std::vector<int16_t>* rearLeft    =  &msg.rearLeft;
+    const std::vector<int16_t>* rearRight   =  &msg.rearRight;
+
+    int bufferSize = frontLeft->size();  // Assuming all channels have the same buffer size
 
     float data1[bufferSize];
     float data2[bufferSize];
+    float data3[bufferSize];
+    float data4[bufferSize];
 
     for (int i = 0; i < bufferSize; i++) {
         data1[i] = frontLeft->at(i);
         data2[i] = frontRight->at(i);
+        data3[i] = rearLeft->at(i);
+        data4[i] = rearRight->at(i);
     }
 
-    // Perform ITD
-    double value = Itd(data1, data2);
-    itd_values.push_back(value);
-    value_received = true;  // Set flag to indicate value has been updated
+    // Calculate RMS of the front and rear microphones
+    float rmsFrontLeft = calculate_rms(*frontLeft, bufferSize);
+    float rmsFrontRight = calculate_rms(*frontRight, bufferSize);
+    float rmsRearLeft = calculate_rms(*rearLeft, bufferSize);
+    float rmsRearRight = calculate_rms(*rearRight, bufferSize);
+
+    // Average RMS for front and rear
+    float rmsFront = (rmsFrontLeft + rmsFrontRight) / 2.0;
+    float rmsRear = (rmsRearLeft + rmsRearRight) / 2.0;
+
+    // Check if sound source is from the front
+    if (rmsFront > rmsRear) {
+        double value = Itd(data1, data2);
+        itd_values.push_back(value);
+        value_received = true;  // Set flag to indicate value has been updated
+    } else {
+        std::cout << "Sound is coming from the back" << std::endl;
+    }
 }
 
 double calculateMode(const std::vector<double>& values) {
@@ -151,7 +167,6 @@ int main(int argc, char* argv[]) {
         // Add a small sleep to avoid busy-waiting
         ros::Duration(0.1).sleep();
     }
-
     return 0;
 }
 
