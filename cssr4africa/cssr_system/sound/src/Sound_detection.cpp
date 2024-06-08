@@ -12,18 +12,27 @@
 #include "sound.h"
 #include <vector>
 #include <ros/ros.h>
+#include <deque>
+#include <algorithm>
+#include <map>
 
 const float speed_of_sound = 346;
 const float distance_between_ears = 0.07;
 const float sampling_rate = 48000;
 const int bufferSize = 4096;
 
+const int windowSize = 5;  // Number of values to consider for the mode
+
+std::vector<double> itd_values;  // Vector to store ITD values
+
+double itd_value;
+bool value_received = false;
+
 const int N = 10;
 double buffered_ITD[N];
-double lastUsedITD = 0.0;
-const int UPDATE_FREQUENCY_MS = 500; // Update frequency in milliseconds
-std::chrono::steady_clock::time_point last_update = std::chrono::steady_clock::now();
-const double THRESHOLD = 0.05; // Threshold to trigger movement
+double Prev_ITD = 0;
+// const int UPDATE_FREQUENCY_MS = 500; // Update frequency in milliseconds
+// const double THRESHOLD = 0.05; // Threshold to trigger movement
 
 // Print the highest sum_square_leftSound and sum_square_rightSound
 // compare to the previous sum_square_leftSound and sum_square_rightSound
@@ -48,7 +57,6 @@ double Itd(float data1[], float data2[]){
     float rightThreshold = 4.77235e+07;
 
     if (sum_square_leftSound < leftThreshold || sum_square_rightSound < rightThreshold) {
-        std::cout << "azimuth: 0 degree (Front)" << std::endl;
         return 0;
     }
 
@@ -84,8 +92,8 @@ double Itd(float data1[], float data2[]){
 }
 
 void audiocallback(const naoqi_driver::AudioCustomMsg& msg) {
-    const std::vector<int16_t>* frontLeft   = &msg.frontLeft;
-    const std::vector<int16_t>* frontRight  = &msg.frontRight;
+    const std::vector<int16_t>* frontLeft = &msg.frontLeft;
+    const std::vector<int16_t>* frontRight = &msg.frontRight;
 
     float data1[bufferSize];
     float data2[bufferSize];
@@ -97,18 +105,53 @@ void audiocallback(const naoqi_driver::AudioCustomMsg& msg) {
 
     // Perform ITD
     double value = Itd(data1, data2);
-    std::cout<<"The value of the ITD is "<<value<<std::endl;
+    itd_values.push_back(value);
+    value_received = true;  // Set flag to indicate value has been updated
 }
 
+double calculateMode(const std::vector<double>& values) {
+    std::map<double, int> frequency_map;
+    for (double value : values) {
+        frequency_map[value]++;
+    }
 
-int main (int argc, char *argv[]){
-    ros::init (argc, argv, "sound_localization");
+    double mode = values[0];
+    int max_count = 0;
+    for (const auto& pair : frequency_map) {
+        if (pair.second > max_count) {
+            max_count = pair.second;
+            mode = pair.first;
+        }
+    }
+    return mode;
+}
+
+int main(int argc, char* argv[]) {
+    ros::init(argc, argv, "sound_localization");
     ros::NodeHandle nh;
 
     // Subscribers
     ros::Subscriber sub1 = nh.subscribe("/naoqi_driver/audio", 1000, audiocallback);
 
-    ros::spin();
+    while (ros::ok()) {
+        ros::spinOnce();
+
+        if (value_received && itd_values.size() >= windowSize) {
+            std::vector<double> last_ten_values(itd_values.end() - windowSize, itd_values.end());
+            double mode = calculateMode(last_ten_values);
+            ROS_INFO("Mode of last 10 ITD values: %f", mode);
+
+            // Clear the vector for the next batch
+            itd_values.clear();
+
+            // Reset flag
+            value_received = false;
+        }
+
+        // Add a small sleep to avoid busy-waiting
+        ros::Duration(0.1).sleep();
+    }
+
     return 0;
 }
 
