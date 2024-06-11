@@ -106,14 +106,14 @@ void audiocallback(const naoqi_driver::AudioCustomMsg& msg) {
     }
 
     // Calculate RMS of the front and rear microphones
-    float rmsFrontLeft = calculate_rms(*frontLeft, bufferSize);
+    float rmsFrontLeft  = calculate_rms(*frontLeft, bufferSize);
     float rmsFrontRight = calculate_rms(*frontRight, bufferSize);
-    float rmsRearLeft = calculate_rms(*rearLeft, bufferSize);
-    float rmsRearRight = calculate_rms(*rearRight, bufferSize);
+    float rmsRearLeft   = calculate_rms(*rearLeft, bufferSize);
+    float rmsRearRight  = calculate_rms(*rearRight, bufferSize);
 
     // Average RMS for front and rear
     float rmsFront = (rmsFrontLeft + rmsFrontRight) / 2.0;
-    float rmsRear = (rmsRearLeft + rmsRearRight) / 2.0;
+    float rmsRear  = (rmsRearLeft + rmsRearRight) / 2.0;
 
     // Check if sound source is from the front
     if (rmsFront > rmsRear) {
