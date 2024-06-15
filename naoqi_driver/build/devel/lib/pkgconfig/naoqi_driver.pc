@@ -1,0 +1,8 @@
+prefix=/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build/devel
+
+Name: naoqi_driver
+Description: Description of naoqi_driver
+Version: 0.5.11
+Cflags: -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build/devel/include
+Libs: -L${prefix}/lib -lnaoqi_driver_module -lnaoqi_driver
+Requires: 

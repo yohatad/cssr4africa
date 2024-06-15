@@ -1,0 +1,12 @@
+{
+    "python.autoComplete.extraPaths": [
+        "/home/yoha/workspace/pepper_rob_ws/devel/lib/python3/dist-packages",
+        "/opt/ros/noetic/lib/python3/dist-packages",
+        "/home/yoha/pynaoqi-python2.7-2.5.5.5-linux64/lib/python2.7/site-packagesexport"
+    ],
+    "python.analysis.extraPaths": [
+        "/home/yoha/workspace/pepper_rob_ws/devel/lib/python3/dist-packages",
+        "/opt/ros/noetic/lib/python3/dist-packages",
+        "/home/yoha/pynaoqi-python2.7-2.5.5.5-linux64/lib/python2.7/site-packagesexport"
+    ]
+}

@@ -1,0 +1,14 @@
+#!/usr/bin/env sh
+# generated from catkin/python/catkin/environment_cache.py
+
+# based on a snapshot of the environment before and after calling the setup script
+# it emulates the modifications of the setup script without recurring computations
+
+# new environment variables
+
+# modified environment variables
+export CMAKE_PREFIX_PATH="/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build/devel:$CMAKE_PREFIX_PATH"
+export PATH='/home/yoha/workspace/pepper_rob_ws/devel/bin:/opt/ros/noetic/bin:/home/yoha/.vscode-server/bin/611f9bfce64f25108829dd295f54a6894e87339d/bin/remote-cli:/home/yoha/.local/bin:/home/yoha/cmake-3.27.9-linux-x86_64/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/Python312/Scripts/:/mnt/c/Python312/:/mnt/c/Program Files/Microsoft/jdk-11.0.16.101-hotspot/bin:/mnt/c/Program Files/Common Files/Oracle/Java/javapath:/mnt/c/Windows/system32:/mnt/c/Windows:/mnt/c/Windows/System32/Wbem:/mnt/c/Windows/System32/WindowsPowerShell/v1.0/:/mnt/c/Windows/System32/OpenSSH/:/mnt/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common:/mnt/c/Program Files/NVIDIA Corporation/NVIDIA NvDLISR:/mnt/c/Program Files (x86)/Skype/Phone/:/mnt/c/Program Files/Microsoft VS Code/bin:/mnt/c/WINDOWS/system32:/mnt/c/WINDOWS:/mnt/c/WINDOWS/System32/Wbem:/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/:/mnt/c/WINDOWS/System32/OpenSSH/:/mnt/c/Program Files/Git/cmd:/mnt/c/Program Files/Microsoft SQL Server/150/Tools/Binn/:/mnt/c/Program Files/Microsoft SQL Server/Client SDK/ODBC/170/Tools/Binn/:/mnt/c/Program Files/Calibre2/:/mnt/c/WINDOWS/system32:/mnt/c/WINDOWS:/mnt/c/WINDOWS/System32/Wbem:/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/:/mnt/c/WINDOWS/System32/OpenSSH/:/mnt/c/Program Files/dotnet/:/mnt/c/Strawberry/c/bin:/mnt/c/Strawberry/perl/site/bin:/mnt/c/Strawberry/perl/bin:/mnt/c/Program Files/nodejs/:/mnt/c/ProgramData/chocolatey/bin:/mnt/c/Program Files/Docker/Docker/resources/bin:/mnt/c/Program Files/MATLAB/R2023a/runtime/win64:/mnt/c/Program Files/MATLAB/R2023a/bin:/mnt/c/Users/Yohannes/anaconda3:/mnt/c/Users/Yohannes/anaconda3/Library/mingw-w64/bin:/mnt/c/Users/Yohannes/anaconda3/Library/usr/bin:/mnt/c/Users/Yohannes/anaconda3/Library/bin:/mnt/c/Users/Yohannes/anaconda3/Scripts:/mnt/c/Users/Yohannes/anaconda3/bin:/mnt/c/Users/Yohannes/AppData/Local/Microsoft/WindowsApps:/mnt/c/MinGW/bin:/mnt/c/Users/Yohannes/AppData/Local/GitHubDesktop/bin:/mnt/c/Users/Yohannes/AppData/Local/Programs/MiKTeX/miktex/bin/x64/:/mnt/c/Strawberry/perl:/mnt/c/Users/Yohannes/.dotnet/tools:/mnt/c/Users/Yohannes/AppData/Roaming/npm:/snap/bin'
+export PWD='/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build'
+export ROSLISP_PACKAGE_DIRECTORIES="/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build/devel/share/common-lisp:$ROSLISP_PACKAGE_DIRECTORIES"
+export ROS_PACKAGE_PATH="/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver:$ROS_PACKAGE_PATH"

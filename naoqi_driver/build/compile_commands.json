@@ -1,0 +1,272 @@
+[
+{
+  "directory": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build",
+  "command": "/usr/bin/c++ -DCATKIN_BUILD -DLIBQI_VERSION=29 -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"naoqi_driver\\\" -Dnaoqi_driver_EXPORTS -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build/devel/include -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp -I/usr/include/eigen3 -isystem /usr/include/opencv4 -g -fPIC -o CMakeFiles/naoqi_driver.dir/src/naoqi_driver.cpp.o -c /home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/naoqi_driver.cpp",
+  "file": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/naoqi_driver.cpp",
+  "output": "CMakeFiles/naoqi_driver.dir/src/naoqi_driver.cpp.o"
+},
+{
+  "directory": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build",
+  "command": "/usr/bin/c++ -DCATKIN_BUILD -DLIBQI_VERSION=29 -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"naoqi_driver\\\" -Dnaoqi_driver_EXPORTS -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build/devel/include -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp -I/usr/include/eigen3 -isystem /usr/include/opencv4 -g -fPIC -o CMakeFiles/naoqi_driver.dir/src/helpers/driver_helpers.cpp.o -c /home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/helpers/driver_helpers.cpp",
+  "file": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/helpers/driver_helpers.cpp",
+  "output": "CMakeFiles/naoqi_driver.dir/src/helpers/driver_helpers.cpp.o"
+},
+{
+  "directory": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build",
+  "command": "/usr/bin/c++ -DCATKIN_BUILD -DLIBQI_VERSION=29 -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"naoqi_driver\\\" -Dnaoqi_driver_EXPORTS -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build/devel/include -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp -I/usr/include/eigen3 -isystem /usr/include/opencv4 -g -fPIC -o CMakeFiles/naoqi_driver.dir/src/recorder/globalrecorder.cpp.o -c /home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/recorder/globalrecorder.cpp",
+  "file": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/recorder/globalrecorder.cpp",
+  "output": "CMakeFiles/naoqi_driver.dir/src/recorder/globalrecorder.cpp.o"
+},
+{
+  "directory": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build",
+  "command": "/usr/bin/c++ -DCATKIN_BUILD -DLIBQI_VERSION=29 -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"naoqi_driver\\\" -Dnaoqi_driver_EXPORTS -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build/devel/include -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp -I/usr/include/eigen3 -isystem /usr/include/opencv4 -g -fPIC -o CMakeFiles/naoqi_driver.dir/src/event/audio.cpp.o -c /home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/event/audio.cpp",
+  "file": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/event/audio.cpp",
+  "output": "CMakeFiles/naoqi_driver.dir/src/event/audio.cpp.o"
+},
+{
+  "directory": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build",
+  "command": "/usr/bin/c++ -DCATKIN_BUILD -DLIBQI_VERSION=29 -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"naoqi_driver\\\" -Dnaoqi_driver_EXPORTS -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build/devel/include -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp -I/usr/include/eigen3 -isystem /usr/include/opencv4 -g -fPIC -o CMakeFiles/naoqi_driver.dir/src/event/touch.cpp.o -c /home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/event/touch.cpp",
+  "file": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/event/touch.cpp",
+  "output": "CMakeFiles/naoqi_driver.dir/src/event/touch.cpp.o"
+},
+{
+  "directory": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build",
+  "command": "/usr/bin/c++ -DCATKIN_BUILD -DLIBQI_VERSION=29 -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"naoqi_driver\\\" -Dnaoqi_driver_EXPORTS -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build/devel/include -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp -I/usr/include/eigen3 -isystem /usr/include/opencv4 -g -fPIC -o CMakeFiles/naoqi_driver.dir/src/converters/audio.cpp.o -c /home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/converters/audio.cpp",
+  "file": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/converters/audio.cpp",
+  "output": "CMakeFiles/naoqi_driver.dir/src/converters/audio.cpp.o"
+},
+{
+  "directory": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build",
+  "command": "/usr/bin/c++ -DCATKIN_BUILD -DLIBQI_VERSION=29 -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"naoqi_driver\\\" -Dnaoqi_driver_EXPORTS -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build/devel/include -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp -I/usr/include/eigen3 -isystem /usr/include/opencv4 -g -fPIC -o CMakeFiles/naoqi_driver.dir/src/converters/touch.cpp.o -c /home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/converters/touch.cpp",
+  "file": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/converters/touch.cpp",
+  "output": "CMakeFiles/naoqi_driver.dir/src/converters/touch.cpp.o"
+},
+{
+  "directory": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build",
+  "command": "/usr/bin/c++ -DCATKIN_BUILD -DLIBQI_VERSION=29 -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"naoqi_driver\\\" -Dnaoqi_driver_EXPORTS -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build/devel/include -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp -I/usr/include/eigen3 -isystem /usr/include/opencv4 -g -fPIC -o CMakeFiles/naoqi_driver.dir/src/converters/camera.cpp.o -c /home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/converters/camera.cpp",
+  "file": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/converters/camera.cpp",
+  "output": "CMakeFiles/naoqi_driver.dir/src/converters/camera.cpp.o"
+},
+{
+  "directory": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build",
+  "command": "/usr/bin/c++ -DCATKIN_BUILD -DLIBQI_VERSION=29 -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"naoqi_driver\\\" -Dnaoqi_driver_EXPORTS -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build/devel/include -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp -I/usr/include/eigen3 -isystem /usr/include/opencv4 -g -fPIC -o CMakeFiles/naoqi_driver.dir/src/converters/diagnostics.cpp.o -c /home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/converters/diagnostics.cpp",
+  "file": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/converters/diagnostics.cpp",
+  "output": "CMakeFiles/naoqi_driver.dir/src/converters/diagnostics.cpp.o"
+},
+{
+  "directory": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build",
+  "command": "/usr/bin/c++ -DCATKIN_BUILD -DLIBQI_VERSION=29 -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"naoqi_driver\\\" -Dnaoqi_driver_EXPORTS -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build/devel/include -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp -I/usr/include/eigen3 -isystem /usr/include/opencv4 -g -fPIC -o CMakeFiles/naoqi_driver.dir/src/converters/imu.cpp.o -c /home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/converters/imu.cpp",
+  "file": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/converters/imu.cpp",
+  "output": "CMakeFiles/naoqi_driver.dir/src/converters/imu.cpp.o"
+},
+{
+  "directory": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build",
+  "command": "/usr/bin/c++ -DCATKIN_BUILD -DLIBQI_VERSION=29 -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"naoqi_driver\\\" -Dnaoqi_driver_EXPORTS -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build/devel/include -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp -I/usr/include/eigen3 -isystem /usr/include/opencv4 -g -fPIC -o CMakeFiles/naoqi_driver.dir/src/converters/info.cpp.o -c /home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/converters/info.cpp",
+  "file": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/converters/info.cpp",
+  "output": "CMakeFiles/naoqi_driver.dir/src/converters/info.cpp.o"
+},
+{
+  "directory": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build",
+  "command": "/usr/bin/c++ -DCATKIN_BUILD -DLIBQI_VERSION=29 -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"naoqi_driver\\\" -Dnaoqi_driver_EXPORTS -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build/devel/include -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp -I/usr/include/eigen3 -isystem /usr/include/opencv4 -g -fPIC -o CMakeFiles/naoqi_driver.dir/src/converters/joint_state.cpp.o -c /home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/converters/joint_state.cpp",
+  "file": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/converters/joint_state.cpp",
+  "output": "CMakeFiles/naoqi_driver.dir/src/converters/joint_state.cpp.o"
+},
+{
+  "directory": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build",
+  "command": "/usr/bin/c++ -DCATKIN_BUILD -DLIBQI_VERSION=29 -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"naoqi_driver\\\" -Dnaoqi_driver_EXPORTS -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build/devel/include -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp -I/usr/include/eigen3 -isystem /usr/include/opencv4 -g -fPIC -o CMakeFiles/naoqi_driver.dir/src/converters/laser.cpp.o -c /home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/converters/laser.cpp",
+  "file": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/converters/laser.cpp",
+  "output": "CMakeFiles/naoqi_driver.dir/src/converters/laser.cpp.o"
+},
+{
+  "directory": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build",
+  "command": "/usr/bin/c++ -DCATKIN_BUILD -DLIBQI_VERSION=29 -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"naoqi_driver\\\" -Dnaoqi_driver_EXPORTS -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build/devel/include -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp -I/usr/include/eigen3 -isystem /usr/include/opencv4 -g -fPIC -o CMakeFiles/naoqi_driver.dir/src/converters/memory_list.cpp.o -c /home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/converters/memory_list.cpp",
+  "file": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/converters/memory_list.cpp",
+  "output": "CMakeFiles/naoqi_driver.dir/src/converters/memory_list.cpp.o"
+},
+{
+  "directory": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build",
+  "command": "/usr/bin/c++ -DCATKIN_BUILD -DLIBQI_VERSION=29 -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"naoqi_driver\\\" -Dnaoqi_driver_EXPORTS -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build/devel/include -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp -I/usr/include/eigen3 -isystem /usr/include/opencv4 -g -fPIC -o CMakeFiles/naoqi_driver.dir/src/converters/memory/bool.cpp.o -c /home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/converters/memory/bool.cpp",
+  "file": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/converters/memory/bool.cpp",
+  "output": "CMakeFiles/naoqi_driver.dir/src/converters/memory/bool.cpp.o"
+},
+{
+  "directory": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build",
+  "command": "/usr/bin/c++ -DCATKIN_BUILD -DLIBQI_VERSION=29 -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"naoqi_driver\\\" -Dnaoqi_driver_EXPORTS -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build/devel/include -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp -I/usr/include/eigen3 -isystem /usr/include/opencv4 -g -fPIC -o CMakeFiles/naoqi_driver.dir/src/converters/memory/int.cpp.o -c /home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/converters/memory/int.cpp",
+  "file": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/converters/memory/int.cpp",
+  "output": "CMakeFiles/naoqi_driver.dir/src/converters/memory/int.cpp.o"
+},
+{
+  "directory": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build",
+  "command": "/usr/bin/c++ -DCATKIN_BUILD -DLIBQI_VERSION=29 -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"naoqi_driver\\\" -Dnaoqi_driver_EXPORTS -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build/devel/include -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp -I/usr/include/eigen3 -isystem /usr/include/opencv4 -g -fPIC -o CMakeFiles/naoqi_driver.dir/src/converters/memory/float.cpp.o -c /home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/converters/memory/float.cpp",
+  "file": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/converters/memory/float.cpp",
+  "output": "CMakeFiles/naoqi_driver.dir/src/converters/memory/float.cpp.o"
+},
+{
+  "directory": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build",
+  "command": "/usr/bin/c++ -DCATKIN_BUILD -DLIBQI_VERSION=29 -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"naoqi_driver\\\" -Dnaoqi_driver_EXPORTS -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build/devel/include -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp -I/usr/include/eigen3 -isystem /usr/include/opencv4 -g -fPIC -o CMakeFiles/naoqi_driver.dir/src/converters/memory/string.cpp.o -c /home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/converters/memory/string.cpp",
+  "file": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/converters/memory/string.cpp",
+  "output": "CMakeFiles/naoqi_driver.dir/src/converters/memory/string.cpp.o"
+},
+{
+  "directory": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build",
+  "command": "/usr/bin/c++ -DCATKIN_BUILD -DLIBQI_VERSION=29 -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"naoqi_driver\\\" -Dnaoqi_driver_EXPORTS -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build/devel/include -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp -I/usr/include/eigen3 -isystem /usr/include/opencv4 -g -fPIC -o CMakeFiles/naoqi_driver.dir/src/converters/sonar.cpp.o -c /home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/converters/sonar.cpp",
+  "file": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/converters/sonar.cpp",
+  "output": "CMakeFiles/naoqi_driver.dir/src/converters/sonar.cpp.o"
+},
+{
+  "directory": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build",
+  "command": "/usr/bin/c++ -DCATKIN_BUILD -DLIBQI_VERSION=29 -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"naoqi_driver\\\" -Dnaoqi_driver_EXPORTS -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build/devel/include -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp -I/usr/include/eigen3 -isystem /usr/include/opencv4 -g -fPIC -o CMakeFiles/naoqi_driver.dir/src/converters/log.cpp.o -c /home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/converters/log.cpp",
+  "file": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/converters/log.cpp",
+  "output": "CMakeFiles/naoqi_driver.dir/src/converters/log.cpp.o"
+},
+{
+  "directory": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build",
+  "command": "/usr/bin/c++ -DCATKIN_BUILD -DLIBQI_VERSION=29 -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"naoqi_driver\\\" -Dnaoqi_driver_EXPORTS -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build/devel/include -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp -I/usr/include/eigen3 -isystem /usr/include/opencv4 -g -fPIC -o CMakeFiles/naoqi_driver.dir/src/converters/odom.cpp.o -c /home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/converters/odom.cpp",
+  "file": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/converters/odom.cpp",
+  "output": "CMakeFiles/naoqi_driver.dir/src/converters/odom.cpp.o"
+},
+{
+  "directory": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build",
+  "command": "/usr/bin/c++ -DCATKIN_BUILD -DLIBQI_VERSION=29 -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"naoqi_driver\\\" -Dnaoqi_driver_EXPORTS -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build/devel/include -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp -I/usr/include/eigen3 -isystem /usr/include/opencv4 -g -fPIC -o CMakeFiles/naoqi_driver.dir/src/publishers/camera.cpp.o -c /home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/publishers/camera.cpp",
+  "file": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/publishers/camera.cpp",
+  "output": "CMakeFiles/naoqi_driver.dir/src/publishers/camera.cpp.o"
+},
+{
+  "directory": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build",
+  "command": "/usr/bin/c++ -DCATKIN_BUILD -DLIBQI_VERSION=29 -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"naoqi_driver\\\" -Dnaoqi_driver_EXPORTS -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build/devel/include -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp -I/usr/include/eigen3 -isystem /usr/include/opencv4 -g -fPIC -o CMakeFiles/naoqi_driver.dir/src/publishers/info.cpp.o -c /home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/publishers/info.cpp",
+  "file": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/publishers/info.cpp",
+  "output": "CMakeFiles/naoqi_driver.dir/src/publishers/info.cpp.o"
+},
+{
+  "directory": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build",
+  "command": "/usr/bin/c++ -DCATKIN_BUILD -DLIBQI_VERSION=29 -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"naoqi_driver\\\" -Dnaoqi_driver_EXPORTS -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build/devel/include -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp -I/usr/include/eigen3 -isystem /usr/include/opencv4 -g -fPIC -o CMakeFiles/naoqi_driver.dir/src/publishers/joint_state.cpp.o -c /home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/publishers/joint_state.cpp",
+  "file": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/publishers/joint_state.cpp",
+  "output": "CMakeFiles/naoqi_driver.dir/src/publishers/joint_state.cpp.o"
+},
+{
+  "directory": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build",
+  "command": "/usr/bin/c++ -DCATKIN_BUILD -DLIBQI_VERSION=29 -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"naoqi_driver\\\" -Dnaoqi_driver_EXPORTS -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build/devel/include -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp -I/usr/include/eigen3 -isystem /usr/include/opencv4 -g -fPIC -o CMakeFiles/naoqi_driver.dir/src/publishers/log.cpp.o -c /home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/publishers/log.cpp",
+  "file": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/publishers/log.cpp",
+  "output": "CMakeFiles/naoqi_driver.dir/src/publishers/log.cpp.o"
+},
+{
+  "directory": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build",
+  "command": "/usr/bin/c++ -DCATKIN_BUILD -DLIBQI_VERSION=29 -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"naoqi_driver\\\" -Dnaoqi_driver_EXPORTS -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build/devel/include -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp -I/usr/include/eigen3 -isystem /usr/include/opencv4 -g -fPIC -o CMakeFiles/naoqi_driver.dir/src/publishers/sonar.cpp.o -c /home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/publishers/sonar.cpp",
+  "file": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/publishers/sonar.cpp",
+  "output": "CMakeFiles/naoqi_driver.dir/src/publishers/sonar.cpp.o"
+},
+{
+  "directory": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build",
+  "command": "/usr/bin/c++ -DCATKIN_BUILD -DLIBQI_VERSION=29 -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"naoqi_driver\\\" -Dnaoqi_driver_EXPORTS -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build/devel/include -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp -I/usr/include/eigen3 -isystem /usr/include/opencv4 -g -fPIC -o CMakeFiles/naoqi_driver.dir/src/subscribers/teleop.cpp.o -c /home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/subscribers/teleop.cpp",
+  "file": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/subscribers/teleop.cpp",
+  "output": "CMakeFiles/naoqi_driver.dir/src/subscribers/teleop.cpp.o"
+},
+{
+  "directory": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build",
+  "command": "/usr/bin/c++ -DCATKIN_BUILD -DLIBQI_VERSION=29 -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"naoqi_driver\\\" -Dnaoqi_driver_EXPORTS -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build/devel/include -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp -I/usr/include/eigen3 -isystem /usr/include/opencv4 -g -fPIC -o CMakeFiles/naoqi_driver.dir/src/subscribers/moveto.cpp.o -c /home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/subscribers/moveto.cpp",
+  "file": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/subscribers/moveto.cpp",
+  "output": "CMakeFiles/naoqi_driver.dir/src/subscribers/moveto.cpp.o"
+},
+{
+  "directory": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build",
+  "command": "/usr/bin/c++ -DCATKIN_BUILD -DLIBQI_VERSION=29 -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"naoqi_driver\\\" -Dnaoqi_driver_EXPORTS -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build/devel/include -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp -I/usr/include/eigen3 -isystem /usr/include/opencv4 -g -fPIC -o CMakeFiles/naoqi_driver.dir/src/subscribers/speech.cpp.o -c /home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/subscribers/speech.cpp",
+  "file": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/subscribers/speech.cpp",
+  "output": "CMakeFiles/naoqi_driver.dir/src/subscribers/speech.cpp.o"
+},
+{
+  "directory": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build",
+  "command": "/usr/bin/c++ -DCATKIN_BUILD -DLIBQI_VERSION=29 -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"naoqi_driver\\\" -Dnaoqi_driver_EXPORTS -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build/devel/include -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp -I/usr/include/eigen3 -isystem /usr/include/opencv4 -g -fPIC -o CMakeFiles/naoqi_driver.dir/src/services/robot_config.cpp.o -c /home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/services/robot_config.cpp",
+  "file": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/services/robot_config.cpp",
+  "output": "CMakeFiles/naoqi_driver.dir/src/services/robot_config.cpp.o"
+},
+{
+  "directory": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build",
+  "command": "/usr/bin/c++ -DCATKIN_BUILD -DLIBQI_VERSION=29 -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"naoqi_driver\\\" -Dnaoqi_driver_EXPORTS -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build/devel/include -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp -I/usr/include/eigen3 -isystem /usr/include/opencv4 -g -fPIC -o CMakeFiles/naoqi_driver.dir/src/services/set_language.cpp.o -c /home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/services/set_language.cpp",
+  "file": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/services/set_language.cpp",
+  "output": "CMakeFiles/naoqi_driver.dir/src/services/set_language.cpp.o"
+},
+{
+  "directory": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build",
+  "command": "/usr/bin/c++ -DCATKIN_BUILD -DLIBQI_VERSION=29 -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"naoqi_driver\\\" -Dnaoqi_driver_EXPORTS -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build/devel/include -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp -I/usr/include/eigen3 -isystem /usr/include/opencv4 -g -fPIC -o CMakeFiles/naoqi_driver.dir/src/services/get_language.cpp.o -c /home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/services/get_language.cpp",
+  "file": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/services/get_language.cpp",
+  "output": "CMakeFiles/naoqi_driver.dir/src/services/get_language.cpp.o"
+},
+{
+  "directory": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build",
+  "command": "/usr/bin/c++ -DCATKIN_BUILD -DLIBQI_VERSION=29 -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"naoqi_driver\\\" -Dnaoqi_driver_EXPORTS -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build/devel/include -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp -I/usr/include/eigen3 -isystem /usr/include/opencv4 -g -fPIC -o CMakeFiles/naoqi_driver.dir/src/recorder/camera.cpp.o -c /home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/recorder/camera.cpp",
+  "file": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/recorder/camera.cpp",
+  "output": "CMakeFiles/naoqi_driver.dir/src/recorder/camera.cpp.o"
+},
+{
+  "directory": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build",
+  "command": "/usr/bin/c++ -DCATKIN_BUILD -DLIBQI_VERSION=29 -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"naoqi_driver\\\" -Dnaoqi_driver_EXPORTS -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build/devel/include -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp -I/usr/include/eigen3 -isystem /usr/include/opencv4 -g -fPIC -o CMakeFiles/naoqi_driver.dir/src/recorder/diagnostics.cpp.o -c /home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/recorder/diagnostics.cpp",
+  "file": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/recorder/diagnostics.cpp",
+  "output": "CMakeFiles/naoqi_driver.dir/src/recorder/diagnostics.cpp.o"
+},
+{
+  "directory": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build",
+  "command": "/usr/bin/c++ -DCATKIN_BUILD -DLIBQI_VERSION=29 -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"naoqi_driver\\\" -Dnaoqi_driver_EXPORTS -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build/devel/include -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp -I/usr/include/eigen3 -isystem /usr/include/opencv4 -g -fPIC -o CMakeFiles/naoqi_driver.dir/src/recorder/joint_state.cpp.o -c /home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/recorder/joint_state.cpp",
+  "file": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/recorder/joint_state.cpp",
+  "output": "CMakeFiles/naoqi_driver.dir/src/recorder/joint_state.cpp.o"
+},
+{
+  "directory": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build",
+  "command": "/usr/bin/c++ -DCATKIN_BUILD -DLIBQI_VERSION=29 -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"naoqi_driver\\\" -Dnaoqi_driver_EXPORTS -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build/devel/include -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp -I/usr/include/eigen3 -isystem /usr/include/opencv4 -g -fPIC -o CMakeFiles/naoqi_driver.dir/src/recorder/log.cpp.o -c /home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/recorder/log.cpp",
+  "file": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/recorder/log.cpp",
+  "output": "CMakeFiles/naoqi_driver.dir/src/recorder/log.cpp.o"
+},
+{
+  "directory": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build",
+  "command": "/usr/bin/c++ -DCATKIN_BUILD -DLIBQI_VERSION=29 -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"naoqi_driver\\\" -Dnaoqi_driver_EXPORTS -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build/devel/include -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp -I/usr/include/eigen3 -isystem /usr/include/opencv4 -g -fPIC -o CMakeFiles/naoqi_driver.dir/src/recorder/sonar.cpp.o -c /home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/recorder/sonar.cpp",
+  "file": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/recorder/sonar.cpp",
+  "output": "CMakeFiles/naoqi_driver.dir/src/recorder/sonar.cpp.o"
+},
+{
+  "directory": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build",
+  "command": "/usr/bin/c++ -DCATKIN_BUILD -DLIBQI_VERSION=29 -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"naoqi_driver\\\" -Dnaoqi_driver_EXPORTS -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build/devel/include -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp -I/usr/include/eigen3 -isystem /usr/include/opencv4 -g -fPIC -o CMakeFiles/naoqi_driver.dir/src/tools/robot_description.cpp.o -c /home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/tools/robot_description.cpp",
+  "file": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/tools/robot_description.cpp",
+  "output": "CMakeFiles/naoqi_driver.dir/src/tools/robot_description.cpp.o"
+},
+{
+  "directory": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build",
+  "command": "/usr/bin/c++ -DCATKIN_BUILD -DLIBQI_VERSION=29 -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"naoqi_driver\\\" -Dnaoqi_driver_EXPORTS -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build/devel/include -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp -I/usr/include/eigen3 -isystem /usr/include/opencv4 -g -fPIC -o CMakeFiles/naoqi_driver.dir/src/tools/from_any_value.cpp.o -c /home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/tools/from_any_value.cpp",
+  "file": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/tools/from_any_value.cpp",
+  "output": "CMakeFiles/naoqi_driver.dir/src/tools/from_any_value.cpp.o"
+},
+{
+  "directory": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build",
+  "command": "/usr/bin/c++ -DCATKIN_BUILD -DLIBQI_VERSION=29 -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"naoqi_driver\\\" -Dnaoqi_driver_module_EXPORTS -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build/devel/include -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp -I/usr/include/eigen3 -isystem /usr/include/opencv4 -g -fPIC -o CMakeFiles/naoqi_driver_module.dir/src/autoload_registration.cpp.o -c /home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/autoload_registration.cpp",
+  "file": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/autoload_registration.cpp",
+  "output": "CMakeFiles/naoqi_driver_module.dir/src/autoload_registration.cpp.o"
+},
+{
+  "directory": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build",
+  "command": "/usr/bin/c++ -DCATKIN_BUILD -DLIBQI_VERSION=29 -DROSCONSOLE_BACKEND_LOG4CXX -DROS_BUILD_SHARED_LIBS=1 -DROS_PACKAGE_NAME=\\\"naoqi_driver\\\" -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build/devel/include -I/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/include -I/opt/ros/noetic/include -I/opt/ros/noetic/share/xmlrpcpp/cmake/../../../include/xmlrpcpp -I/usr/include/eigen3 -isystem /usr/include/opencv4 -g -o CMakeFiles/naoqi_driver_node.dir/src/external_registration.cpp.o -c /home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/external_registration.cpp",
+  "file": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/src/external_registration.cpp",
+  "output": "CMakeFiles/naoqi_driver_node.dir/src/external_registration.cpp.o"
+},
+{
+  "directory": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build/gtest/googlemock",
+  "command": "/usr/bin/c++ -DGTEST_CREATE_SHARED_LIBRARY=1 -Dgmock_EXPORTS -I/usr/src/googletest/googlemock/include -I/usr/src/googletest/googlemock -isystem /usr/src/googletest/googletest/include -isystem /usr/src/googletest/googletest -g -std=c++11 -fPIC -Wall -Wshadow -Wno-error=dangling-else -DGTEST_HAS_PTHREAD=1 -fexceptions -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -DGTEST_HAS_PTHREAD=1 -o CMakeFiles/gmock.dir/src/gmock-all.cc.o -c /usr/src/googletest/googlemock/src/gmock-all.cc",
+  "file": "/usr/src/googletest/googlemock/src/gmock-all.cc",
+  "output": "gtest/googlemock/CMakeFiles/gmock.dir/src/gmock-all.cc.o"
+},
+{
+  "directory": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build/gtest/googlemock",
+  "command": "/usr/bin/c++ -DGTEST_CREATE_SHARED_LIBRARY=1 -Dgmock_main_EXPORTS -isystem /usr/src/googletest/googlemock/include -isystem /usr/src/googletest/googlemock -isystem /usr/src/googletest/googletest/include -isystem /usr/src/googletest/googletest -g -std=c++11 -fPIC -Wall -Wshadow -Wno-error=dangling-else -DGTEST_HAS_PTHREAD=1 -fexceptions -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -DGTEST_HAS_PTHREAD=1 -o CMakeFiles/gmock_main.dir/src/gmock_main.cc.o -c /usr/src/googletest/googlemock/src/gmock_main.cc",
+  "file": "/usr/src/googletest/googlemock/src/gmock_main.cc",
+  "output": "gtest/googlemock/CMakeFiles/gmock_main.dir/src/gmock_main.cc.o"
+},
+{
+  "directory": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build/gtest/googletest",
+  "command": "/usr/bin/c++ -DGTEST_CREATE_SHARED_LIBRARY=1 -Dgtest_EXPORTS -I/usr/src/googletest/googletest/include -I/usr/src/googletest/googletest -g -std=c++11 -fPIC -Wall -Wshadow -Wno-error=dangling-else -DGTEST_HAS_PTHREAD=1 -fexceptions -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -o CMakeFiles/gtest.dir/src/gtest-all.cc.o -c /usr/src/googletest/googletest/src/gtest-all.cc",
+  "file": "/usr/src/googletest/googletest/src/gtest-all.cc",
+  "output": "gtest/googletest/CMakeFiles/gtest.dir/src/gtest-all.cc.o"
+},
+{
+  "directory": "/home/yoha/workspace/pepper_rob_ws/src/naoqi_driver/build/gtest/googletest",
+  "command": "/usr/bin/c++ -DGTEST_CREATE_SHARED_LIBRARY=1 -Dgtest_main_EXPORTS -isystem /usr/src/googletest/googletest/include -isystem /usr/src/googletest/googletest -g -std=c++11 -fPIC -Wall -Wshadow -Wno-error=dangling-else -DGTEST_HAS_PTHREAD=1 -fexceptions -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -DGTEST_HAS_PTHREAD=1 -o CMakeFiles/gtest_main.dir/src/gtest_main.cc.o -c /usr/src/googletest/googletest/src/gtest_main.cc",
+  "file": "/usr/src/googletest/googletest/src/gtest_main.cc",
+  "output": "gtest/googletest/CMakeFiles/gtest_main.dir/src/gtest_main.cc.o"
+}
+]

@@ -1,0 +1,5 @@
+<launch>
+  <!-- Launch audio_enhancer_node -->
+  <node pkg="audio_enhancer" type="audio_enhancer_node.py" name="audio_enhancer_node" output="screen">
+  </node>
+</launch>
