@@ -17,9 +17,10 @@ class AudioEnhancerNode:
         self.model = rospy.get_param('~model', 'nsnet2-20ms-48k-baseline.onnx')
         self.output_dir = rospy.get_param('~output_dir', '/home/yoha/workspace/pepper_rob_ws')
         self.audio_buffer = []
+        self.input_audio_buffer = []
         self.processed_audio_buffer = []
         self.lock = threading.Lock()
-        self.save_interval = 10  # Save processed audio every 10 seconds
+        self.save_interval = 30  # Save processed audio every 10 seconds
         self.audio_frame_duration = 1  # Accumulate audio for 1 second before processing
 
         self.enhancer = NSnet2Enhancer(fs=self.fs)
@@ -31,14 +32,14 @@ class AudioEnhancerNode:
         rospy.loginfo('Audio Enhancer Node initialized')
 
         # Timer to save audio every save_interval seconds
-        self.timer = rospy.Timer(rospy.Duration(self.save_interval), self.save_audio)
+        self.timer = rospy.Timer(rospy.Duration(self.save_interval), self.save_audio)      
 
     def audio_callback(self, msg):
-        rospy.loginfo('Received audio data')
         sigIn = np.array(msg.frontLeft)
         
         with self.lock:
             self.audio_buffer.extend(sigIn.tolist())
+            self.input_audio_buffer.extend(sigIn.tolist())
 
         # Check if we have accumulated enough audio data for 1 second
         if len(self.audio_buffer) >= self.fs * self.audio_frame_duration:
@@ -46,7 +47,7 @@ class AudioEnhancerNode:
 
     def process_audio(self):
         with self.lock:
-            sigIn = np.array(self.audio_buffer[:self.fs * self.audio_frame_duration])
+            sigIn = np.array(self.audio_buffer[:self.fs * self.audio_frame_duration]) / 32767
             self.audio_buffer = self.audio_buffer[self.fs * self.audio_frame_duration:]
 
         outSig = self.enhancer(sigIn, self.fs)
@@ -58,8 +59,15 @@ class AudioEnhancerNode:
 
     def save_audio(self, event):
         with self.lock:
+            if self.input_audio_buffer:
+                inputSig = np.array(self.input_audio_buffer, dtype=np.int16)
+                input_path = Path(self.output_dir) / f'input_audio_{int(time.time())}.wav'
+                sf.write(str(input_path), inputSig, self.fs)
+                rospy.loginfo(f'Input audio saved to {input_path}')
+                self.input_audio_buffer.clear()
+            
             if self.processed_audio_buffer:
-                outSig = np.array(self.processed_audio_buffer)
+                outSig = np.array(self.processed_audio_buffer, dtype=np.float32)
                 out_path = Path(self.output_dir) / f'enhanced_audio_{int(time.time())}.wav'
                 sf.write(str(out_path), outSig, self.fs)
                 rospy.loginfo(f'Processed audio saved to {out_path}')
