@@ -1,127 +1,107 @@
 /************************************************************************************************
 *  
-* This code implement Interaural Time Difference (ITD) algorithm to detect the direction of the sound source
-* by reading two audio file one is the original audio file and the other is the delayed audio file. 
+* This code implements the Interaural Time Difference (ITD) algorithm to detect the direction of the sound source
+* by reading audio from four microphones arranged in a square pattern.
 * 
-*
-*
-*
 *************************************************************************************************/
 
 #include "util.h"
 #include "sound.h"
 #include <vector>
 #include <ros/ros.h>
+#include <map>
+#include <cmath>
+#include <algorithm>
+#include <numeric>  // For std::inner_product
 
-const float speed_of_sound = 346;
-const float distance_between_ears = 0.07;
-const float sampling_rate = 48000;
-const int bufferSize = 4096;
+const float SPEED_OF_SOUND = 346.0f;
+const float DISTANCE_BETWEEN_EARS = 0.07f;
+const float SAMPLING_RATE = 48000.0f;
+const int BUFFER_SIZE = 4096;
+const int WINDOW_SIZE = 3;  // Number of values to consider for the mode
+const float INTENSITY_THRESHOLD = 2.66608e+07;;
 
-const int windowSize = 3;  // Number of values to consider for the mode
-std::vector<double> itd_values;  // Vector to store ITD values
-
-double itd_value;
+std::vector<double> angle_values;  // Vector to store ITD angle values
 bool value_received = false;
 
-double prev_sum_square_leftSound = 0;
-double prev_sum_square_rightSound = 0; 
+double calculateItd(const float* data1, const float* data2, int size);
+float calculateRms(const std::vector<int16_t>& data);
+void audioCallback(const naoqi_driver::AudioCustomMsg& msg);
+double calculateMode(const std::vector<double>& values);
 
-double Itd(float data1[], float data2[]){
-    
-    float ans[2 * bufferSize];
-    float sum_square_leftSound = 0;
-    float sum_square_rightSound = 0;
+double calculateItd(const float* data1, const float* data2, int size) {
+    std::vector<float> ans(2 * size, 0.0f);
+    correl(data1 - 1, data2 - 1, size, ans.data());
 
-    // Apply Energy Thresholding
-    for (int i = 0; i < bufferSize; i++) {
-        sum_square_leftSound += data1[i] * data1[i];
-        sum_square_rightSound += data2[i] * data2[i];
-    }   
-
-    float leftThreshold = 2.66608e+07;
-    float rightThreshold = 4.77235e+07;
-
-    if (sum_square_leftSound < leftThreshold || sum_square_rightSound < rightThreshold) {
-        return 0;
-    }
-
-    // correl(data1, data2, bufferSize, ans);
-    correl(data1 - 1, data2 - 1, bufferSize, ans);
-
-    float max = ans[1];
-    int location = 1;
-    
-    for (int i = 2; i <= bufferSize; i++) {
-        if (max < ans[i]) {
-            max = ans[i];
-            location = i;
-        }
-    }
+    auto max_it = std::max_element(ans.begin() + 1, ans.begin() + size + 1);
+    int location = std::distance(ans.begin(), max_it);
 
     if (location != 1) {
-        int num_samples = (location >= bufferSize / 2 + 1) ? (bufferSize + 1) - location : location - 1;
-        float ITD = num_samples / sampling_rate;
-        float z = ITD * (speed_of_sound / distance_between_ears);
-        double azimuth = std::asin(z) * (180.0 / M_PI);
+        int num_samples = (location >= size / 2 + 1) ? (size + 1 - location) : (location - 1);
+        float ITD = num_samples / SAMPLING_RATE;
+        float z = ITD * (SPEED_OF_SOUND / DISTANCE_BETWEEN_EARS);
+        double angle = std::asin(z) * (180.0 / M_PI);
 
-        if (location >= bufferSize / 2 + 1) {
-            return -azimuth;
-        }
-        else {
-            return azimuth;
-        }
+        return (location >= size / 2 + 1) ? -angle : angle;
     }
-    else {
-        return 0;
-    }
+
+    return 0.0;
 }
 
-float calculate_rms(const std::vector<int16_t>& data, int bufferSize) {
-    float sum = 0.0;
-    for (int i = 0; i < bufferSize; ++i) {
-        sum += data[i] * data[i];
-    }
-    return std::sqrt(sum / bufferSize);
+float calculateRms(const std::vector<int16_t>& data) {
+    float sum = std::inner_product(data.begin(), data.end(), data.begin(), 0.0f);
+    return std::sqrt(sum / data.size());
 }
 
-void audiocallback(const naoqi_driver::AudioCustomMsg& msg) {
-    const std::vector<int16_t>* frontLeft   =  &msg.frontLeft;
-    const std::vector<int16_t>* frontRight  =  &msg.frontRight;
-    const std::vector<int16_t>* rearLeft    =  &msg.rearLeft;
-    const std::vector<int16_t>* rearRight   =  &msg.rearRight;
+void audioCallback(const naoqi_driver::AudioCustomMsg& msg) {
+    const std::vector<int16_t>& frontLeft = msg.frontLeft;
+    const std::vector<int16_t>& frontRight = msg.frontRight;
+    const std::vector<int16_t>& rearLeft = msg.rearLeft;
+    const std::vector<int16_t>& rearRight = msg.rearRight;
 
-    int bufferSize = frontLeft->size();  // Assuming all channels have the same buffer size
+    int bufferSize = frontLeft.size();
 
-    float data1[bufferSize];
-    float data2[bufferSize];
-    float data3[bufferSize];
-    float data4[bufferSize];
+    std::vector<float> data1(frontLeft.begin(), frontLeft.end());
+    std::vector<float> data2(frontRight.begin(), frontRight.end());
+    std::vector<float> data3(rearLeft.begin(), rearLeft.end());
+    std::vector<float> data4(rearRight.begin(), rearRight.end());
 
-    for (int i = 0; i < bufferSize; i++) {
-        data1[i] = frontLeft->at(i);
-        data2[i] = frontRight->at(i);
-        data3[i] = rearLeft->at(i);
-        data4[i] = rearRight->at(i);
+    float rmsFrontLeft = calculateRms(frontLeft);
+    float rmsFrontRight = calculateRms(frontRight);
+    float rmsRearLeft = calculateRms(rearLeft);
+    float rmsRearRight = calculateRms(rearRight);
+
+    // Determine the pair of microphones with the highest combined intensity
+    float combinedFront = rmsFrontLeft + rmsFrontRight;
+    float combinedRear = rmsRearLeft + rmsRearRight;
+    float combinedLeft = rmsFrontLeft + rmsRearLeft;
+    float combinedRight = rmsFrontRight + rmsRearRight;
+
+    float maxCombinedIntensity = std::max({combinedFront, combinedRear, combinedLeft, combinedRight});
+
+    if (maxCombinedIntensity < INTENSITY_THRESHOLD) {
+        ROS_INFO("Sound intensity is too low to determine direction");
+        return;
     }
 
-    // Calculate RMS of the front and rear microphones
-    float rmsFrontLeft  = calculate_rms(*frontLeft, bufferSize);
-    float rmsFrontRight = calculate_rms(*frontRight, bufferSize);
-    float rmsRearLeft   = calculate_rms(*rearLeft, bufferSize);
-    float rmsRearRight  = calculate_rms(*rearRight, bufferSize);
-
-    // Average RMS for front and rear
-    float rmsFront = (rmsFrontLeft + rmsFrontRight) / 2.0;
-    float rmsRear  = (rmsRearLeft + rmsRearRight) / 2.0;
-
-    // Check if sound source is from the front
-    if (rmsFront > rmsRear) {
-        double value = Itd(data1, data2);
-        itd_values.push_back(value);
-        value_received = true;  // Set flag to indicate value has been updated
+    if (maxCombinedIntensity == combinedFront) {
+        double angle = calculateItd(data1.data(), data2.data(), bufferSize);
+        angle_values.push_back(angle * (rmsFrontLeft > rmsFrontRight ? 1 : -1));
+        value_received = true;
+    } else if (maxCombinedIntensity == combinedRear) {
+        double angle = calculateItd(data3.data(), data4.data(), bufferSize);
+        angle_values.push_back(angle * (rmsRearLeft > rmsRearRight ? 1 : -1));
+        value_received = true;
+    } else if (maxCombinedIntensity == combinedLeft) {
+        double angle = calculateItd(data1.data(), data3.data(), bufferSize);
+        angle_values.push_back(angle * (rmsFrontLeft > rmsRearLeft ? 1 : -1));
+        value_received = true;
+    } else if (maxCombinedIntensity == combinedRight) {
+        double angle = calculateItd(data2.data(), data4.data(), bufferSize);
+        angle_values.push_back(angle * (rmsFrontRight > rmsRearRight ? 1 : -1));
+        value_received = true;
     } else {
-        std::cout << "Sound is coming from the back" << std::endl;
+        ROS_INFO("Sound intensity is too low to determine direction");
     }
 }
 
@@ -131,42 +111,33 @@ double calculateMode(const std::vector<double>& values) {
         frequency_map[value]++;
     }
 
-    double mode = values[0];
-    int max_count = 0;
-    for (const auto& pair : frequency_map) {
-        if (pair.second > max_count) {
-            max_count = pair.second;
-            mode = pair.first;
-        }
-    }
-    return mode;
+    return std::max_element(frequency_map.begin(), frequency_map.end(),
+                            [](const std::pair<double, int>& a, const std::pair<double, int>& b) {
+                                return a.second < b.second;
+                            })->first;
 }
 
 int main(int argc, char* argv[]) {
     ros::init(argc, argv, "sound_localization");
     ros::NodeHandle nh;
 
-    // Subscribers
-    ros::Subscriber sub1 = nh.subscribe("/naoqi_driver/audio", 1000, audiocallback);
+    ros::Subscriber sub = nh.subscribe("/naoqi_driver/audio", 1000, audioCallback);
 
+    ros::Rate rate(10);  // 10 Hz loop rate
     while (ros::ok()) {
         ros::spinOnce();
 
-        if (value_received && itd_values.size() >= windowSize) {
-            std::vector<double> last_ten_values(itd_values.end() - windowSize, itd_values.end());
-            double mode = calculateMode(last_ten_values);
-            ROS_INFO("Mode of last 10 ITD values: %f", mode);
+        if (value_received && angle_values.size() >= WINDOW_SIZE) {
+            std::vector<double> last_values(angle_values.end() - WINDOW_SIZE, angle_values.end());
+            double mode = calculateMode(last_values);
+            ROS_INFO("Mode of last %d ITD angle values: %f", WINDOW_SIZE, mode);
 
-            // Clear the vector for the next batch
-            itd_values.clear();
-
-            // Reset flag
+            angle_values.clear();
             value_received = false;
         }
 
-        // Add a small sleep to avoid busy-waiting
-        ros::Duration(0.1).sleep();
+        rate.sleep();
     }
+
     return 0;
 }
-

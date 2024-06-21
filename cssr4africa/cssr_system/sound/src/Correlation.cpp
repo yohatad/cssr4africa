@@ -52,10 +52,10 @@
 
 #include "util.h"
 
-void correl(float data1[], float data2[], unsigned long n, float ans[])
+void correl(const float data1[], const float data2[], unsigned long n, float ans[])
 {
     void realft(float data[], unsigned long n, int isign);
-    void twofft(float data1[], float data2[], float fft1[], float fft2[], unsigned long n);
+    void twofft(const float data1[],const float data2[], float fft1[], float fft2[], unsigned long n);
     
     unsigned long no2, i;
     float dum, *fft;
@@ -79,7 +79,7 @@ void correl(float data1[], float data2[], unsigned long n, float ans[])
 }
 
 
-void twofft(float data1[], float data2[], float fft1[], float fft2[], unsigned long n)
+void twofft(const float data1[],const float data2[], float fft1[], float fft2[], unsigned long n)
 {
     void four1(float data[], unsigned long nn, int isign);
     unsigned long nn3, nn2, jj, j;
