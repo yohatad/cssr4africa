@@ -16,6 +16,8 @@ class AudioEnhancerNode:
         
         self.fs = rospy.get_param('~fs', 48000)
         self.model = rospy.get_param('~model', 'nsnet2-20ms-48k-baseline.onnx')
+        
+        # Change this according to the workspace (the user is using)
         self.output_dir = rospy.get_param('~output_dir', '/home/yoha/workspace/pepper_rob_ws')
         self.save_interval = rospy.get_param('~save_interval', 30)
         self.audio_frame_duration = rospy.get_param('~audio_frame_duration', 0.25)
