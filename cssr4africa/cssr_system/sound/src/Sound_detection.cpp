@@ -13,13 +13,14 @@
 #include <cmath>
 #include <algorithm>
 #include <numeric>  // For std::inner_product
+#include <fstream>
 
 const float SPEED_OF_SOUND = 346.0f;
 const float DISTANCE_BETWEEN_EARS = 0.07f;
 const float SAMPLING_RATE = 48000.0f;
 const int BUFFER_SIZE = 4096;
 const int WINDOW_SIZE = 3;  // Number of values to consider for the mode
-const float INTENSITY_THRESHOLD = 2.66608e+07;;
+const float INTENSITY_THRESHOLD = 250;
 
 std::vector<double> angle_values;  // Vector to store ITD angle values
 bool value_received = false;
@@ -78,25 +79,52 @@ void audioCallback(const naoqi_driver::AudioCustomMsg& msg) {
     float combinedRight = rmsFrontRight + rmsRearRight;
 
     float maxCombinedIntensity = std::max({combinedFront, combinedRear, combinedLeft, combinedRight});
+    // std::cout<<"Max combined intensity: "<<maxCombinedIntensity<<std::endl;
+
+    // print the intesnity for each 
+    std::cout<<"Front: "<<combinedFront<< " rmsFrontLeft: "<<rmsFrontLeft<<" rmsFrontRight: "<<rmsFrontRight<<std::endl;
+    std::cout<<"Rear: "<<combinedRear<< " rmsRearLeft: "<<rmsRearLeft<<" rmsRearRight: "<<rmsRearRight<<std::endl;
+    std::cout<<"Left: "<<combinedLeft<< " rmsFrontLeft: "<<rmsFrontLeft<<" rmsRearLeft: "<<rmsRearLeft<<std::endl;
+    std::cout<<"Right: "<<combinedRight<< " rmsFrontRight: "<<rmsFrontRight<<" rmsRearRight: "<<rmsRearRight<<std::endl;
+
+    // write the audio data to a file
+    writeToFile(frontLeft, "frontLeft.txt");
+
+   
+
+    // compare the four microphones and print out which one has the highest intensity
+    // if (rmsFrontLeft > rmsFrontRight && rmsFrontLeft > rmsRearLeft && rmsFrontLeft > rmsRearRight && rmsFrontLeft > INTENSITY_THRESHOLD) {
+    //     std::cout<<"Front Left " <<rmsFrontLeft<<std::endl;
+    // } else if (rmsFrontRight > rmsFrontLeft && rmsFrontRight > rmsRearLeft && rmsFrontRight > rmsRearRight && rmsFrontRight > INTENSITY_THRESHOLD) {
+    //     std::cout<<"Front Right "<<rmsFrontRight<<std::endl;
+    // } else if (rmsRearLeft > rmsFrontLeft && rmsRearLeft > rmsFrontRight && rmsRearLeft > rmsRearRight && rmsRearLeft > INTENSITY_THRESHOLD) {
+    //     std::cout<<"Rear Left " <<rmsRearLeft<<std::endl; 
+    // } else if (rmsRearRight > rmsFrontLeft && rmsRearRight > rmsFrontRight && rmsRearRight > rmsRearLeft && rmsRearRight > INTENSITY_THRESHOLD) {
+    //     std::cout<<"Rear Right "<<rmsRearRight<<std::endl;
+    // }
+    
 
     if (maxCombinedIntensity < INTENSITY_THRESHOLD) {
-        ROS_INFO("Sound intensity is too low to determine direction");
         return;
     }
 
     if (maxCombinedIntensity == combinedFront) {
+        // std::cout<<"front"<<std::endl; 
         double angle = calculateItd(data1.data(), data2.data(), bufferSize);
         angle_values.push_back(angle * (rmsFrontLeft > rmsFrontRight ? 1 : -1));
         value_received = true;
     } else if (maxCombinedIntensity == combinedRear) {
+        // std::cout<<"back"<<std::endl;
         double angle = calculateItd(data3.data(), data4.data(), bufferSize);
         angle_values.push_back(angle * (rmsRearLeft > rmsRearRight ? 1 : -1));
         value_received = true;
     } else if (maxCombinedIntensity == combinedLeft) {
+        // std::cout<<"left"<<std::endl;
         double angle = calculateItd(data1.data(), data3.data(), bufferSize);
         angle_values.push_back(angle * (rmsFrontLeft > rmsRearLeft ? 1 : -1));
         value_received = true;
     } else if (maxCombinedIntensity == combinedRight) {
+        // std::cout<<"right"<<std::endl;
         double angle = calculateItd(data2.data(), data4.data(), bufferSize);
         angle_values.push_back(angle * (rmsFrontRight > rmsRearRight ? 1 : -1));
         value_received = true;
@@ -120,8 +148,9 @@ double calculateMode(const std::vector<double>& values) {
 int main(int argc, char* argv[]) {
     ros::init(argc, argv, "sound_localization");
     ros::NodeHandle nh;
-
+    
     ros::Subscriber sub = nh.subscribe("/naoqi_driver/audio", 1000, audioCallback);
+
 
     ros::Rate rate(10);  // 10 Hz loop rate
     while (ros::ok()) {
@@ -130,7 +159,7 @@ int main(int argc, char* argv[]) {
         if (value_received && angle_values.size() >= WINDOW_SIZE) {
             std::vector<double> last_values(angle_values.end() - WINDOW_SIZE, angle_values.end());
             double mode = calculateMode(last_values);
-            ROS_INFO("Mode of last %d ITD angle values: %f", WINDOW_SIZE, mode);
+            // ROS_INFO("Mode of last %d ITD angle values: %f", WINDOW_SIZE, mode);
 
             angle_values.clear();
             value_received = false;
