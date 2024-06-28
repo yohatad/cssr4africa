@@ -121,6 +121,7 @@ catkin_package(
 include_directories(
 include
 ${catkin_INCLUDE_DIRS}
+${FFTW_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
@@ -138,4 +139,4 @@ ${catkin_INCLUDE_DIRS}
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(${PROJECT_NAME}_sound_localization src/Sound_detection.cpp src/util.cpp src/Correlation.cpp)
 set_target_properties(${PROJECT_NAME}_sound_localization PROPERTIES OUTPUT_NAME sound_localization PREFIX "")
-target_link_libraries(${PROJECT_NAME}_sound_localization ${catkin_LIBRARIES})
+target_link_libraries(${PROJECT_NAME}_sound_localization ${catkin_LIBRARIES} ${FFTW_LIBRARIES})
