@@ -1,0 +1,11 @@
+string face_label
+int32[] face_centroid
+int32 face_width
+int32 face_height
+float32 confidence
+int32[] left_eye_centroid
+int32 left_eye_width
+int32 left_eye_height
+int32[] right_eye_centroid
+int32 right_eye_width
+int32 right_eye_height
