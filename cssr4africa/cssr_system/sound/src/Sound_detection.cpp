@@ -48,7 +48,7 @@ double calculateItd(const float* data1, const float* data2, int size) {
         float z = ITD * (SPEED_OF_SOUND / DISTANCE_BETWEEN_EARS);
         double angle = std::asin(z) * (180.0 / M_PI);
 
-        return (location >= size / 2 + 1) ? -angle : angle;
+        return (location >= size / 2 + 1) ? angle : -angle;
     }
     return 0.0;
 }
