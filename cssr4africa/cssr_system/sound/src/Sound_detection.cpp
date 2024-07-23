@@ -108,7 +108,7 @@ int main(int argc, char* argv[]) {
     ros::Subscriber sub = nh.subscribe("/naoqi_driver/audio", 1000, audioCallback);
 
     // Initialize the publisher
-    sound_direction_pub = nh.advertise<std_msgs::Float64>("SoundDirection", 1000);
+    sound_direction_pub = nh.advertise<std_msgs::Float64>("/soundDetection/direction", 1000);
 
     ros::Rate rate(10);  // 10 Hz loop rate
     while (ros::ok()) {
