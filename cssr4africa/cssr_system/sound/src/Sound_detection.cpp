@@ -21,7 +21,7 @@ const float DISTANCE_BETWEEN_EARS = 0.07f;
 const float SAMPLING_RATE = 48000.0f;
 const int TARGET_BUFFER_SIZE = 8192;  // New target buffer size for accumulation
 const int WINDOW_SIZE = 1;  // Number of values to consider for the mode
-const float INTENSITY_THRESHOLD = 250;
+const float INTENSITY_THRESHOLD = 400;
 
 std::vector<double> angle_values;  // Vector to store ITD angle values
 std::vector<int16_t> accumulated_frontLeft;  // Accumulated data for front left mic
