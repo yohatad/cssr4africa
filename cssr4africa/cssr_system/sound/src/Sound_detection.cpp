@@ -80,44 +80,49 @@ void audioCallback(const naoqi_driver::AudioCustomMsg& msg) {
         std::vector<float> data3(accumulated_rearLeft.begin(), accumulated_rearLeft.end());
         std::vector<float> data4(accumulated_rearRight.begin(), accumulated_rearRight.end());
 
-        std::vector<float> flfr(2 * TARGET_BUFFER_SIZE, 0.0f);
-        std::vector<float> flbl(2 * TARGET_BUFFER_SIZE, 0.0f);
-        std::vector<float> frbr(2 * TARGET_BUFFER_SIZE, 0.0f);
-
-        correl(data1.data(), data2.data(), TARGET_BUFFER_SIZE, flfr.data());
-        correl(data1.data(), data3.data(), TARGET_BUFFER_SIZE, flbl.data());
-        correl(data2.data(), data4.data(), TARGET_BUFFER_SIZE, frbr.data());
-
-        auto max_itFLFR = std::max_element(flfr.begin() + 1, flfr.begin() + TARGET_BUFFER_SIZE + 1);
-        int locationFLFR = std::distance(flfr.begin(), max_itFLFR);
-        
-        if (locationFLFR != 1) {
-            int num_samples = (locationFLFR >= TARGET_BUFFER_SIZE / 2 + 1) ? (TARGET_BUFFER_SIZE + 1 - locationFLFR) : (locationFLFR - 1);
-            std::cout<<"num_samples FLFR: "<<num_samples<<std::endl;
-        }
-
-        auto max_itFLBL = std::max_element(flbl.begin() + 1, flbl.begin() + TARGET_BUFFER_SIZE + 1);
-        int locationFLBL = std::distance(flbl.begin(), max_itFLBL);
-        
-        if (locationFLFR != 1) {
-            int num_samples = (locationFLBL >= TARGET_BUFFER_SIZE / 2 + 1) ? (TARGET_BUFFER_SIZE + 1 - locationFLBL) : (locationFLBL - 1);
-            std::cout<<"num_samples FLBL: "<<num_samples<<std::endl;
-        }
-
-        auto max_itFRBR = std::max_element(frbr.begin() + 1, frbr.begin() + TARGET_BUFFER_SIZE + 1);
-        int locationFRBR = std::distance(frbr.begin(), max_itFRBR);
-
-        if (locationFLFR != 1) {
-            int num_samples = (locationFRBR >= TARGET_BUFFER_SIZE / 2 + 1) ? (TARGET_BUFFER_SIZE + 1 - locationFRBR) : (locationFRBR - 1);
-            std::cout<<"num_samples FRBR: "<<num_samples<<std::endl;
-        }
-
         float rmsFrontLeft = calculateRms(accumulated_frontLeft);
         float rmsFrontRight = calculateRms(accumulated_frontRight);
 
         float combinedIntensity = rmsFrontLeft + rmsFrontRight;
 
         if (combinedIntensity > INTENSITY_THRESHOLD){
+            std::vector<float> flfr(2 * TARGET_BUFFER_SIZE, 0.0f);
+            std::vector<float> flbl(2 * TARGET_BUFFER_SIZE, 0.0f);
+            std::vector<float> frbr(2 * TARGET_BUFFER_SIZE, 0.0f);
+
+            correl(data1.data(), data2.data(), TARGET_BUFFER_SIZE, flfr.data());
+            correl(data1.data(), data3.data(), TARGET_BUFFER_SIZE, flbl.data());
+            correl(data2.data(), data4.data(), TARGET_BUFFER_SIZE, frbr.data());
+
+            auto max_itFLFR = std::max_element(flfr.begin() + 1, flfr.begin() + TARGET_BUFFER_SIZE + 1);
+            int locationFLFR = std::distance(flfr.begin(), max_itFLFR);
+
+            std::cout<<"locationFLFR: "<<locationFLFR<<std::endl;
+            
+            if (locationFLFR != 1) {
+                int num_samples = (locationFLFR >= TARGET_BUFFER_SIZE / 2 + 1) ? (TARGET_BUFFER_SIZE + 1 - locationFLFR) : (locationFLFR - 1);
+                // std::cout<<"num_samples FLFR: "<<num_samples<<std::endl;
+            }
+
+            auto max_itFLBL = std::max_element(flbl.begin() + 1, flbl.begin() + TARGET_BUFFER_SIZE + 1);
+            int locationFLBL = std::distance(flbl.begin(), max_itFLBL);
+            
+            if (locationFLFR != 1) {
+                int num_samples = (locationFLBL >= TARGET_BUFFER_SIZE / 2 + 1) ? (TARGET_BUFFER_SIZE + 1 - locationFLBL) : (locationFLBL - 1);
+                // std::cout<<"num_samples FLBL: "<<num_samples<<std::endl;
+            }
+
+            std::cout<<"locationFLBL: "<<locationFLBL<<std::endl;
+
+            auto max_itFRBR = std::max_element(frbr.begin() + 1, frbr.begin() + TARGET_BUFFER_SIZE + 1);
+            int locationFRBR = std::distance(frbr.begin(), max_itFRBR);
+
+            std::cout<<"locationFRBR: "<<locationFRBR<<std::endl;
+
+            if (locationFLFR != 1) {
+                int num_samples = (locationFRBR >= TARGET_BUFFER_SIZE / 2 + 1) ? (TARGET_BUFFER_SIZE + 1 - locationFRBR) : (locationFRBR - 1);
+                // std::cout<<"num_samples FRBR: "<<num_samples<<std::endl;
+            }
             double itd = calculateItd(data1.data(), data2.data(), TARGET_BUFFER_SIZE);
             angle_values.push_back(itd);
 
@@ -130,6 +135,8 @@ void audioCallback(const naoqi_driver::AudioCustomMsg& msg) {
         // Clear the accumulated buffers after processing
         accumulated_frontLeft.clear();
         accumulated_frontRight.clear();
+        accumulated_rearLeft.clear();
+        accumulated_rearRight.clear();
     }
 }
 
