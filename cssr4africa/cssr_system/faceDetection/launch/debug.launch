@@ -1,6 +1,0 @@
-<launch> 
-    <node name="driver"      pkg="face_detection" type="faceDetectionDriver"      output="screen" />
-    <node name="application" pkg="face_detection" type="faceDetectionApplication" output="screen"   launch-prefix="xterm -e gdb --args"/>
-    
-    <!-- <node name="stub"        pkg="face_detection" type="faceDetectionStub"   output="screen" />  -->
-</launch> 
