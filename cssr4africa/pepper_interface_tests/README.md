@@ -1,11 +1,13 @@
 # Pepper Interface Tests
-<a href="https://cssr4africa.github.io/"> <img src="https://github.com/cssr4africa/cssr4africa.github.io/blob/main/docs/images/CSSRforAfrica_logo_red.png?raw=true" alt="CSSR4Africa" height=20> </a>
 
-Pepper interface tests is a ROS package to test the sensors and actuators of the Pepper robot on a physical and simulator platform. After setting up the development environment using the instruction on the document 
+<img src="CSSR4AfricaLogo.svg" alt="CSSR4Africa Logo" style="width:50%; height:auto;">
+
+Pepper interface tests is a ROS package to test the sensors and actuators of the Pepper robot on a physical and simulator platform. After setting up the development environment using the software installation document as setout  [D3.3 Software Installation Manual](https://cssr4africa.github.io/deliverables/CSSR4Africa_Deliverable_D3.3.pdf), the package can be installed and run on the Pepper robot. 
+
+The package is designed to test the sensors and actuators of the Pepper robot. The package is divided into two parts: sensor test and actuator test. The sensor test is designed to test the sensors of the Pepper robot, while the actuator test is designed to test the actuators of the Pepper robot. The sensor test is designed to test the following sensors: sonar, laser, microphone, and camera. The actuator test is designed to test the following actuators: Head, arm, hand, leg, and wheels.
 
 ## Documentation
-The main documentation for this deliverable is found in [D3.3 Software Installation Manual](https://cssr4africa.github.io/deliverables/CSSR4Africa_Deliverable_D3.3.pdf) that
-provides a detailed installation guide.
+Accompnaying this code, there is a deliverable report that provides a detailed explanation of the code and how to run the tests. The deliverable report is available at [D4.1 Sensor test](https://cssr4africa.github.io/deliverables/CSSR4Africa_Deliverable_D4.1.pdf) and [5.1 Actuator test](https://cssr4africa.github.io/deliverables/CSSR4Africa_Deliverable_D5.1.pdf)
 
 ## Running Tests
 To run the test on the physical platform, change the first line of actuatorTestConfiguration.ini file in the config folder
