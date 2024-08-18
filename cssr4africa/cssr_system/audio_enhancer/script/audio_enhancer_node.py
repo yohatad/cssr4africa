@@ -42,7 +42,7 @@ class AudioEnhancerNode:
         Path(self.output_dir).mkdir(parents=True, exist_ok=True)
         rospy.loginfo('Audio Enhancer Node initialized')
 
-        self.timer = rospy.Timer(rospy.Duration(self.save_interval), self.save_audio)
+        # self.timer = rospy.Timer(rospy.Duration(self.save_interval), self.save_audio)
 
         logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')
         self.logger = logging.getLogger('AudioEnhancerNode')
