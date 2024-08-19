@@ -18,7 +18,7 @@ class AudioEnhancerNode:
         self.fs = rospy.get_param('~fs', 48000)
         self.model = rospy.get_param('~model', 'nsnet2-20ms-48k-baseline.onnx')
         
-        self.output_dir = rospy.get_param('~output_dir', '/home/yoha/workspace/pepper_rob_ws')
+        self.output_dir = rospy.get_param('~output_dir', '/home/lab/workspace/pepper_rob_ws')
         self.save_interval = rospy.get_param('~save_interval', 30)
         self.audio_frame_duration = rospy.get_param('~audio_frame_duration', 0.25)
         self.max_buffer_duration = rospy.get_param('~max_buffer_duration', 10)
@@ -31,7 +31,7 @@ class AudioEnhancerNode:
         self.lock = threading.Lock()
 
         self.enhancer = NSnet2Enhancer(fs=self.fs)
-        self.vad = webrtcvad.Vad(2)  # Set aggressiveness level (0-3)
+        self.vad = webrtcvad.Vad(3)  # Set aggressiveness level (0-3)
 
         self.vad_frame_duration = 0.02  # 20ms frames for VAD
         self.vad_frame_size = int(self.fs * self.vad_frame_duration)
@@ -70,14 +70,17 @@ class AudioEnhancerNode:
                 end_size = self.buffer_size - self.buffer_start
                 sigIn = np.concatenate((self.audio_buffer[self.buffer_start:], self.audio_buffer[:frame_size - end_size]))
             self.buffer_start = (self.buffer_start + frame_size) % self.buffer_size
+        
+        outSig = self.enhancer(sigIn, self.fs)
+        with self.lock:
+            self.processed_audio_buffer = np.concatenate((self.processed_audio_buffer, outSig))
+        
+        # check if voice is detected and print message
+        if self.is_voice_detected(outSig):
+            print('voice detected')
 
-        if self.is_voice_detected(sigIn):
-            outSig = self.enhancer(sigIn, self.fs)
-            with self.lock:
-                self.processed_audio_buffer = np.concatenate((self.processed_audio_buffer, outSig))
-
-            out_msg = Float32MultiArray(data=outSig)
-            self.audio_pub.publish(out_msg)
+        out_msg = Float32MultiArray(data=outSig)
+        self.audio_pub.publish(out_msg)
 
     def is_voice_detected(self, audio_frame):
         if len(audio_frame) < self.vad_frame_size:
@@ -87,6 +90,7 @@ class AudioEnhancerNode:
             frame = audio_frame[start:start + self.vad_frame_size]
             frame_bytes = (frame * 32767).astype(np.int16).tobytes()
             if self.vad.is_speech(frame_bytes, self.fs):
+                print('voice detected')
                 return True
         return False
 
