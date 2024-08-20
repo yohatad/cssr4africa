@@ -15,4 +15,11 @@ The CSSR4Africa software repository contains the code and resources for the CSSR
 - `cssr4africa` directory contains the source code for the CSSR4Africa project.
 - `cssr4africa.github.io` contains the the project's website.
 - `gazebo_model_velocity_plugin` publisheds
-- `naoqi_dcm_driver` hardware interface allowing control Nao, Romeo, and pepper
+- `naoqi_dcm_driver` hardware interface allowing control Nao, Romeo, and pepper robots using the Naoqi API.
+- `naoqi_driver` module that establishes a ROS brige to the Naoqi API. It publishes sensor data as well as the robot position. 
+- `pepper_dcm_robot` DCM (Device Communication Manager) stack integrating tools to control the Pepper robot.
+- `software installation scripts` contains scripts for installing the software required for the CSSR4Africa project.
+
+A detailed report on how to install the software and run the CSSR4Africa project can be found in the [CSSR4Africa Software Installation Manual](https://cssr4africa.github.io/deliverables/CSSR4Africa_Deliverable_D3.3.pdf).
+
+The system architecture details the ROS packages that will eventually be part of the CSSR4Africa sofware repository. The architecture is available in the [CSSR4Africa System Architecture](https://cssr4africa.github.io/deliverables/CSSR4Africa_Deliverable_D3.1.pdf).
