@@ -1,144 +1,25 @@
-### Culturally Sensitive Social Robotics for Africa (CSS4RAfrica)
+### The CSSR4Africa Project
 
-## Installation of ROS-Noetic
+<img src="CSSR4AfricaLogo.svg" alt="CSSR4Africa Logo" style="width:90%; height:auto;">
 
-# Setup your source.list
+Based on ethnographic research to acquire cultural knowledge about acceptable modes of communication, the CSSR4Africa project aims to equip robots with the ability to interact sensitively and politely with people in Africa using spatial, non-verbal, and verbal modes of communication. 
 
-```bash
-sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list'
-```
+The project has the following objectives. 
 
-# Set up your keys
+1. Identify the verbal and non-verbal social and cultural norms of human interaction that are prevalent in countries in Africa.
+2. Encapsulate them in the behavioural patterns of social robots so that they can engage with African people in a manner that is consistent with their expectations of acceptable social interaction.
+3. Demonstrate these culturally-sensitive social robot behaviours in two use cases: one for giving a tour of a university laboratory, and one for assisting and giving directions to visitors at the reception of a university.
 
-``` bash
-sudo apt install curl # if you haven't already installed curl
-curl -s https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | sudo apt-key add -
-```
+The CSSR4Africa software repository contains the code and resources for the CSSR4Africa project. The repository is organized as follows:
 
-# Installation 
-``` bash
-sudo apt update
-```
+- `cssr4africa` directory contains the source code for the CSSR4Africa project.
+- `cssr4africa.github.io` contains the the project's website.
+- `gazebo_model_velocity_plugin` publisheds
+- `naoqi_dcm_driver` hardware interface allowing control Nao, Romeo, and pepper robots using the Naoqi API.
+- `naoqi_driver` module that establishes a ROS brige to the Naoqi API. It publishes sensor data as well as the robot position. 
+- `pepper_dcm_robot` DCM (Device Communication Manager) stack integrating tools to control the Pepper robot.
+- `software installation scripts` contains scripts for installing the software required for the CSSR4Africa project.
 
-Desktop-Full install
-``` bash
-sudo apt install ros-noetic-desktop-full
-```
-Source the script every time 
-``` bash
-echo "source /opt/ros/noetic/setup.bash" >> ~/.bashrc
-source ~/.bashrc
-```
+A detailed report on how to install the software and run the CSSR4Africa project can be found in the [CSSR4Africa Software Installation Manual](https://cssr4africa.github.io/deliverables/CSSR4Africa_Deliverable_D3.3.pdf).
 
-To install this tool and other dependencies for building ROS packages
-``` bash
-sudo apt install python3-rosdep python3-rosinstall python3-rosinstall-generator python3-wstool build-essential
-```
-
-Initialize rosdep
-``` bash
-sudo apt install python3-rosdep
-```
-
-``` bash
-sudo rosdep init
-rosdep update
-```
-
-
-## Installing NAOqi Driver and ROS Packages 
-# Install the NAOqi driver
-
-``` bash
-sudo apt-get install ros-.*-naoqi-driver
-```
-
-Create ROS workspace
-``` bash
-mkdir -p $HOME/workspace/pepper_rob_ws/src
-```
-
-Move to the workspace directory
-``` bash
-cd $HOME/workspace/pepper_rob_ws/src
-```
-
-Clone NAOqi DCM driver repository
-``` bash
-git clone https://github.com/cssr4africa/naoqi_dcm_driver.git
-```
-
-Clone NAOqi driver repository
-``` bash
-git clone https://github.com/cssr4africa/naoqi_driver.git
-```
-
-Clone Pepper DCM driver repository
-``` bash
-git clone https://github.com/cssr4africa/pepper_dcm_robot.git
-```
-
-Clone Pepper virtual repository
-``` bash
-git clone https://github.com/ros-naoqi/pepper_virtual.git
-```
-
-Clone Pepper robot repository
-``` bash
-git clone https://github.com/ros-naoqi/pepper_robot.git
-```
-
-Clone Pepper moveit config repository
-``` bash
-git clone https://github.com/ros-naoqi/pepper_moveit_config.git
-```
-
-Build the repository
-``` bash
-cd .. && catkin_make
-```
-
-Source the setup.bash file
-``` bash
-source devel/setup.bash
-```
-
-Add the setup to your .bashrc file so that you don't have to source it every time
-``` bash
-echo "source $HOME/workspace/pepper_rob_ws/devel/setup.bash" >> $HOME/.bashrc
-source $HOME/.bashrc
-```
-
-# Install additional packages 
-``` bash
-sudo apt-get install ros-noetic-joint-trajectory-controller
-```
-
-``` bash
-sudo apt-get install ros-noetic-ros-controllers
-```
-
-``` bash
-sudo apt-get install ros-noetic-pepper-meshes
-```
-
-When the configuring window opens up, you may agree to the license
-terms using the right/left arrow key select <ok> hit enter, and then
-select <Yes> to accept the terms and press enter.
-
-Install rosdep
-``` bash
-sudo pip install -U rosdep
-```
-
-``` bash
-sudo rosdep init
-```
-
-``` bash
-rosdep update
-```
-
-``` bash
-sudo rosdep init
-```
+The system architecture details the ROS packages that will eventually be part of the CSSR4Africa sofware repository. The architecture is available in the [CSSR4Africa System Architecture](https://cssr4africa.github.io/deliverables/CSSR4Africa_Deliverable_D3.1.pdf).
