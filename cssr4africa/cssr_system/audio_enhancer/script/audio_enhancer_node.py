@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import rospy
 from audio_enhancer.msg import AudioCustomMsg
-from std_msgs.msg import Float32MultiArray
+from std_msgs.msg import Float32MultiArray, Bool
 import numpy as np
 import soundfile as sf
 from pathlib import Path
@@ -38,6 +38,7 @@ class AudioEnhancerNode:
 
         self.audio_sub = rospy.Subscriber('/naoqi_driver/audio', AudioCustomMsg, self.audio_callback)
         self.audio_pub = rospy.Publisher('/audio_enhancer', Float32MultiArray, queue_size=10)
+        self.voice_detected_pub = rospy.Publisher('/voice_detected', Bool, queue_size=10)  # New publisher for voice detection
 
         Path(self.output_dir).mkdir(parents=True, exist_ok=True)
         rospy.loginfo('Audio Enhancer Node initialized')
@@ -74,11 +75,12 @@ class AudioEnhancerNode:
         outSig = self.enhancer(sigIn, self.fs)
         with self.lock:
             self.processed_audio_buffer = np.concatenate((self.processed_audio_buffer, outSig))
-        
-        # check if voice is detected and print message
-        if self.is_voice_detected(outSig):
-            print('voice detected')
 
+        # Voice detection
+        voice_detected = self.is_voice_detected(outSig)
+        self.voice_detected_pub.publish(Bool(data=voice_detected))  # Publish voice detection status
+
+        # Publish the enhanced audio
         out_msg = Float32MultiArray(data=outSig)
         self.audio_pub.publish(out_msg)
 
@@ -90,7 +92,6 @@ class AudioEnhancerNode:
             frame = audio_frame[start:start + self.vad_frame_size]
             frame_bytes = (frame * 32767).astype(np.int16).tobytes()
             if self.vad.is_speech(frame_bytes, self.fs):
-                print('voice detected')
                 return True
         return False
 
