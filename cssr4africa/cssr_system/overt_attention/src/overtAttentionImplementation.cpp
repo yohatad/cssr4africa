@@ -1121,8 +1121,9 @@ int social_attention(std::string topics_file, int realignment_threshold, ros::Pu
         control_head_yaw = head_joint_states[1];
 
         if(face_detected && sound_detected){            // When a face is detected and sound is detected
-            if (sound_count > 10)
+            if (sound_count > 30)
             {
+                cout << "Sound count: " << sound_count << endl;
                 control_head_pitch = 0.0;
                 control_head_yaw += angle_of_sound;
                 sound_count = 0;

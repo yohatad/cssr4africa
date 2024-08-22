@@ -10,7 +10,6 @@
 #include <vector>
 #include <ros/ros.h>
 #include <std_msgs/Float64.h>  // Include for publishing Float64 messages
-#include <std_msgs/Bool.h>  // Include for subscribing to Bool messages
 #include <map>
 #include <cmath>
 #include <algorithm>
@@ -31,12 +30,10 @@ std::vector<int16_t> accumulated_frontRight; // Accumulated data for front right
 double calculateItd(const float* data1, const float* data2, int size);
 float calculateRms(const std::vector<int16_t>& data);
 void audioCallback(const naoqi_driver::AudioCustomMsg& msg);
-void voiceDetectedCallback(const std_msgs::Bool::ConstPtr& msg);
 double calculateMode(const std::vector<double>& values);
 
-// Declare the publisher and voice detected flag as global variables
+// Declare the publisher as a global variable
 ros::Publisher sound_direction_pub;
-bool voice_detected = false;
 
 double calculateItd(const float* data1, const float* data2, int size) {
     std::vector<float> ans(2 * size, 0.0f);
@@ -62,11 +59,6 @@ float calculateRms(const std::vector<int16_t>& data) {
 }
 
 void audioCallback(const naoqi_driver::AudioCustomMsg& msg) {
-    if (!voice_detected) {
-        // Skip processing if voice is not detected
-        return;
-    }
-
     const std::vector<int16_t>& frontLeft = msg.frontLeft;
     const std::vector<int16_t>& frontRight = msg.frontRight;
 
@@ -98,10 +90,6 @@ void audioCallback(const naoqi_driver::AudioCustomMsg& msg) {
     }
 }
 
-void voiceDetectedCallback(const std_msgs::Bool::ConstPtr& msg) {
-    voice_detected = msg->data;
-}
-
 double calculateMode(const std::vector<double>& values) {
     std::map<double, int> frequency_map;
     for (double value : values) {
@@ -118,7 +106,6 @@ int main(int argc, char* argv[]) {
     ros::NodeHandle nh;
     
     ros::Subscriber sub = nh.subscribe("/naoqi_driver/audio", 1000, audioCallback);
-    ros::Subscriber voice_detected_sub = nh.subscribe("/voice_detected", 1000, voiceDetectedCallback);  // Subscribe to voice detection topic
 
     // Initialize the publisher
     sound_direction_pub = nh.advertise<std_msgs::Float64>("/soundDetection/direction", 1000);
@@ -127,6 +114,14 @@ int main(int argc, char* argv[]) {
     while (ros::ok()) {
         ros::spinOnce();
         ROS_INFO_THROTTLE(10, "Sound Localization Node Running...\n");
+
+        // if (angle_values.size() >= WINDOW_SIZE) {
+        //     std::vector<double> last_values(angle_values.end() - WINDOW_SIZE, angle_values.end());
+        //     double mode = calculateMode(last_values);
+        //     ROS_INFO("Mode of last %d ITD angle values: %f", WINDOW_SIZE, mode);
+        //     angle_values.clear();
+        // }
+        // rate.sleep();
     }
     return 0;
 }
