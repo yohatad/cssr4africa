@@ -2,7 +2,7 @@
 <package format="2">
   <name>soundDetection</name>
   <version>0.0.0</version>
-  <description>soundDetection</description>
+  <description>Sound Detection and Localization</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->

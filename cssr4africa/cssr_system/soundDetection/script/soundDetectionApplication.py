@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import rospy
-from audio_enhancer.msg import AudioCustomMsg
+from soundDetection.msg import AudioCustomMsg
 from std_msgs.msg import Float32MultiArray
 import numpy as np
 import soundfile as sf
@@ -9,11 +9,11 @@ from threading import Lock
 import time
 import logging
 import webrtcvad
-from nsnet2_enhancer import NSnet2Enhancer  # Update the import path to match your setup
+from soundDetectionImplementation import NSnet2Enhancer  # Update the import path to match your setup
 
 class AudioEnhancerNode:
     def __init__(self):
-        rospy.init_node('audio_enhancer_node', anonymous=True)
+        rospy.init_node('soundDetection', anonymous=True)
         
         # Get ROS parameters and handle paths with pathlib
         self.fs = rospy.get_param('~fs', 48000)
