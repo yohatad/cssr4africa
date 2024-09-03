@@ -9,16 +9,24 @@ from threading import Lock
 import time
 import logging
 import webrtcvad
-from soundDetectionImplementation import NSnet2Enhancer  # Update the import path to match your setup
+from nsnet2_enhancer import NSnet2Enhancer  # Update the import path to match your setup
 
 class AudioEnhancerNode:
     def __init__(self):
         rospy.init_node('audio_enhancer_node', anonymous=True)
         
+        # Get ROS parameters and handle paths with pathlib
         self.fs = rospy.get_param('~fs', 48000)
-        self.model = rospy.get_param('~model', 'nsnet2-20ms-48k-baseline.onnx')
         
-        self.output_dir = rospy.get_param('~output_dir', '/home/lab/workspace/pepper_rob_ws')
+        # Use pathlib to handle file paths
+        model_path = rospy.get_param('~model', '../models/nsnet2-20ms-48k-baseline.onnx')
+        self.model = Path(model_path).resolve()  # Convert to absolute path
+
+        # Dynamically get the user's home directory
+        default_output_dir = Path.home() / 'workspace/pepper_rob_ws'
+        output_dir_path = rospy.get_param('~output_dir', str(default_output_dir))
+        self.output_dir = Path(output_dir_path).resolve()  # Convert to absolute path
+
         self.save_interval = rospy.get_param('~save_interval', 30)
         self.audio_frame_duration = rospy.get_param('~audio_frame_duration', 0.25)
         self.max_buffer_duration = rospy.get_param('~max_buffer_duration', 10)
@@ -40,7 +48,7 @@ class AudioEnhancerNode:
         self.audio_sub = rospy.Subscriber('/naoqi_driver/audio', AudioCustomMsg, self.audio_callback)
         self.audio_pub = rospy.Publisher('/audio_enhancer', Float32MultiArray, queue_size=10)
 
-        Path(self.output_dir).mkdir(parents=True, exist_ok=True)
+        self.output_dir.mkdir(parents=True, exist_ok=True)
         rospy.loginfo('Audio Enhancer Node initialized')
 
         # self.timer = rospy.Timer(rospy.Duration(self.save_interval), self.save_audio)
@@ -99,7 +107,7 @@ class AudioEnhancerNode:
         with self.lock:
             if self.processed_audio_buffer.size > 0:
                 outSig = self.processed_audio_buffer
-                out_path = Path(self.output_dir) / f'enhanced_audio_{int(time.time())}.wav'
+                out_path = self.output_dir / f'enhanced_audio_{int(time.time())}.wav'
                 try:
                     sf.write(str(out_path), outSig, self.fs)
                     rospy.loginfo(f'Processed audio saved to {out_path}')
