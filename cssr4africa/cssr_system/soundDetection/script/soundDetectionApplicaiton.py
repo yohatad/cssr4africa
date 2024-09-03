@@ -5,11 +5,11 @@ from std_msgs.msg import Float32MultiArray
 import numpy as np
 import soundfile as sf
 from pathlib import Path
-from enhance_onnx import NSnet2Enhancer
-import threading
+from threading import Lock
 import time
 import logging
 import webrtcvad
+from soundDetectionImplementation import NSnet2Enhancer  # Update the import path to match your setup
 
 class AudioEnhancerNode:
     def __init__(self):
@@ -28,8 +28,9 @@ class AudioEnhancerNode:
         self.buffer_start = 0
         self.buffer_end = 0
         self.processed_audio_buffer = np.array([], dtype=np.float32)
-        self.lock = threading.Lock()
+        self.lock = Lock()
 
+        # Initialize NSnet2Enhancer
         self.enhancer = NSnet2Enhancer(fs=self.fs)
         self.vad = webrtcvad.Vad(3)  # Set aggressiveness level (0-3)
 
