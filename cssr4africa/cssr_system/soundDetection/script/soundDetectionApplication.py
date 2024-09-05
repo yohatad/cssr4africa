@@ -156,7 +156,8 @@ class soundDetectionNode:
 
             # Check if the buffers have reached the maximum size for localization
             if len(self.frontleft_buffer) >= self.localization_buffer_size and len(self.frontright_buffer) >= self.localization_buffer_size:
-                self.localize(self.frontleft_buffer, self.frontright_buffer)
+                if self.is_voice_detected(self.frontleft_buffer):
+                    self.localize(self.frontleft_buffer, self.frontright_buffer)
 
             for sample in sigIn_frontLeft:
                 self.audio_buffer[self.buffer_end] = sample
