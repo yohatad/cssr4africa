@@ -17,15 +17,13 @@ class soundDetectionNode:
     def __init__(self):
         try:
             rospy.init_node('soundDetection', anonymous=True)
-            
-            # Get ROS parameters and handle paths with pathlib
-            self.fs = 48000  
 
             # Dynamically get the user's home directory
             default_output_dir = Path.home() / 'workspace/pepper_rob_ws'
             output_dir_path = rospy.get_param('~output_dir', str(default_output_dir))
             self.output_dir = Path(output_dir_path).resolve()  # Convert to absolute path
 
+            self.fs = 48000  
             self.save_interval = 30
             self.audio_frame_duration = 0.25
             self.max_buffer_duration = 10
@@ -42,7 +40,7 @@ class soundDetectionNode:
 
             self.speed_of_sound = 343.0  # Speed of sound in m/s
             self.distance_between_ears = 0.07  # Distance between microphones in meters
-            self.intensity_threshold = 400  # Intensity threshold for detecting sound
+            self.intensity_threshold = 6.0846175e-05  # Intensity threshold for detecting sound
 
             # Initialize NSnet2Enhancer
             self.enhancer = NSnet2Enhancer(fs=self.fs)
@@ -128,20 +126,25 @@ class soundDetectionNode:
         - sigIn_frontLeft: Signal from the front left microphone
         - sigIn_frontRight: Signal from the front right microphone
         """
-        # Compute the ITD using GCC-PHAT
-        max_tau = self.distance_between_ears / self.speed_of_sound
-        itd, _ = self.gcc_phat(sigIn_frontLeft, sigIn_frontRight, fs=self.fs, max_tau=max_tau)
-        
-        # Calculate the angle of arrival
-        angle = self.calculate_angle(itd)
-        
-        # Publish the calculated angle
-        angle_msg = std_msgs.msg.Float32()
-        angle_msg.data = angle
-        self.local_pub.publish(angle_msg)
-        
-        # Log the detected direction
-        rospy.loginfo(f"Sound detected at angle: {angle:.2f} degrees")
+        # Compute the intensity of the sound source
+        intensity = np.mean(sigIn_frontLeft ** 2 + sigIn_frontRight ** 2)
+
+        # Check if the intensity is above the threshold
+        if intensity > self.intensity_threshold:   
+            # Compute the ITD using GCC-PHAT
+            max_tau = self.distance_between_ears / self.speed_of_sound
+            itd, _ = self.gcc_phat(sigIn_frontLeft, sigIn_frontRight, fs=self.fs, max_tau=max_tau)
+            
+            # Calculate the angle of arrival
+            angle = self.calculate_angle(itd)
+            
+            # Publish the calculated angle
+            angle_msg = std_msgs.msg.Float32()
+            angle_msg.data = angle
+            self.local_pub.publish(angle_msg)
+            
+            # Log the detected direction
+            rospy.loginfo(f"Sound detected at angle: {angle:.2f} degrees")
 
     def audio_callback(self, msg):
         sigIn_frontLeft = np.array(msg.frontLeft, dtype=np.float32) / 32767.0
@@ -156,7 +159,7 @@ class soundDetectionNode:
 
             # Check if the buffers have reached the maximum size for localization
             if len(self.frontleft_buffer) >= self.localization_buffer_size and len(self.frontright_buffer) >= self.localization_buffer_size:
-                if self.is_voice_detected(self.frontleft_buffer):
+                # if self.is_voice_detected(self.frontleft_buffer):
                     self.localize(self.frontleft_buffer, self.frontright_buffer)
 
             for sample in sigIn_frontLeft:
@@ -184,10 +187,6 @@ class soundDetectionNode:
         with self.lock:
             self.processed_audio_buffer = np.concatenate((self.processed_audio_buffer, outSig))
         
-        # check if voice is detected and print message
-        if self.is_voice_detected(outSig):
-            print('voice detected')
-
         out_msg = std_msgs.msg.Float32MultiArray()
         self.signal_pub.publish(out_msg)
 
