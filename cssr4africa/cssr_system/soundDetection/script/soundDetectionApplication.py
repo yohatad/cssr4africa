@@ -14,8 +14,6 @@ import numpy as np
 import soundfile as sf
 from scipy.signal import butter, lfilter, wiener
 
-
-
 class soundDetectionNode:
     def __init__(self):
         try:
@@ -43,7 +41,6 @@ class soundDetectionNode:
 
             self.speed_of_sound = 343.0         # Speed of sound in m/s
             self.distance_between_ears = 0.07   # Distance between microphones in meters
-            self.intensity_threshold = 400      # Intensity threshold for detecting sound
 
             # Initialize NSnet2Enhancer
             self.enhancer = NSnet2Enhancer(fs=self.fs)
@@ -116,7 +113,7 @@ class soundDetectionNode:
         SIG = np.fft.rfft(sig, n=n)
         REFSIG = np.fft.rfft(ref_sig, n=n)
         R = SIG * np.conj(REFSIG)
-        R /= np.abs(R)
+        R /= (np.abs(R) + 1e-10)  # Adding a small epsilon to avoid division by zero
         cc = np.fft.irfft(R, n=n)
         max_shift = int(n / 2)
         if max_tau:
@@ -190,6 +187,12 @@ class soundDetectionNode:
         # Step 8: Combine ITD estimates
         energies = [np.sum(np.abs(left)**2) for left in sub_band_signals_frontleft]
         itd_weights = [energy / sum(energies) for energy in energies]
+        energy_sum = sum(energies)
+        if energy_sum == 0:
+            itd_weights = [0] * len(energies)  # If the sum is zero, set weights to zero
+        else:   
+            itd_weights = [energy / energy_sum for energy in energies]  # Normal calculation
+
         itd_combined = sum([itd * weight for itd, weight in zip(itds_estimates, itd_weights)])
 
         # Step 9: Calculate the angle of arrival
@@ -200,6 +203,8 @@ class soundDetectionNode:
         angle_msg = std_msgs.msg.Float32()
         angle_msg.data = angle
         self.local_pub.publish(angle_msg)
+        
+        
         # # Compute the intensity of the sound source
         # intensity = np.mean(sigIn_frontLeft ** 2 + sigIn_frontRight ** 2)
 
