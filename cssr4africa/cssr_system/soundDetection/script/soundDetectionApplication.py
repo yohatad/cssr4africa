@@ -134,7 +134,12 @@ class soundDetectionNode:
         - angle: Angle of arrival in degrees
         """
         z = itd * (self.speed_of_sound / self.distance_between_ears)
-        angle = math.asin(z) * (180.0 / np.pi)
+        try:
+            angle = math.asin(z) * (180.0 / np.pi)
+        except ValueError:
+            angle = 0.0
+
+
         return angle
 
     def localize(self, sigIn_frontLeft, sigIn_frontRight):
@@ -145,14 +150,24 @@ class soundDetectionNode:
         - sigIn_frontLeft: Signal from the front left microphone
         - sigIn_frontRight: Signal from the front right microphone
         """
+
+        # print(sigIn_frontLeft)
         
         # Step 1: Noise reduction
-        noise_reduced_frontLeft = wiener(sigIn_frontLeft)
-        noise_reduced_frontRight = wiener(sigIn_frontRight)
+        # def apply_wiener_filter(signal, threshold=1e-10):
+        #     if np.var(signal) > threshold:
+        #         return wiener(signal)
+        #     else:
+        #         rospy.logwarn('Skipping Wiener filtering due to low signal variance')
+        #         return signal  # Return the original signal if variance is too low
+            
+        # noise_reduced_frontLeft = apply_wiener_filter(sigIn_frontLeft)
+        # noise_reduced_frontRight = apply_wiener_filter(sigIn_frontRight)
 
-        # Step 2: Bandpass filtering
-        filtered_frontLeft = self.bandpass_filter(noise_reduced_frontLeft, self.lowcut, self.highcut, self.fs)
-        filtered_frontRight = self.bandpass_filter(noise_reduced_frontRight, self.lowcut, self.highcut, self.fs)
+
+        # # Step 2: Bandpass filtering
+        filtered_frontLeft = self.bandpass_filter(sigIn_frontLeft, self.lowcut, self.highcut, self.fs)
+        filtered_frontRight = self.bandpass_filter(sigIn_frontRight, self.lowcut, self.highcut, self.fs)
 
         # Step 3: Normalize the signals
         normalized_frontLeft = self.normalize_signal(filtered_frontLeft)
@@ -171,38 +186,40 @@ class soundDetectionNode:
         vad_frontleft = self.voice_activity_detection(reverb_suppressed_frontleft)
         vad_frontright = self.voice_activity_detection(reverb_suppressed_frontright)
 
-        # Step 7: Sub-band filtering
-        filters = self.create_sub_band_filters(self.sub_bands, self.fs)
-        sub_band_signals_frontleft = self.apply_filter_bank(vad_frontleft, filters)
-        sub_band_signals_frontright = self.apply_filter_bank(vad_frontright, filters)
+        # # Step 7: Sub-band filtering
+        # filters = self.create_sub_band_filters(self.sub_bands, self.fs)
+        # sub_band_signals_frontleft = self.apply_filter_bank(vad_frontleft, filters)
+        # sub_band_signals_frontright = self.apply_filter_bank(vad_frontright, filters)
 
-        print('Sub-band signals:', len(sub_band_signals_frontleft))
-
+        # Step 7: GCC-PHAT
+        itd_combined = self.gcc_phat(vad_frontleft, vad_frontright, fs=self.fs)
+        # print(f'ITD: {itd_combined:.9f} seconds')
+        
         # ITD estimation for each sub-band
-        itds_estimates = []
-        for i, (left, right) in enumerate(zip(sub_band_signals_frontleft, sub_band_signals_frontright)):
-            itd = self.gcc_phat(left, right, fs=self.fs)
-            itds_estimates.append(itd)
+        # itds_estimates = []
+        # for i, (left, right) in enumerate(zip(sub_band_signals_frontleft, sub_band_signals_frontright)):
+        #     itd = self.gcc_phat(left, right, fs=self.fs)
+        #     itds_estimates.append(itd)
 
-        # Step 8: Combine ITD estimates
-        energies = [np.sum(np.abs(left)**2) for left in sub_band_signals_frontleft]
-        itd_weights = [energy / sum(energies) for energy in energies]
-        energy_sum = sum(energies)
-        if energy_sum == 0:
-            itd_weights = [0] * len(energies)  # If the sum is zero, set weights to zero
-        else:   
-            itd_weights = [energy / energy_sum for energy in energies]  # Normal calculation
+        # # Step 8: Combine ITD estimates
+        # energies = [np.sum(np.abs(left)**2) for left in sub_band_signals_frontleft]
+        # itd_weights = [energy / sum(energies) for energy in energies]
+        # energy_sum = sum(energies)
+        # if energy_sum == 0:
+        #     itd_weights = [0] * len(energies)  # If the sum is zero, set weights to zero
+        # else:   
+        #     itd_weights = [energy / energy_sum for energy in energies]  # Normal calculation
 
-        itd_combined = sum([itd * weight for itd, weight in zip(itds_estimates, itd_weights)])
+        # itd_combined = sum([itd * weight for itd, weight in zip(itds_estimates, itd_weights)])
 
         # Step 9: Calculate the angle of arrival
         angle = self.calculate_angle(itd_combined)
         print(f'Angle of arrival: {angle:.2f} degrees')
 
-        # Step 10: Publish the calculated angle
-        angle_msg = std_msgs.msg.Float32()
-        angle_msg.data = angle
-        self.local_pub.publish(angle_msg)
+        # # Step 10: Publish the calculated angle
+        # angle_msg = std_msgs.msg.Float32()
+        # angle_msg.data = angle
+        # self.local_pub.publish(angle_msg)
         
         
         # # Compute the intensity of the sound source
