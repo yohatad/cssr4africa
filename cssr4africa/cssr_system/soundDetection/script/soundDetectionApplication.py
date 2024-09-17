@@ -36,6 +36,7 @@ class soundDetectionNode:
             self.processed_audio_buffer = np.array([], dtype=np.float32)
             self.lock = Lock()
             self.localization_buffer_size = 8192
+            self.accumulated_samples = 0
             self.frontleft_buffer = np.zeros(self.localization_buffer_size, dtype=np.float32)
             self.frontright_buffer = np.zeros(self.localization_buffer_size, dtype=np.float32)
 
@@ -246,24 +247,37 @@ class soundDetectionNode:
         sigIn_frontLeft = np.array(msg.frontLeft, dtype=np.float32) / 32767.0
         sigIn_frontRight = np.array(msg.frontRight, dtype=np.float32) / 32767.0
 
+        new_data_length = len(sigIn_frontLeft)  # This is expected to be 4096 per callback
+
         with self.lock:
-            self.frontleft_buffer = np.roll(self.frontleft_buffer, -len(sigIn_frontLeft))
-            self.frontright_buffer = np.roll(self.frontright_buffer, -len(sigIn_frontRight))
+            # Track the total number of accumulated samples
+            self.accumulated_samples += new_data_length
 
-            self.frontleft_buffer[-len(sigIn_frontLeft):] = sigIn_frontLeft
-            self.frontright_buffer[-len(sigIn_frontRight):] = sigIn_frontRight
+            # Roll the buffer to the left and insert the new data at the end
+            self.frontleft_buffer = np.roll(self.frontleft_buffer, -new_data_length)
+            self.frontright_buffer = np.roll(self.frontright_buffer, -new_data_length)
 
-            # Check if the buffers have reached the maximum size for localization
-            if len(self.frontleft_buffer) >= self.localization_buffer_size and len(self.frontright_buffer) >= self.localization_buffer_size:
-                # if self.is_voice_detected(self.frontleft_buffer):
+            # Insert new data at the end of the buffer
+            self.frontleft_buffer[-new_data_length:] = sigIn_frontLeft
+            self.frontright_buffer[-new_data_length:] = sigIn_frontRight
+
+            if self.accumulated_samples >= self.localization_buffer_size:
+                # Process the buffers once we have accumulated enough data
+                if self.is_voice_detected(self.frontleft_buffer):
+                    # Localize sound using the full buffer
                     self.localize(self.frontleft_buffer, self.frontright_buffer)
 
+                # Reset the accumulated sample counter after processing
+                self.accumulated_samples = 0
+
+            # Process audio in the general buffer (if you need to accumulate the main audio stream)
             for sample in sigIn_frontLeft:
                 self.audio_buffer[self.buffer_end] = sample
                 self.buffer_end = (self.buffer_end + 1) % self.buffer_size
                 if self.buffer_end == self.buffer_start:
                     self.buffer_start = (self.buffer_start + 1) % self.buffer_size
 
+        # Process audio when enough data is accumulated
         if (self.buffer_end - self.buffer_start) % self.buffer_size >= int(self.fs * self.audio_frame_duration):
             self.process_audio()
 
