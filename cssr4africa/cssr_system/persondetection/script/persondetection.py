@@ -1,64 +1,65 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 import rospy
+import cv2
+import numpy as np
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
-import cv2
 from ultralytics import YOLO
-import numpy as np
+from std_msgs.msg import String
 
-# Initialize YOLOv8 model
-model = YOLO('yolov8n.pt')  # You can use any model variant like 'yolov8s.pt' for better accuracy
-
-class YOLOPersonDetector:
+class YOLOv8ROS:
     def __init__(self):
-        # Initialize the ROS node
-        rospy.init_node('yolov8_person_detector', anonymous=True)
+        # Initialize ROS node
+        rospy.init_node('yolov8_node', anonymous=True)
+
+        # Define YOLOv8 model
+        self.yolo_model = YOLO('/root/workspace/pepper_rob_ws/src/cssr4africa/cssr_system/persondetection/script/yolov8s.pt')
+
+        # ROS topics and publishers
+        self.image_sub = rospy.Subscriber('/camera/color/image_raw', Image, self.image_callback)  # Subscribing to camera/color/image_raw
+        self.person_detected_pub = rospy.Publisher('/yolov8/person_detected', String, queue_size=10)
         
-        # Create a subscriber to the camera image topic
-        self.image_sub = rospy.Subscriber('/camera/color/image_raw', Image, self.image_callback)
-        
-        # Initialize the CvBridge to convert ROS Image messages to OpenCV images
+        # Initialize OpenCV bridge for image conversion
         self.bridge = CvBridge()
-        
-        # Open a window to display the results
-        cv2.namedWindow("YOLOv8 Person Detection", cv2.WINDOW_NORMAL)
 
-    def image_callback(self, img_msg):
-        try:
-            # Convert the image from ROS Image message to OpenCV format
-            frame = self.bridge.imgmsg_to_cv2(img_msg, "bgr8")
-        except Exception as e:
-            rospy.logerr(f"Error converting image: {e}")
-            return
-        
-        # Run YOLOv8 detection
-        results = model(frame)
+    def image_callback(self, msg):
+        # Convert ROS image message to OpenCV image
+        frame = self.bridge.imgmsg_to_cv2(msg, "bgr8")
 
-        # Filter results to show only 'person' class detections (class ID 0 in YOLO's COCO dataset)
-        for detection in results[0].boxes:
-            if detection.cls == 0:  # Class 0 is 'person' in YOLOv8's COCO dataset
-                # Get bounding box coordinates
-                x1, y1, x2, y2 = map(int, detection.xyxy[0].cpu().numpy())
-                conf = detection.conf.item()  # Get confidence level
-                
-                # Draw the bounding box and confidence score on the image
-                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                label = f'Person {conf:.2f}'
-                cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+        # Run YOLOv8 detection on the frame
+        results = self.yolo_model(frame)
 
-        # Display the image with detections
-        cv2.imshow("YOLOv8 Person Detection", frame)
-        cv2.waitKey(1)  # Display the image for 1 ms and move to the next frame
+        # Extract bounding boxes and confidences for persons
+        person_detected = []
+        for result in results:
+            for box in result.boxes:
+                x1, y1, x2, y2 = map(int, box.xyxy[0])  # Bounding box coordinates
+                conf = float(box.conf[0])  # Confidence score
+                class_id = int(box.cls[0])  # Class ID of the detected object
 
-    def spin(self):
+                # Only process detections for class "person" (COCO class 0) with confidence above threshold
+                if class_id == 0 and conf > 0.5:
+                    # Store detected person information
+                    person_detected.append(f'Bbox: [{x1}, {y1}, {x2}, {y2}], Conf: {conf:.2f}')
+
+                    # Draw bounding box and confidence score on the image
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                    cv2.putText(frame, f'Conf: {conf:.2f}', (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 0), 2)
+
+        # Publish detected person information
+        self.person_detected_pub.publish(str(person_detected))
+
+        # Display the processed frame (optional)
+        cv2.imshow("YOLOv8 ROS", frame)
+        cv2.waitKey(1)
+
+    def run(self):
         rospy.spin()
 
 if __name__ == '__main__':
     try:
-        person_detector = YOLOPersonDetector()
-        person_detector.spin()
+        yolov8_ros = YOLOv8ROS()
+        yolov8_ros.run()
     except rospy.ROSInterruptException:
         pass
-    finally:
-        cv2.destroyAllWindows()
