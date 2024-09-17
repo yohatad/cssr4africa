@@ -166,25 +166,25 @@ class soundDetectionNode:
 
 
         # # Step 2: Bandpass filtering
-        filtered_frontLeft = self.bandpass_filter(sigIn_frontLeft, self.lowcut, self.highcut, self.fs)
-        filtered_frontRight = self.bandpass_filter(sigIn_frontRight, self.lowcut, self.highcut, self.fs)
+        # filtered_frontLeft = self.bandpass_filter(sigIn_frontLeft, self.lowcut, self.highcut, self.fs)
+        # filtered_frontRight = self.bandpass_filter(sigIn_frontRight, self.lowcut, self.highcut, self.fs)
 
         # Step 3: Normalize the signals
-        normalized_frontLeft = self.normalize_signal(filtered_frontLeft)
-        normalized_frontRight = self.normalize_signal(filtered_frontRight)
+        # normalized_frontLeft = self.normalize_signal(filtered_frontLeft)
+        # normalized_frontRight = self.normalize_signal(filtered_frontRight)
 
         # Step 4: Winowing (Hanning window)
-        win = np.hanning(self.window_size)
-        windowed_frontLeft = win * normalized_frontLeft[:self.window_size] 
-        windowed_frontRight = win * normalized_frontRight[:self.window_size] 
+        # win = np.hanning(self.window_size)
+        # windowed_frontLeft = win * normalized_frontLeft[:self.window_size] 
+        # windowed_frontRight = win * normalized_frontRight[:self.window_size] 
 
         # Step 5: Reverberation suppression
-        reverb_suppressed_frontleft = lfilter([1], [1, -0.95], windowed_frontLeft)
-        reverb_suppressed_frontright = lfilter([1], [1, -0.95], windowed_frontRight)
+        # reverb_suppressed_frontleft = lfilter([1], [1, -0.95], windowed_frontLeft)
+        # reverb_suppressed_frontright = lfilter([1], [1, -0.95], windowed_frontRight)
 
         # Step 6: Voice activity detection
-        vad_frontleft = self.voice_activity_detection(reverb_suppressed_frontleft)
-        vad_frontright = self.voice_activity_detection(reverb_suppressed_frontright)
+        # vad_frontleft = self.voice_activity_detection(reverb_suppressed_frontleft)
+        # vad_frontright = self.voice_activity_detection(reverb_suppressed_frontright)
 
         # # Step 7: Sub-band filtering
         # filters = self.create_sub_band_filters(self.sub_bands, self.fs)
@@ -192,7 +192,7 @@ class soundDetectionNode:
         # sub_band_signals_frontright = self.apply_filter_bank(vad_frontright, filters)
 
         # Step 7: GCC-PHAT
-        itd_combined = self.gcc_phat(vad_frontleft, vad_frontright, fs=self.fs)
+        itd_combined = self.gcc_phat(sigIn_frontLeft, sigIn_frontRight, fs=self.fs)
         # print(f'ITD: {itd_combined:.9f} seconds')
         
         # ITD estimation for each sub-band
