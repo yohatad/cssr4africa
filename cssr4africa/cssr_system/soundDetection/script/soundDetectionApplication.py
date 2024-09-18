@@ -28,6 +28,7 @@ class soundDetectionNode:
             self.save_interval = 30
             self.audio_frame_duration = 0.25
             self.max_buffer_duration = 10
+            self.intensity_threshold = 3.9e-3
 
             self.buffer_size = int(self.fs * self.max_buffer_duration)
             self.audio_buffer = np.zeros(self.buffer_size, dtype=np.float32)
@@ -60,7 +61,6 @@ class soundDetectionNode:
             # self.timer = rospy.Timer(rospy.Duration(self.save_interval), self.save_audio)
             logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')
             self.logger = logging.getLogger('soundDetectionNode')
-
 
             # Define sub-band frequencies
             self.sub_bands = [
@@ -171,8 +171,8 @@ class soundDetectionNode:
         # filtered_frontRight = self.bandpass_filter(sigIn_frontRight, self.lowcut, self.highcut, self.fs)
 
         # Step 3: Normalize the signals
-        # normalized_frontLeft = self.normalize_signal(filtered_frontLeft)
-        # normalized_frontRight = self.normalize_signal(filtered_frontRight)
+        normalized_frontLeft = self.normalize_signal(sigIn_frontLeft)
+        normalized_frontRight = self.normalize_signal(sigIn_frontRight)
 
         # Step 4: Winowing (Hanning window)
         # win = np.hanning(self.window_size)
@@ -193,7 +193,7 @@ class soundDetectionNode:
         # sub_band_signals_frontright = self.apply_filter_bank(vad_frontright, filters)
 
         # Step 7: GCC-PHAT
-        itd_combined = self.gcc_phat(sigIn_frontLeft, sigIn_frontRight, fs=self.fs)
+        itd_combined = self.gcc_phat(normalized_frontLeft, normalized_frontRight, fs=self.fs)
         # print(f'ITD: {itd_combined:.9f} seconds')
         
         # ITD estimation for each sub-band
@@ -244,42 +244,52 @@ class soundDetectionNode:
         #     rospy.loginfo(f"Sound detected at angle: {angle:.2f} degrees")
 
     def audio_callback(self, msg):
+        # Step 1: Convert incoming message data to float32 format and normalize it to the range [-1, 1]
         sigIn_frontLeft = np.array(msg.frontLeft, dtype=np.float32) / 32767.0
         sigIn_frontRight = np.array(msg.frontRight, dtype=np.float32) / 32767.0
 
-        new_data_length = len(sigIn_frontLeft)  # This is expected to be 4096 per callback
+        # Step 2: Calculate the intensity of the front left signal (RMS) and skip processing if below threshold
+        intensity_sigIn_frontLeft = np.sqrt(np.mean(sigIn_frontLeft ** 2))
+        if intensity_sigIn_frontLeft < self.intensity_threshold:
+            # Skip processing if the signal intensity is below the threshold
+            return
+
+        new_data_length = len(sigIn_frontLeft)  # Number of samples in this callback (expected to be 4096)
 
         with self.lock:
-            # Track the total number of accumulated samples
+            # Step 3: Accumulate the number of samples we've processed since the last localization
             self.accumulated_samples += new_data_length
 
-            # Roll the buffer to the left and insert the new data at the end
+            # Step 4: Roll the front left and right buffers to make space for new data
             self.frontleft_buffer = np.roll(self.frontleft_buffer, -new_data_length)
             self.frontright_buffer = np.roll(self.frontright_buffer, -new_data_length)
 
-            # Insert new data at the end of the buffer
+            # Step 5: Insert the new data at the end of the buffers
             self.frontleft_buffer[-new_data_length:] = sigIn_frontLeft
             self.frontright_buffer[-new_data_length:] = sigIn_frontRight
 
+            # Step 6: If enough samples are accumulated (equal or more than the localization buffer size), process localization
             if self.accumulated_samples >= self.localization_buffer_size:
-                # Process the buffers once we have accumulated enough data
+                # Check if a voice is detected in the buffer before performing sound localization
                 if self.is_voice_detected(self.frontleft_buffer):
-                    # Localize sound using the full buffer
+                    # Localize the sound source based on the signals in the buffers
                     self.localize(self.frontleft_buffer, self.frontright_buffer)
-
-                # Reset the accumulated sample counter after processing
+                
+                # Reset the accumulated samples counter after processing the buffers
                 self.accumulated_samples = 0
 
-            # Process audio in the general buffer (if you need to accumulate the main audio stream)
+            # Step 7: Update the general audio buffer with the incoming front left signal for other audio processing
             for sample in sigIn_frontLeft:
                 self.audio_buffer[self.buffer_end] = sample
                 self.buffer_end = (self.buffer_end + 1) % self.buffer_size
                 if self.buffer_end == self.buffer_start:
                     self.buffer_start = (self.buffer_start + 1) % self.buffer_size
 
-        # Process audio when enough data is accumulated
+        # Step 8: Trigger general audio processing when enough data is accumulated in the general buffer
         if (self.buffer_end - self.buffer_start) % self.buffer_size >= int(self.fs * self.audio_frame_duration):
+            # Process accumulated audio data for other purposes (e.g., enhancement, saving, etc.)
             self.process_audio()
+
 
     def process_audio(self):
         frame_size = int(self.fs * self.audio_frame_duration)
