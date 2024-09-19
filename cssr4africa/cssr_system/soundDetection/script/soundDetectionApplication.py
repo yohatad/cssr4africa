@@ -3,7 +3,6 @@ from soundDetection.msg import AudioCustomMsg
 from soundDetectionImplementation import NSnet2Enhancer  # Update the import path to match your setup
 from pathlib import Path
 from threading import Lock
-from scipy.signal import fftconvolve
 import math
 import time
 import rospy
@@ -11,8 +10,7 @@ import std_msgs.msg
 import webrtcvad
 import logging
 import numpy as np
-import soundfile as sf
-from scipy.signal import butter, lfilter, wiener
+import matplotlib.pyplot as plt
 
 class soundDetectionNode:
     def __init__(self):
@@ -38,8 +36,11 @@ class soundDetectionNode:
             self.lock = Lock()
             self.localization_buffer_size = 8192
             self.accumulated_samples = 0
+
             self.frontleft_buffer = np.zeros(self.localization_buffer_size, dtype=np.float32)
             self.frontright_buffer = np.zeros(self.localization_buffer_size, dtype=np.float32)
+            self.rearleft_buffer = np.zeros(self.localization_buffer_size, dtype=np.float32)
+            self.rearright_buffer = np.zeros(self.localization_buffer_size, dtype=np.float32)
 
             self.speed_of_sound = 343.0         # Speed of sound in m/s
             self.distance_between_ears = 0.07   # Distance between microphones in meters
@@ -61,53 +62,63 @@ class soundDetectionNode:
             # self.timer = rospy.Timer(rospy.Duration(self.save_interval), self.save_audio)
             logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')
             self.logger = logging.getLogger('soundDetectionNode')
-
-            # Define sub-band frequencies
-            self.sub_bands = [
-                (300, 1000),   # Sub-band 1
-                (1000, 2000),  # Sub-band 2
-                (2000, 3400)   # Sub-band 3
-            ]
-
-            self.lowcut = 300
-            self.highcut = 3400
-            self.window_size = 4096
             
         except Exception as e:
             rospy.logerr(f'Failed to initialize sound detection node: {e}')
             raise
-  
-    # Define pre-processing functions
-    def butter_bandpass(self, lowcut, highcut, fs, order=5):
-        nyquist = 0.5 * fs
-        low = lowcut / nyquist
-        high = highcut / nyquist
-        b, a = butter(order, [low, high], btype='band')
-        return b, a
 
-    def bandpass_filter(self, data, lowcut, highcut, fs, order=5):
-        b, a = self.butter_bandpass(lowcut, highcut, fs, order=order)
-        return lfilter(b, a, data)
+    def plot_signals(self, original_signal, filtered_signal, mic_label):
+        """
+        Plots and saves the original and filtered signals.
+
+        Parameters:
+        - original_signal: The original unfiltered signal
+        - filtered_signal: The signal after bandpass filtering
+        - mic_label: Label indicating which microphone the signal is from
+        """
+
+        time_axis = np.arange(len(original_signal)) / self.fs
+
+        plt.figure(figsize=(12, 6))
+
+        # Plot original signal
+        plt.subplot(2, 1, 1)
+        plt.plot(time_axis, original_signal, label='Original Signal')
+        plt.title(f'Original Signal - {mic_label}')
+        plt.xlabel('Time [s]')
+        plt.ylabel('Amplitude')
+        plt.legend()
+        plt.grid(True)
+
+        # Plot filtered signal
+        plt.subplot(2, 1, 2)
+        plt.plot(time_axis, filtered_signal, label='Filtered Signal', color='orange')
+        plt.title(f'Filtered Signal - {mic_label}')
+        plt.xlabel('Time [s]')
+        plt.ylabel('Amplitude')
+        plt.legend()
+        plt.grid(True)
+
+        # Adjust layout and save the figure
+        plt.tight_layout()
+
+        # Create a directory to save the plots if it doesn't exist
+        plot_dir = self.output_dir / 'plots'
+        plot_dir.mkdir(parents=True, exist_ok=True)
+
+        # Generate a filename with timestamp
+        timestamp = int(time.time() * 1000)
+        filename = plot_dir / f'{mic_label}_signal_{timestamp}.png'
+
+        plt.savefig(str(filename))
+        plt.close()
+        rospy.loginfo(f'Plot saved to {filename}')
 
     def normalize_signal(self, signal):
         return signal / np.max(np.abs(signal))
 
     def voice_activity_detection(self, signal, threshold=0.01):
         return np.where(np.abs(signal) > threshold, signal, 0)
-    
-    def create_sub_band_filters(self, sub_bands, fs, order=4):
-        filters = []
-        for low, high in sub_bands:
-            b, a = self.butter_bandpass(low, high, fs, order=order)
-            filters.append((b, a))
-        return filters
-
-    def apply_filter_bank(self, signal, filters):
-        sub_band_signals = []
-        for b, a in filters:
-            filtered = lfilter(b, a, signal)
-            sub_band_signals.append(filtered)
-        return sub_band_signals
      
     def gcc_phat(self, sig, ref_sig, fs, max_tau=None, interp=16):
         n = sig.shape[0] + ref_sig.shape[0]
@@ -124,6 +135,70 @@ class soundDetectionNode:
         tau = shift / float(fs)
         return tau
     
+    def direction(self, sigIn_frontLeft, sigIn_frontRight, sigIn_rearLeft, sigIn_rearRight):
+        
+        """
+        Estimate the direction of the sound source based on dynamically selected microphone pairs
+        depending on whether the sound is coming from the front, back, left, or right.
+
+        Parameters:
+        - sigIn_frontLeft: Signal from the front-left microphone
+        - sigIn_frontRight: Signal from the front-right microphone
+        - sigIn_rearLeft: Signal from the rear-left microphone
+        - sigIn_rearRight: Signal from the rear-right microphone
+
+        Returns:
+        - azimuth_angle: The estimated azimuth angle in degrees.
+        - direction: The estimated direction (front, back, left, right).
+        """
+
+        # Step 1: Compute ITDs based on the general direction
+        # Front/Back: Use FL-FR and BL-BR
+        itd_front = self.gcc_phat(sigIn_frontLeft, sigIn_frontRight, fs=self.fs)
+        itd_back = self.gcc_phat(sigIn_rearLeft, sigIn_rearRight, fs=self.fs)
+        
+        # Left/Right: Use FL-BL and FR-BR
+        itd_left = self.gcc_phat(sigIn_frontLeft, sigIn_rearLeft, fs=self.fs)
+        itd_right = self.gcc_phat(sigIn_frontRight, sigIn_rearRight, fs=self.fs)
+        
+        # rospy.loginfo(f'ITD (Front-Left to Front-Right): {itd_front * 1000:.5f} ms')
+        # rospy.loginfo(f'ITD (Rear-Left to Rear-Right): {itd_back * 1000:.5f} ms')
+        # rospy.loginfo(f'ITD (Front-Left to Rear-Left): {itd_left * 1000:.5f} ms')
+        # rospy.loginfo(f'ITD (Front-Right to Rear-Right): {itd_right * 1000:.5f} ms')
+
+        # Step 2: Determine the general direction using the ITDs
+        if abs(itd_front) > abs(itd_left) and abs(itd_front) > abs(itd_right):
+            if itd_front > 0:
+                direction = 'right'
+                # Use FL-FR and BL-BR for final azimuth estimation
+                angle_front = self.calculate_angle(itd_front)
+                angle_back = self.calculate_angle(itd_back)
+                final_angle = (angle_front + angle_back) / 2.0
+            else:
+                direction = 'left'
+                # Use FL-BL and FR-BR for final azimuth estimation
+                angle_left = self.calculate_angle(itd_left)
+                angle_right = self.calculate_angle(itd_right)
+                final_angle = (angle_left + angle_right) / 2.0
+        else:
+            if itd_left > 0:
+                direction = 'front'
+                # Use FL-FR and BL-BR for final azimuth estimation
+                angle_front = self.calculate_angle(itd_front)
+                angle_back = self.calculate_angle(itd_back)
+                final_angle = (angle_front + angle_back) / 2.0
+            else:
+                direction = 'back'
+                # Use FL-BL and FR-BR for final azimuth estimation
+                angle_left = self.calculate_angle(itd_left)
+                angle_right = self.calculate_angle(itd_right)
+                final_angle = (angle_left + angle_right) / 2.0
+
+        rospy.loginfo(f'Final estimated direction: {direction} at angle: {final_angle:.2f} degrees')
+
+        # Return the final angle and direction
+        return final_angle, direction
+
     def calculate_angle(self, itd):
         """
         Calculate the angle of arrival of the sound source based on ITD.
@@ -134,16 +209,18 @@ class soundDetectionNode:
         Returns:
         - angle: Angle of arrival in degrees
         """
+
         z = itd * (self.speed_of_sound / self.distance_between_ears)
         try:
             angle = math.asin(z) * (180.0 / np.pi)
+        
         except ValueError:
+            
             angle = 0.0
-
-
+        
         return angle
-
-    def localize(self, sigIn_frontLeft, sigIn_frontRight):
+    
+    def localize(self, sigIn_frontLeft, sigIn_frontRight, sigIn_rearLeft, sigIn_rearRight):
         """
         Localizes the sound source based on the time delay between signals received by two microphones.
 
@@ -151,102 +228,22 @@ class soundDetectionNode:
         - sigIn_frontLeft: Signal from the front left microphone
         - sigIn_frontRight: Signal from the front right microphone
         """
-
-        # print(sigIn_frontLeft)
         
-        # Step 1: Noise reduction
-        # def apply_wiener_filter(signal, threshold=1e-10):
-        #     if np.var(signal) > threshold:
-        #         return wiener(signal)
-        #     else:
-        #         rospy.logwarn('Skipping Wiener filtering due to low signal variance')
-        #         return signal  # Return the original signal if variance is too low
-            
-        # noise_reduced_frontLeft = apply_wiener_filter(sigIn_frontLeft)
-        # noise_reduced_frontRight = apply_wiener_filter(sigIn_frontRight)
-
-
-        # # Step 2: Bandpass filtering
-        # filtered_frontLeft = self.bandpass_filter(sigIn_frontLeft, self.lowcut, self.highcut, self.fs)
-        # filtered_frontRight = self.bandpass_filter(sigIn_frontRight, self.lowcut, self.highcut, self.fs)
-
-        # Step 3: Normalize the signals
+        # Step 1: Normalize the signals
         normalized_frontLeft = self.normalize_signal(sigIn_frontLeft)
         normalized_frontRight = self.normalize_signal(sigIn_frontRight)
+        normalized_rearLeft = self.normalize_signal(sigIn_rearLeft)
+        normalized_rearRight = self.normalize_signal(sigIn_rearRight)
 
-        # Step 4: Winowing (Hanning window)
-        # win = np.hanning(self.window_size)
-        # windowed_frontLeft = win * normalized_frontLeft[:self.window_size] 
-        # windowed_frontRight = win * normalized_frontRight[:self.window_size] 
-
-        # Step 5: Reverberation suppression
-        # reverb_suppressed_frontleft = lfilter([1], [1, -0.95], windowed_frontLeft)
-        # reverb_suppressed_frontright = lfilter([1], [1, -0.95], windowed_frontRight)
-
-        # Step 6: Voice activity detection
-        # vad_frontleft = self.voice_activity_detection(reverb_suppressed_frontleft)
-        # vad_frontright = self.voice_activity_detection(reverb_suppressed_frontright)
-
-        # # Step 7: Sub-band filtering
-        # filters = self.create_sub_band_filters(self.sub_bands, self.fs)
-        # sub_band_signals_frontleft = self.apply_filter_bank(vad_frontleft, filters)
-        # sub_band_signals_frontright = self.apply_filter_bank(vad_frontright, filters)
-
-        # Step 7: GCC-PHAT
-        itd_combined = self.gcc_phat(normalized_frontLeft, normalized_frontRight, fs=self.fs)
-        # print(f'ITD: {itd_combined:.9f} seconds')
-        
-        # ITD estimation for each sub-band
-        # itds_estimates = []
-        # for i, (left, right) in enumerate(zip(sub_band_signals_frontleft, sub_band_signals_frontright)):
-        #     itd = self.gcc_phat(left, right, fs=self.fs)
-        #     itds_estimates.append(itd)
-
-        # # Step 8: Combine ITD estimates
-        # energies = [np.sum(np.abs(left)**2) for left in sub_band_signals_frontleft]
-        # itd_weights = [energy / sum(energies) for energy in energies]
-        # energy_sum = sum(energies)
-        # if energy_sum == 0:
-        #     itd_weights = [0] * len(energies)  # If the sum is zero, set weights to zero
-        # else:   
-        #     itd_weights = [energy / energy_sum for energy in energies]  # Normal calculation
-
-        # itd_combined = sum([itd * weight for itd, weight in zip(itds_estimates, itd_weights)])
-
-        # Step 9: Calculate the angle of arrival
-        angle = self.calculate_angle(itd_combined)
-        print(f'Angle of arrival: {angle:.2f} degrees')
-
-        # # Step 10: Publish the calculated angle
-        # angle_msg = std_msgs.msg.Float32()
-        # angle_msg.data = angle
-        # self.local_pub.publish(angle_msg)
-        
-        
-        # # Compute the intensity of the sound source
-        # intensity = np.mean(sigIn_frontLeft ** 2 + sigIn_frontRight ** 2)
-
-        # # Check if the intensity is above the threshold
-        # if intensity > self.intensity_threshold:   
-        #     # Compute the ITD using GCC-PHAT
-        #     max_tau = self.distance_between_ears / self.speed_of_sound
-        #     itd, _ = self.gcc_phat(sigIn_frontLeft, sigIn_frontRight, fs=self.fs, max_tau=max_tau)
-            
-        #     # Calculate the angle of arrival
-        #     angle = self.calculate_angle(itd)
-            
-        #     # Publish the calculated angle
-        #     angle_msg = std_msgs.msg.Float32()
-        #     angle_msg.data = angle
-        #     self.local_pub.publish(angle_msg)
-            
-        #     # Log the detected direction
-        #     rospy.loginfo(f"Sound detected at angle: {angle:.2f} degrees")
+        # Step 2: Localize and estimate the direction of the sound source
+        self.direction(normalized_frontLeft, normalized_frontRight, normalized_rearLeft, normalized_rearRight)
 
     def audio_callback(self, msg):
         # Step 1: Convert incoming message data to float32 format and normalize it to the range [-1, 1]
         sigIn_frontLeft = np.array(msg.frontLeft, dtype=np.float32) / 32767.0
         sigIn_frontRight = np.array(msg.frontRight, dtype=np.float32) / 32767.0
+        sigIn_rearLeft = np.array(msg.rearLeft, dtype=np.float32) / 32767.0
+        sigIn_rearRight = np.array(msg.rearRight, dtype=np.float32) / 32767.0
 
         # Step 2: Calculate the intensity of the front left signal (RMS) and skip processing if below threshold
         intensity_sigIn_frontLeft = np.sqrt(np.mean(sigIn_frontLeft ** 2))
@@ -263,17 +260,21 @@ class soundDetectionNode:
             # Step 4: Roll the front left and right buffers to make space for new data
             self.frontleft_buffer = np.roll(self.frontleft_buffer, -new_data_length)
             self.frontright_buffer = np.roll(self.frontright_buffer, -new_data_length)
+            self.rearleft_buffer = np.roll(self.rearleft_buffer, -new_data_length)
+            self.rearright_buffer = np.roll(self.rearright_buffer, -new_data_length)
 
             # Step 5: Insert the new data at the end of the buffers
             self.frontleft_buffer[-new_data_length:] = sigIn_frontLeft
             self.frontright_buffer[-new_data_length:] = sigIn_frontRight
+            self.rearleft_buffer[-new_data_length:] = sigIn_rearLeft
+            self.rearright_buffer[-new_data_length:] = sigIn_rearRight
 
             # Step 6: If enough samples are accumulated (equal or more than the localization buffer size), process localization
             if self.accumulated_samples >= self.localization_buffer_size:
                 # Check if a voice is detected in the buffer before performing sound localization
                 if self.is_voice_detected(self.frontleft_buffer):
                     # Localize the sound source based on the signals in the buffers
-                    self.localize(self.frontleft_buffer, self.frontright_buffer)
+                    self.localize(self.frontleft_buffer, self.frontright_buffer, self.rearleft_buffer, self.rearright_buffer)
                 
                 # Reset the accumulated samples counter after processing the buffers
                 self.accumulated_samples = 0
