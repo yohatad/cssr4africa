@@ -6,19 +6,19 @@
     {
       "enabled"       : true,
       "resolution"    : 2,
-      "fps"           : 10,
+      "fps"           : 100,
       "recorder_fps"  : 5
     },
     "bottom_camera":
     {
-      "enabled"       : true,
+      "enabled"       : false,
       "resolution"    : 2,
       "fps"           : 10,
       "recorder_fps"  : 5
     },
     "depth_camera":
     {
-      "enabled"       : true,
+      "enabled"       : false,
       "xtion_resolution": 2,
       "stereo_resolution": 9,
       "fps"           : 10,
@@ -26,21 +26,21 @@
     },
     "stereo_camera":
     {
-      "enabled"       : true,
+      "enabled"       : false,
       "resolution"    : 15,
       "fps"           : 10,
       "recorder_fps"  : 5
     },
     "ir_camera":
     {
-      "enabled"       : true,
+      "enabled"       : false,
       "resolution"    : 1,
       "fps"           : 10,
       "recorder_fps"  : 5
     },
     "info":
     {
-      "enabled"       : true,
+      "enabled"       : false,
       "frequency"     : 1
     },
     "logs":
@@ -50,34 +50,34 @@
     },
     "diag":
     {
-      "enabled"       : true,
+      "enabled"       : false,
       "frequency"     : 1
     },
     "imu_torso":
     {
-      "enabled"       : true,
+      "enabled"       : false,
       "frequency"     : 10
     },
     "imu_base":
     {
-      "enabled"       : true,
+      "enabled"       : false,
       "frequency"     : 10
     },
     "joint_states":
     {
-      "enabled"       : true,
+      "enabled"       : false,
       "frequency"     : 50
     },
     "laser":
     {
-      "enabled"       : true,
+      "enabled"       : false,
       "frequency"     : 10,
       "range_min"     : 0.1,
       "range_max"     : 3.0
     },
     "sonar":
     {
-      "enabled"       : true,
+      "enabled"       : false,
       "frequency"     : 10
     },
     "audio":
