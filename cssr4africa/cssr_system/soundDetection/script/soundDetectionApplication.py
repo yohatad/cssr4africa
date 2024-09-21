@@ -167,35 +167,64 @@ class soundDetectionNode:
         # rospy.loginfo(f'ITD (Front-Right to Rear-Right): {itd_right * 1000:.5f} ms')
 
         # Step 2: Determine the general direction using the ITDs
-        if abs(itd_front) > abs(itd_left) and abs(itd_front) > abs(itd_right):
-            if itd_front > 0:
-                direction = 'right'
-                # Use FL-FR and BL-BR for final azimuth estimation
-                angle_front = self.calculate_angle(itd_front)
-                angle_back = self.calculate_angle(itd_back)
-                final_angle = (angle_front + angle_back) / 2.0
-            else:
-                direction = 'left'
-                # Use FL-BL and FR-BR for final azimuth estimation
-                angle_left = self.calculate_angle(itd_left)
-                angle_right = self.calculate_angle(itd_right)
-                final_angle = (angle_left + angle_right) / 2.0
+        # if abs(itd_front) > abs(itd_left) and abs(itd_front) > abs(itd_right):
+        #     if itd_front > 0:
+        #         direction = 'right'
+        #         # Use FL-FR and BL-BR for final azimuth estimation
+        #         angle_front = self.calculate_angle(itd_front)
+        #         angle_back = self.calculate_angle(itd_back)
+        #         final_angle = (angle_front + angle_back) / 2.0
+        #     else:
+        #         direction = 'left'
+        #         # Use FL-BL and FR-BR for final azimuth estimation
+        #         angle_left = self.calculate_angle(itd_left)
+        #         angle_right = self.calculate_angle(itd_right)
+        #         final_angle = (angle_left + angle_right) / 2.0
+        # else:
+        #     if itd_left > 0:
+        #         direction = 'front'
+        #         # Use FL-FR and BL-BR for final azimuth estimation
+        #         angle_front = self.calculate_angle(itd_front)
+        #         angle_back = self.calculate_angle(itd_back)
+        #         final_angle = (angle_front + angle_back) / 2.0
+        #     else:
+        #         direction = 'back'
+        #         # Use FL-BL and FR-BR for final azimuth estimation
+        #         angle_left = self.calculate_angle(itd_left)
+        #         angle_right = self.calculate_angle(itd_right)
+        #         final_angle = (angle_left + angle_right) / 2.0
+
+        # rospy.loginfo(f'Final estimated direction: {direction} at angle: {final_angle:.2f} degrees')
+
+        # Step 2: Determine the general direction using the ITDs
+        if (itd_left > 0 and itd_right > 0):
+            direction = 'front'
+            # Use FL-FR and BL-BR for final azimuth estimation
+            angle_front = self.calculate_angle(itd_front)
+            angle_back = self.calculate_angle(itd_back)
+            final_angle = (angle_front + angle_back) / 2.0
+        elif (itd_left < 0 and itd_right < 0):
+            direction = 'back'
+            # Use FL-BL and FR-BR for final azimuth estimation
+            angle_left = self.calculate_angle(itd_left)
+            angle_right = self.calculate_angle(itd_right)
+            final_angle = (angle_left + angle_right) / 2.0
+
+        elif (itd_front > 0 and itd_back > 0):
+            direction = 'right'
+            # Use FL-FR and BL-BR for final azimuth estimation
+            angle_front = self.calculate_angle(itd_front)
+            angle_back = self.calculate_angle(itd_back)
+            final_angle = (angle_front + angle_back) / 2.0
         else:
-            if itd_left > 0:
-                direction = 'front'
-                # Use FL-FR and BL-BR for final azimuth estimation
-                angle_front = self.calculate_angle(itd_front)
-                angle_back = self.calculate_angle(itd_back)
-                final_angle = (angle_front + angle_back) / 2.0
-            else:
-                direction = 'back'
-                # Use FL-BL and FR-BR for final azimuth estimation
-                angle_left = self.calculate_angle(itd_left)
-                angle_right = self.calculate_angle(itd_right)
-                final_angle = (angle_left + angle_right) / 2.0
+            direction = 'left'
+            # Use FL-BL and FR-BR for final azimuth estimation
+            angle_left = self.calculate_angle(itd_left)
+            angle_right = self.calculate_angle(itd_right)
+            final_angle = (angle_left + angle_right) / 2.0
 
         rospy.loginfo(f'Final estimated direction: {direction} at angle: {final_angle:.2f} degrees')
-
+        
         # Return the final angle and direction
         return final_angle, direction
 
