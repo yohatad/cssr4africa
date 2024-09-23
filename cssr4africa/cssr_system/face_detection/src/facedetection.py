@@ -6,6 +6,8 @@ import mediapipe as mp
 import rospy
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
+from geometry_msgs.msg import Point
+from face_detection.msg import faceGaze  # Replace with your actual package name
 
 # Initialize Mediapipe
 mp_face_mesh = mp.solutions.face_mesh
@@ -20,6 +22,7 @@ class MediapipeFacePoseNode:
         self.image_sub = rospy.Subscriber("/camera/color/image_raw", Image, self.image_callback)
         self.bridge = CvBridge()
         self.pub_pose = rospy.Publisher("/head_pose", Image, queue_size=10)
+        self.pub_gaze = rospy.Publisher("/face_gaze", faceGaze, queue_size=10)  # Publisher for the FaceGaze message
     
     def image_callback(self, data):
         # Convert ROS image to OpenCV format
@@ -39,6 +42,10 @@ class MediapipeFacePoseNode:
 
         img_h, img_w, img_c = image.shape
 
+        # Initialize arrays for centroids and forward gaze status
+        centroids = []
+        mutualGaze_list = []
+
         if results.multi_face_landmarks:
             for face_landmarks in results.multi_face_landmarks:
                 # Initialize face_2d and face_3d as lists for each detected face
@@ -55,14 +62,20 @@ class MediapipeFacePoseNode:
                         face_2d.append([x, y])
                         face_3d.append([x, y, lm.z])
 
+                # Calculate centroid
+                centroid_x = np.mean([pt[0] for pt in face_2d])
+                centroid_y = np.mean([pt[1] for pt in face_2d])
+                centroid = Point(x=centroid_x, y=centroid_y, z=0)  # z = 0 for 2D image coordinates
+                centroids.append(centroid)
+
                 # Convert face_2d and face_3d to NumPy arrays for solvePnP
                 face_2d = np.array(face_2d, dtype=np.float64)
                 face_3d = np.array(face_3d, dtype=np.float64)
 
                 focal_length = 1 * img_w
                 cam_matrix = np.array([[focal_length, 0, img_h / 2],
-                                       [0, focal_length, img_w / 2],
-                                       [0, 0, 1]])
+                                    [0, focal_length, img_w / 2],
+                                    [0, 0, 1]])
 
                 distortion_matrix = np.zeros((4, 1), dtype=np.float64)
 
@@ -71,35 +84,25 @@ class MediapipeFacePoseNode:
                 rmat, jac = cv2.Rodrigues(rotation_vec)
                 angles, mtxR, mtxQ, Qx, Qy, Qz = cv2.RQDecomp3x3(rmat)
 
-                x = angles[0] * 360
-                y = angles[1] * 360
-                z = angles[2] * 360
+                x_angle = angles[0] * 360
+                y_angle = angles[1] * 360
+                z_angle = angles[2] * 360
 
-                # Determine head pose
-                if y < -10:
-                    text = "Looking Left"
-                elif y > 10:
-                    text = "Looking Right"
-                elif x < -10:
-                    text = "Looking Down"
-                elif x > 10:
-                    text = "Looking Up"
-                else:
-                    text = "Forward"
+                # Determine if head is facing forward
+                mutualGaze = abs(x_angle) <= 5 and abs(y_angle) <= 5
+                mutualGaze_list.append(mutualGaze)
 
                 # Draw nose projection
                 nose_3d_projection, jacobian = cv2.projectPoints(nose_3d, rotation_vec, translation_vec, cam_matrix, distortion_matrix)
 
                 p1 = (int(nose_2d[0]), int(nose_2d[1]))
-                p2 = (int(nose_2d[0] + y * 10), int(nose_2d[1] - x * 10))
+                p2 = (int(nose_2d[0] + y_angle * 10), int(nose_2d[1] - x_angle * 10))
 
                 cv2.line(image, p1, p2, (255, 0, 0), 3)
-                cv2.putText(image, text, (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 2)
 
-                end = rospy.get_time()
-                totalTime = end - start
-                fps = 1 / totalTime
-                cv2.putText(image, f'FPS: {int(fps)}', (20, 450), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 255, 0), 2)
+                # Display text
+                text = "Forward" if mutualGaze else "Not Forward"
+                cv2.putText(image, text, (int(centroid_x), int(centroid_y)), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
                 # Draw landmarks on image
                 mp_drawing.draw_landmarks(
@@ -113,10 +116,15 @@ class MediapipeFacePoseNode:
         cv2.imshow('Head Pose Detection', image)
         if cv2.waitKey(5) & 0xFF == 27:
             rospy.signal_shutdown("User requested shutdown")
-            cap.release()
-
+        
         # Publish processed image with annotations to ROS
         self.pub_pose.publish(self.bridge.cv2_to_imgmsg(image, "bgr8"))
+
+        # Publish centroids and mutual gaze status
+        gaze_msg = faceGaze()
+        gaze_msg.centroids = centroids
+        gaze_msg.mutualGaze = mutualGaze_list
+        self.pub_gaze.publish(gaze_msg)
 
 if __name__ == '__main__':
     rospy.init_node('mediapipe_face_pose', anonymous=True)
