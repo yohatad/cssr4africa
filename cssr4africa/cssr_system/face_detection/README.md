@@ -1,6 +1,6 @@
 # Face and Mutual Gaze Detection
 
-<img src="CSSR4AfricaLogo.svg" alt="CSSR4Africa Logo" style="width:100%; height:auto;">
+<img src="CSSR4AfricaLogo.svg" alt="CSSR4Africa Logo" style="width:50%; height:auto;">
 
 The face and mutual gaze detection package is a ROS package designed to detect faces and mutual gaze between the Pepper robot and a human. The package uses the media pipe library
 to detect both multiple faces and their respective mutual gaze. It publishes an array of the detected faces and their mutual gaze to the topic `/face_pose`.
