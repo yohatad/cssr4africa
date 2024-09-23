@@ -21,7 +21,7 @@ class MediapipeFacePoseNode:
     def __init__(self):
         self.image_sub = rospy.Subscriber("/naoqi_driver/camera/front/image_raw", Image, self.image_callback)
         self.bridge = CvBridge()
-        self.pub_gaze = rospy.Publisher("/face_gaze", facePose, queue_size=10)  # Publisher for the facePose message
+        self.pub_gaze = rospy.Publisher("/face_pose", facePose, queue_size=10)  # Publisher for the facePose message
     
     def image_callback(self, data):
         # Convert ROS image to OpenCV format
