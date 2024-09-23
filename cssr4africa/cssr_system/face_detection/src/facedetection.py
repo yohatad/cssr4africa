@@ -14,7 +14,7 @@ mp_face_mesh = mp.solutions.face_mesh
 face_mesh = mp_face_mesh.FaceMesh(max_num_faces=10, min_detection_confidence=0.5, min_tracking_confidence=0.5)
 
 mp_drawing = mp.solutions.drawing_utils
-drawing_spec = mp_drawing.DrawingSpec(color=(128, 0, 128), thickness=2, circle_radius=1)
+drawing_spec = mp_drawing.DrawingSpec(color=(128, 128, 128), thickness=1, circle_radius=1)
 
 # ROS Node
 class MediapipeFacePoseNode:
@@ -47,7 +47,7 @@ class MediapipeFacePoseNode:
         mutualGaze_list = []
 
         if results.multi_face_landmarks:
-            for face_landmarks in results.multi_face_landmarks:
+            for face_id, face_landmarks in enumerate(results.multi_face_landmarks):
                 # Initialize face_2d and face_3d as lists for each detected face
                 face_2d = []
                 face_3d = []
@@ -100,9 +100,10 @@ class MediapipeFacePoseNode:
 
                 cv2.line(image, p1, p2, (255, 0, 0), 3)
 
-                # Display text
+                # Display text (forward or not forward)
                 text = "Forward" if mutualGaze else "Not Forward"
-                cv2.putText(image, text, (int(centroid_x), int(centroid_y)), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                label = f"Face {face_id + 1}: {text}"
+                cv2.putText(image, label, (int(centroid_x), int(centroid_y) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
 
                 # Draw landmarks on image
                 mp_drawing.draw_landmarks(
