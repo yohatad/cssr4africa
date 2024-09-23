@@ -7,7 +7,7 @@ import rospy
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 from geometry_msgs.msg import Point
-from face_detection.msg import faceGaze  # Replace with your actual package name
+from face_detection.msg import facePose  # Replace with your actual package name
 
 # Initialize Mediapipe
 mp_face_mesh = mp.solutions.face_mesh
@@ -19,10 +19,9 @@ drawing_spec = mp_drawing.DrawingSpec(color=(128, 128, 128), thickness=1, circle
 # ROS Node
 class MediapipeFacePoseNode:
     def __init__(self):
-        self.image_sub = rospy.Subscriber("/camera/color/image_raw", Image, self.image_callback)
+        self.image_sub = rospy.Subscriber("/naoqi_driver/camera/front/image_raw", Image, self.image_callback)
         self.bridge = CvBridge()
-        self.pub_pose = rospy.Publisher("/head_pose", Image, queue_size=10)
-        self.pub_gaze = rospy.Publisher("/face_gaze", faceGaze, queue_size=10)  # Publisher for the FaceGaze message
+        self.pub_gaze = rospy.Publisher("/face_gaze", facePose, queue_size=10)  # Publisher for the facePose message
     
     def image_callback(self, data):
         # Convert ROS image to OpenCV format
@@ -118,17 +117,14 @@ class MediapipeFacePoseNode:
         if cv2.waitKey(5) & 0xFF == 27:
             rospy.signal_shutdown("User requested shutdown")
         
-        # Publish processed image with annotations to ROS
-        self.pub_pose.publish(self.bridge.cv2_to_imgmsg(image, "bgr8"))
-
         # Publish centroids and mutual gaze status
-        gaze_msg = faceGaze()
+        gaze_msg = facePose()
         gaze_msg.centroids = centroids
         gaze_msg.mutualGaze = mutualGaze_list
         self.pub_gaze.publish(gaze_msg)
 
 if __name__ == '__main__':
-    rospy.init_node('mediapipe_face_pose', anonymous=True)
+    rospy.init_node('facepose', anonymous=True)
     mp_node = MediapipeFacePoseNode()
     rospy.spin()
     cv2.destroyAllWindows()
