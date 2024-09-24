@@ -51,7 +51,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## Add service and message files
 add_message_files(
   FILES
-  faceGaze.msg
+  facePose.msg
 )
 
 ## Generate services in the 'srv' folder
