@@ -1,0 +1,25 @@
+animateBehaviour node started. Waiting for activation...
+animateBehaviour node is active. Ready to animate.
+Configuration file opened successfully: /home/emati/workspace/pepper_rob_ws/src/cssr4africa/cssr_system/animateBehaviour/config/animateBehaviourConfiguration.ini
+Config: armMaximumRange = 0.2,0.2,0.2,0.2,0.3
+Config: behaviour = body
+Config: gestureDuration = 1.5
+Config: handMaximumRange = 0.7
+Config: legMaximumRange = 0.1,0.1,0.08
+Config: numPoints = 100
+Config: platform = robot
+Config: robotTopics = pepperTopics.dat
+Config: rotMaximumRange = 0.3
+Config: selectedRange = 0.5
+Config: simulatorTopics = simulatorTopics.dat
+Config: verboseMode = true
+Platform configuration loaded successfully: robot
+Key: LArm, Value: /pepper_dcm/LeftArm_controller/follow_joint_trajectory
+Key: LHand, Value: /pepper_dcm/LeftHand_controller/follow_joint_trajectory
+Key: Leg, Value: /pepper_dcm/Pelvis_controller/follow_joint_trajectory
+Key: RArm, Value: /pepper_dcm/RightArm_controller/follow_joint_trajectory
+Key: RHand, Value: /pepper_dcm/RightHand_controller/follow_joint_trajectory
+Key: Wheels, Value: /pepper_dcm/cmd_moveto
+Data loaded successfully for platform: robot
+Configuration loaded and data initialized.
+Shutting down animateBehaviour node...
