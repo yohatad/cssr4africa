@@ -1,6 +1,6 @@
 animateBehaviour node started. Waiting for activation...
 animateBehaviour node is active. Ready to animate.
-Configuration file opened successfully: /home/emati/workspace/pepper_rob_ws/src/cssr4africa/cssr_system/animateBehaviour/config/animateBehaviourConfiguration.ini
+Configuration file opened successfully: /home/yoha/workspace/pepper_rob_ws/src/cssr4africa/cssr_system/animateBehaviour/config/animateBehaviourConfiguration.ini
 Config: armMaximumRange = 0.2,0.2,0.2,0.2,0.3
 Config: behaviour = body
 Config: gestureDuration = 1.5
