@@ -18,7 +18,7 @@ void closeLogFile() {
 }
 
 // Define the Service Function
-bool setActivation(cssr_system::SetActivation::Request &req, cssr_system::SetActivation::Response &res) {
+bool setActivation(cssr_system::set_activation::Request &req, cssr_system::set_activation::Response &res) {
     if (req.state == "enabled") {
         isActive = true;
         res.success = true;

@@ -24,7 +24,7 @@
 #include <boost/thread.hpp>
 #include "actionlib/client/simple_action_client.h"
 #include "control_msgs/FollowJointTrajectoryAction.h"
-#include "cssr_system/SetActivation.h"
+#include "cssr_system/set_activation.h"
 #include <iostream>
 #include <sstream>
 #include <std_srvs/SetBool.h>
@@ -54,7 +54,7 @@ void logToFile(const std::string &message);
 
 void closeAndDeleteLogFile();
 
-bool setActivation(cssr_system::SetActivation::Request &req, cssr_system::SetActivation::Response &res);
+bool set_activation(cssr_system::set_activation::Request &req, cssr_system::set_activation::Response &res);
 
 void trim(std::string &s);
 
