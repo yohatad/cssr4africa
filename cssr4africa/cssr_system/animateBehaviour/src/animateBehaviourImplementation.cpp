@@ -459,8 +459,6 @@ void moveToPositionBiological(ControlClientPtr& client,
 }
 
 
-
-
 /**
  * @brief Parses percentage values from a configuration string.
  *
@@ -519,7 +517,10 @@ void logTrajectoryData(const std::string& filename,
         for (size_t j = 0; j < accelerations[i].size(); ++j) {
             file << "," << accelerations[i][j]; // Log each acceleration component
         }
-        file << "," << durations[i]; // Log the duration
+        // for (size_t  = 0; j < durations[i].size(); ++j) {
+        //     file << "," << durations[i]; // Log each duration component
+        // }
+        
         file << "\n";
     }
 
@@ -574,13 +575,13 @@ std::vector<std::vector<double>> calculateTargetPosition(const std::vector<doubl
         if (configParams.find("selectedRange") == configParams.end()) {
             throw std::runtime_error("selectedRange not found in configuration");
         }
-        double selectedRange = std::stod(configParams["selectedRange"]);
+        
 
         if (homePosition.size() != maxPosition.size() || homePosition.size() != minPosition.size()) {
             throw std::runtime_error("Mismatch in vector sizes for home, max, and min positions");
         }
-
-        for (int i = 0; i < count; ++i) {
+    double selectedRange = std::stod(configParams["selectedRange"]);
+    for (int i = 0; i < count; ++i) {
     std::vector<double> singleTargetPosition;
             for (size_t j = 0; j < homePosition.size(); ++j) {
                 if (j >= maximumRange.size()) {
@@ -628,26 +629,30 @@ double computeDistance(const std::vector<double>& pos1, const std::vector<double
     return std::sqrt(distance);
 }
 
+
 void computeDurationsBasedOnDistance(const std::vector<std::vector<double>>& positions, 
+                                     std::vector<double>& previous_durations, 
                                      std::vector<double>& durations, 
                                      double baseTimeFactor) {
     durations.clear();
+    ROS_INFO("Computing durations based on distance STARTED");
 
     // Iterate through the positions and compute durations for each consecutive pair
     for (size_t i = 0; i < positions.size() - 1; ++i) {
         double distance = computeDistance(positions[i], positions[i + 1]);
         // Compute duration based on the distance and base time factor
         double duration = distance * baseTimeFactor;
+
+        // check if the previous duration is less than the current duration
+        if (i < previous_durations.size() && previous_durations[i] >= duration) {
+            duration = previous_durations[i] + 0.0001;  // Add a small increment to the previous duration
+        }
+        
         // Store the computed duration for this segment
         durations.push_back(duration);
     }
+    ROS_INFO("Computing durations based on distance END");
 
-    // Add a small final duration for the last position to ensure smooth completion
-    durations.push_back(0.1);  // Final duration to cap off the movement
-
-
-    // Log the completion of duration calculation
-    ROS_INFO("Computed durations for %zu position transitions.", positions.size() - 1);
 }
 
 // As the prst of the project wheere ther is ths kind ofthe  nfgjd asas shwn shown the 
@@ -656,23 +661,18 @@ void computeTrajectoryCubicSpline(const std::vector<std::vector<double>>& random
                                   double totalTime,
                                   std::vector<std::vector<double>>& velocities_t, 
                                   std::vector<std::vector<double>>& accelerations_t, 
-                                  std::vector<double>& durations) {
-    
+                                  std::vector<double>& durations) { 
+
     size_t number_of_joints = currentPosition.size();
     size_t number_of_positions = randomPositions.size();
 
     // Clear previous trajectory data
     velocities_t.clear();
     accelerations_t.clear();
-    durations.clear();
 
     // Ensure velocities_t and accelerations_t are resized appropriately
     velocities_t.resize(number_of_positions, std::vector<double>(number_of_joints, 0.0));
     accelerations_t.resize(number_of_positions, std::vector<double>(number_of_joints, 0.0));
-    durations.resize(number_of_positions, 0.0);
-
-    // Calculate time intervals based on total time and number of positions
-    double time_interval = totalTime / (number_of_positions - 1);
 
     // Set up vectors for spline coefficients (for each joint)
     std::vector<Eigen::VectorXd> spline_coefficients_b(number_of_joints);
@@ -686,8 +686,11 @@ void computeTrajectoryCubicSpline(const std::vector<std::vector<double>>& random
             positions(i) = randomPositions[i][joint];
         }
 
-        // Set up time intervals as uniform
-        Eigen::VectorXd time_intervals = Eigen::VectorXd::Constant(number_of_positions - 1, time_interval);
+        // Use the pre-computed durations to set time intervals
+        Eigen::VectorXd time_intervals(number_of_positions - 1);
+        for (size_t i = 0; i < number_of_positions - 1; ++i) {
+            time_intervals(i) = durations[i + 1] - durations[i];
+        }
 
         // Spline coefficients (using natural cubic spline formula)
         Eigen::MatrixXd A = Eigen::MatrixXd::Zero(number_of_positions, number_of_positions);
@@ -727,8 +730,7 @@ void computeTrajectoryCubicSpline(const std::vector<std::vector<double>>& random
 
     // Now that we have the spline coefficients, we can generate the velocities and accelerations for each joint
     for (size_t i = 0; i < number_of_positions - 1; ++i) {  // Stop at number_of_positions - 1
-        double t = i * time_interval;
-        durations[i] = t;
+        double t = durations[i];  // Use the pre-computed durations
 
         for (size_t joint = 0; joint < number_of_joints; ++joint) {
             double dt = t;
@@ -743,9 +745,12 @@ void computeTrajectoryCubicSpline(const std::vector<std::vector<double>>& random
         }
     }
 
-    // Add a final duration to ensure smooth completion of the motion
-    durations[number_of_positions - 1] = durations[number_of_positions - 2] + time_interval;
+    // Handle final position duration
+    durations[number_of_positions - 1] = durations[number_of_positions - 2] + 0.1;  
 }
+
+
+
 
 
 /**
@@ -767,6 +772,14 @@ void lArm(ros::NodeHandle& nh, std::string leftArmTopic, bool resetPosition) {
     std::vector<double> homePosition = {1.7625, 0.09970, -0.1334, -1.7150,  0.06592};
     const std::string jointType = "arm";
 
+    // Prepare vectors for storing random positions and trajectory data
+    std::vector<std::vector<double>> randomPositions;
+    std::vector<std::vector<double>> positions_t;
+    std::vector<std::vector<double>> velocities_t;
+    std::vector<std::vector<double>> accelerations_t;
+    std::vector<double> duration_t;
+    std::vector<double> previous_duration_t;
+
     // Retrieve the base time factor from config parameters (default to 1.0 if not provided)
     double baseTimeFactor = configParams.find("gestureDuration") != configParams.end() 
                             ? std::stod(configParams["gestureDuration"]) 
@@ -779,19 +792,11 @@ void lArm(ros::NodeHandle& nh, std::string leftArmTopic, bool resetPosition) {
     if (currentPosition.empty() || resetPosition) {
         currentPosition = homePosition;
         moveToPosition(leftArmClient, lArmJointNames, "home Position", homePosition);
-
         if (verboseMode) {
             ROS_INFO("Moved to home position.");
         }
     }
-
-    // Prepare vectors for storing random positions and trajectory data
-    std::vector<std::vector<double>> randomPositions;
-    std::vector<std::vector<double>> positions_t;
-    std::vector<std::vector<double>> velocities_t;
-    std::vector<std::vector<double>> accelerations_t;
-    std::vector<double> duration_t;
-
+    
     // Generate random positions for the arm within joint limits
     // generateListOfRandomPositions(randomPositions, homePosition, maxPosition, minPosition, jointType);
     randomPositions = calculateTargetPosition(homePosition, maxPosition, minPosition, "arm");
@@ -799,14 +804,15 @@ void lArm(ros::NodeHandle& nh, std::string leftArmTopic, bool resetPosition) {
 
 
     // Compute durations for each segment based on the distance between consecutive positions
-    computeDurationsBasedOnDistance(positions_t, duration_t, baseTimeFactor);
+    computeDurationsBasedOnDistance(positions_t, previous_duration_t,  duration_t, baseTimeFactor);
+    previous_duration_t = duration_t;
    
 
    // Compute the trajectory using cubic spline interpolation
    computeTrajectoryCubicSpline(randomPositions, currentPosition, duration_t.back(), velocities_t, accelerations_t, duration_t);
 
     // Append the trajectory data to the file
-    //logTrajectoryData("src/cssr4africa/cssr_system/animateBehaviour/data/trajectory_data.csv", positions_t, velocities_t, accelerations_t, duration_t, true);
+    logTrajectoryData("src/cssr4africa/cssr_system/animateBehaviour/data/trajectory_data.csv", positions_t, velocities_t, accelerations_t, duration_t, true);
     ros::Time start_time = ros::Time::now();
     // Move the left arm using the computed biological trajectory
     moveToPositionBiological(leftArmClient, lArmJointNames, "Animate Behavior", positions_t, velocities_t, accelerations_t, duration_t);
@@ -830,10 +836,92 @@ void lArm(ros::NodeHandle& nh, std::string leftArmTopic, bool resetPosition) {
         }
     }
 }
+void lHand(ros::NodeHandle& nh, std::string leftHandTopic, bool resetPosition) {
+    ControlClientPtr leftHandClient = createClient(leftHandTopic);
+
+    // Joint position limits and home position for the hand
+    std::vector<double> minPosition = {0.0};
+    std::vector<double> maxPosition = {1.0};
+    std::vector<double> homePosition = {0.6695};
+    const std::string jointType = "hand";
+
+    // Prepare vectors for storing random positions and trajectory data
+    std::vector<std::vector<double>> randomPositions;
+    std::vector<std::vector<double>> positions_t;
+    std::vector<std::vector<double>> velocities_t;
+    std::vector<std::vector<double>> accelerations_t;
+    std::vector<double> duration_t;
+    std::vector<double> previous_duration_t;
+
+    // Retrieve the base time factor from config parameters (default to 1.0 if not provided)
+    double baseTimeFactor = configParams.find("gestureDuration") != configParams.end() 
+                            ? std::stod(configParams["gestureDuration"]) 
+                            : 1.0;
+
+    // Declare currentPosition statically to keep it persistent between function calls
+    static std::vector<double> currentPosition;
+
+    // Reset position if currentPosition is empty or if explicitly requested
+    if (currentPosition.empty() || resetPosition) {
+        currentPosition = homePosition;
+        moveToPosition(leftHandClient, lhandJointNames, "home Position", homePosition);
+
+        if (verboseMode) {
+            ROS_INFO("Moved to home position.");
+        }
+    }
+
+    // Generate random positions for the hand within joint limits
+    randomPositions = calculateTargetPosition(homePosition, maxPosition, minPosition, "hand");
+    positions_t = randomPositions;
+
+    // Compute durations for each segment based on the distance between consecutive positions
+    computeDurationsBasedOnDistance(positions_t, previous_duration_t, duration_t, baseTimeFactor);
+    previous_duration_t = duration_t;
+
+    // Compute the trajectory using cubic spline interpolation
+    computeTrajectoryCubicSpline(randomPositions, currentPosition, duration_t.back(), velocities_t, accelerations_t, duration_t);
+
+    // Append the trajectory data to the file
+    logTrajectoryData("src/cssr4africa/cssr_system/animateBehaviour/data/trajectory_data.csv", positions_t, velocities_t, accelerations_t, duration_t, true);
+
+    ros::Time start_time = ros::Time::now();
+
+    // Move the left hand using the computed biological trajectory
+    moveToPositionBiological(leftHandClient, lhandJointNames, "Animate Behavior", positions_t, velocities_t, accelerations_t, duration_t);
+
+    // Log movement completion
+    if (verboseMode) {
+        ROS_INFO("Hand moved through computed trajectory.");
+    }
+
+    ros::Time end_time = ros::Time::now();
+    ros::Duration elapsed_time = end_time - start_time;
+    
+    // Convert elapsed time to minutes
+    double elapsed_minutes = elapsed_time.toSec() / 60.0;
+
+    ROS_INFO("Subtle hand movement completed in %.2f minutes.", elapsed_minutes);
+
+    // Update currentPosition to the last position for continuous movement
+    if (!positions_t.empty()) {
+        currentPosition = positions_t.back();  // Update currentPosition to the last position
+        if (verboseMode) {
+            ROS_INFO("Updated current position for continuous movement.");
+        }
+    }
+
+    if (verboseMode) {
+        ROS_INFO_STREAM("----------[END LEFT HAND ANIMATE MOVEMENT]-----------");
+    }
+}
+
+
 
 void subtleBodyMovement(ros::NodeHandle& nh) {
     
     std::string leftArmTopic = topicData["LArm"];
+    std::string leftHandTopic = topicData["LHand"];
 
     bool resetPosition = isFirstRun();
     if (resetPosition) {
@@ -843,8 +931,10 @@ void subtleBodyMovement(ros::NodeHandle& nh) {
     ROS_INFO("Robot platform detected and flexi movement initiated");
     
     std::thread lArmThread(lArm, std::ref(nh), leftArmTopic, resetPosition);
+    // std::thread lHandThread(lHand, std::ref(nh), leftHandTopic, resetPosition);
         
     lArmThread.join();
+    // lHandThread.join();
               
 }
 
