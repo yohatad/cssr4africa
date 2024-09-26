@@ -22,3 +22,4 @@ Key: RHand, Value: /pepper_dcm/RightHand_controller/follow_joint_trajectory
 Key: Wheels, Value: /pepper_dcm/cmd_moveto
 Data loaded successfully for platform: robot
 Configuration loaded and data initialized.
+Shutting down animateBehaviour node...
