@@ -18,7 +18,7 @@ class FaceDetectionAndPoseEstimationNode:
 
         # Initialize Mediapipe Face Mesh
         self.mp_face_mesh = mp.solutions.face_mesh
-        self.face_mesh = self.mp_face_mesh.FaceMesh(max_num_faces=10, min_detection_confidence=0.5, min_tracking_confidence=0.5)
+        self.face_mesh = self.mp_face_mesh.FaceMesh(max_num_faces=10, min_detection_confidence=0.1, min_tracking_confidence=0.3)
         
         self.mp_drawing = mp.solutions.drawing_utils
         self.drawing_spec = self.mp_drawing.DrawingSpec(color=(128, 128, 128), thickness=1, circle_radius=1)
@@ -27,7 +27,7 @@ class FaceDetectionAndPoseEstimationNode:
         rospy.init_node('face_detection_pose_estimation_node', anonymous=True)
 
         # Subscribe to the camera topic
-        self.image_sub = rospy.Subscriber('/camera/color/image_raw', Image, self.image_callback)
+        self.image_sub = rospy.Subscriber('/naoqi_driver/camera/front/image_raw', Image, self.image_callback)
 
         # Publisher for processed images
         self.image_pub = rospy.Publisher('/face_detection_pose_estimation', Image, queue_size=10)
@@ -48,14 +48,14 @@ class FaceDetectionAndPoseEstimationNode:
                     cv2.rectangle(cv_image, (x1, y1), (x2, y2), (0, 155, 255), 2)
 
                 # Flip image for selfie-view
-                cv_image = cv2.cvtColor(cv2.flip(cv_image, 1), cv2.COLOR_BGR2RGB)
+                # cv_image = cv2.cvtColor(cv2.flip(cv_image, 1), cv2.COLOR_BGR2RGB)
                 cv_image.flags.writeable = False
 
                 # Perform face mesh landmark detection using Mediapipe
                 results = self.face_mesh.process(cv_image)
 
                 cv_image.flags.writeable = True
-                cv_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB)
+                # cv_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB)
 
                 img_h, img_w, img_c = cv_image.shape
 
