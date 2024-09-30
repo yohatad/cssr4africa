@@ -1,156 +1,187 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 import rospy
-from sensor_msgs.msg import Image
-from cv_bridge import CvBridge
 import cv2
-from facenet_pytorch import MTCNN
-from geometry_msgs.msg import Point
-import mediapipe as mp
+import copy
 import numpy as np
+import onnxruntime
+from math import cos, sin, pi
+from typing import Tuple, Optional, List
+from sensor_msgs.msg import Image
+from cv_bridge import CvBridge, CvBridgeError
 
-class FaceDetectionAndPoseEstimationNode:
+class GoldYOLOONNX:
+    def __init__(
+        self,
+        model_path: str = 'gold_yolo_n_head_post_0277_0.5071_1x3x480x640.onnx',
+        class_score_th: float = 0.65,
+        providers: List[str] = ['CUDAExecutionProvider', 'CPUExecutionProvider'],
+    ):
+        
+        self.class_score_th = class_score_th
+        session_option = onnxruntime.SessionOptions()
+        session_option.log_severity_level = 3
+        self.onnx_session = onnxruntime.InferenceSession(model_path, sess_options=session_option, providers=providers)
+
+        self.input_shape = self.onnx_session.get_inputs()[0].shape
+        self.input_names = [inp.name for inp in self.onnx_session.get_inputs()]
+        self.output_names = [out.name for out in self.onnx_session.get_outputs()]
+
+    def __call__(self, image: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+        resized_image = self.__preprocess(image)
+        inference_image = resized_image[np.newaxis, ...].astype(np.float32)
+        boxes = self.onnx_session.run(
+            self.output_names,
+            {name: inference_image for name in self.input_names},
+        )[0]
+        return self.__postprocess(image, boxes)
+
+    def __preprocess(self, image: np.ndarray) -> np.ndarray:
+        resized_image = cv2.resize(image, (self.input_shape[3], self.input_shape[2]))
+        resized_image = resized_image[:, :, ::-1] / 255.0  # BGR to RGB and normalize
+        return resized_image.transpose(2, 0, 1)  # HWC to CHW
+
+    def __postprocess(self, image: np.ndarray, boxes: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+        img_h, img_w = image.shape[:2]
+        result_boxes = []
+        result_scores = []
+        if boxes.size > 0:
+            scores = boxes[:, 6]
+            keep_idxs = scores > self.class_score_th
+            boxes_keep = boxes[keep_idxs]
+            for box in boxes_keep:
+                x_min = int(max(box[2], 0) * img_w / self.input_shape[3])
+                y_min = int(max(box[3], 0) * img_h / self.input_shape[2])
+                x_max = int(min(box[4], self.input_shape[3]) * img_w / self.input_shape[3])
+                y_max = int(min(box[5], self.input_shape[2]) * img_h / self.input_shape[2])
+                result_boxes.append([x_min, y_min, x_max, y_max])
+                result_scores.append(box[6])
+        return np.array(result_boxes), np.array(result_scores)
+
+def draw_axis(img, yaw, pitch, roll, tdx=None, tdy=None, size=100):
+    pitch = pitch * pi / 180
+    yaw = -yaw * pi / 180
+    roll = roll * pi / 180
+    height, width = img.shape[:2]
+    tdx = tdx if tdx is not None else width / 2
+    tdy = tdy if tdy is not None else height / 2
+
+    x1 = size * (cos(yaw) * cos(roll)) + tdx
+    y1 = size * (cos(pitch) * sin(roll) + sin(pitch) * sin(yaw) * cos(roll)) + tdy
+    x2 = size * (-cos(yaw) * sin(roll)) + tdx
+    y2 = size * (cos(pitch) * cos(roll) - sin(pitch) * sin(yaw) * sin(roll)) + tdy
+    x3 = size * sin(yaw) + tdx
+    y3 = size * (-cos(yaw) * sin(pitch)) + tdy
+
+    cv2.line(img, (int(tdx), int(tdy)), (int(x1), int(y1)), (0, 0, 255), 2)
+    cv2.line(img, (int(tdx), int(tdy)), (int(x2), int(y2)), (0, 255, 0), 2)
+    cv2.line(img, (int(tdx), int(tdy)), (int(x3), int(y3)), (255, 0, 0), 2)
+
+class GoldYOLONode:
     def __init__(self):
+        rospy.init_node('gold_yolo_node')
+        model_path = rospy.get_param('~model', '/root/workspace/pepper_rob_ws/src/cssr4africa/cssr_system/face_detection/models/gold_yolo_n_head_post_0277_0.5071_1x3x480x640.onnx')
+        sixdrepnet_model_path = rospy.get_param('~sixdrepnet_model', '/root/workspace/pepper_rob_ws/src/cssr4africa/cssr_system/face_detection/models/sixdrepnet360_Nx3x224x224.onnx')
+        self.image_topic = rospy.get_param('~image_topic', '/camera/color/image_raw')
+        self.output_topic = rospy.get_param('~output_topic', '/gold_yolo/output_image')
+
+        self.model = GoldYOLOONNX(model_path=model_path)
+        session_option = onnxruntime.SessionOptions()
+        session_option.log_severity_level = 3
+        self.sixdrepnet_session = onnxruntime.InferenceSession(sixdrepnet_model_path, 
+                                                               sess_options=session_option, providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
+
         self.bridge = CvBridge()
-        
-        # Initialize MTCNN for face detection
-        self.mtcnn = MTCNN(keep_all=True, device= 'cuda')
+        self.image_sub = rospy.Subscriber(self.image_topic, Image, self.image_callback, queue_size=1)
+        self.image_pub = rospy.Publisher(self.output_topic, Image, queue_size=1)
+        self.mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)
+        self.std = np.array([0.229, 0.224, 0.225], dtype=np.float32)
 
-        # Initialize Mediapipe Face Mesh
-        self.mp_face_mesh = mp.solutions.face_mesh
-        self.face_mesh = self.mp_face_mesh.FaceMesh(max_num_faces=10, min_detection_confidence=0.1, min_tracking_confidence=0.3)
-        
-        self.mp_drawing = mp.solutions.drawing_utils
-        self.drawing_spec = self.mp_drawing.DrawingSpec(color=(128, 128, 128), thickness=1, circle_radius=1)
-
-        # Initialize ROS node
-        rospy.init_node('face_detection_pose_estimation_node', anonymous=True)
-
-        # Subscribe to the camera topic
-        self.image_sub = rospy.Subscriber('/naoqi_driver/camera/front/image_raw', Image, self.image_callback)
-
-        # Publisher for processed images
-        self.image_pub = rospy.Publisher('/face_detection_pose_estimation', Image, queue_size=10)
-
-    def image_callback(self, data):
+    def image_callback(self, msg):
         try:
-            # Convert ROS Image message to OpenCV image
-            cv_image = self.bridge.imgmsg_to_cv2(data, 'bgr8')
+            cv_image = self.bridge.imgmsg_to_cv2(msg, 'bgr8')
+        except CvBridgeError as e:
+            rospy.logerr("CvBridge Error: {}".format(e))
+            return
 
-            # Perform face detection using MTCNN on the entire image
-            boxes, probs = self.mtcnn.detect(cv_image)
+        debug_image = copy.deepcopy(cv_image)
+        boxes, scores = self.model(debug_image)
+        img_h, img_w = debug_image.shape[:2]
 
-            # Proceed only if at least one face is detected
-            if boxes is not None and len(boxes) > 0:
-                # Optional: Draw bounding boxes around detected faces
-                for box in boxes:
-                    x1, y1, x2, y2 = map(int, box)
-                    cv2.rectangle(cv_image, (x1, y1), (x2, y2), (0, 155, 255), 2)
+        # Sort the boxes and scores from left to right based on x1 coordinate
+        if len(boxes) > 0:
+            boxes = np.array(boxes)
+            indices = np.argsort(boxes[:, 0])
+            boxes = boxes[indices]
+            scores = scores[indices]
 
-                # Flip image for selfie-view
-                # cv_image = cv2.cvtColor(cv2.flip(cv_image, 1), cv2.COLOR_BGR2RGB)
-                cv_image.flags.writeable = False
+            looking_results = []
 
-                # Perform face mesh landmark detection using Mediapipe
-                results = self.face_mesh.process(cv_image)
+            for idx, (box, score) in enumerate(zip(boxes, scores)):
+                x1, y1, x2, y2 = box
+                cx, cy = (x1 + x2) // 2, (y1 + y2) // 2
+                w, h = x2 - x1, y2 - y1
+                ew, eh = w * 1.2, h * 1.2
+                ex1, ex2 = int(cx - ew / 2), int(cx + ew / 2)
+                ey1, ey2 = int(cy - eh / 2), int(cy + eh / 2)
+                ex1, ex2 = max(ex1, 0), min(ex2, img_w)
+                ey1, ey2 = max(ey1, 0), min(ey2, img_h)
 
-                cv_image.flags.writeable = True
-                # cv_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB)
+                head_image = debug_image[ey1:ey2, ex1:ex2]
+                resized_image = cv2.resize(head_image, (256, 256))[16:240, 16:240]
+                normalized_image = (resized_image[..., ::-1] / 255.0 - self.mean) / self.std
+                input_tensor = normalized_image.transpose(2, 0, 1)[np.newaxis, ...].astype(np.float32)
 
-                img_h, img_w, img_c = cv_image.shape
+                yaw_pitch_roll = self.sixdrepnet_session.run(None, {'input': input_tensor})[0][0]
+                yaw_deg, pitch_deg, roll_deg = yaw_pitch_roll
+                draw_axis(debug_image, yaw_deg, pitch_deg, roll_deg, tdx=cx, tdy=cy, size=100)
 
-                mutualGaze_list = []
+                # Determine if the person is looking at the camera
+                if abs(yaw_deg) < 15 and abs(pitch_deg) < 15:
+                    looking = "Forward "
+                else:
+                    looking = "Not Forward"
+                looking_results.append(looking)
 
-                if results.multi_face_landmarks:
-                    for face_id, face_landmarks in enumerate(results.multi_face_landmarks):
-                        # Initialize face_2d and face_3d as lists for each detected face
-                        face_2d = []
-                        face_3d = []
+                # Draw bounding box and score
+                cv2.rectangle(debug_image, (x1, y1), (x2, y2), (255, 255, 255), 2)
+                cv2.rectangle(debug_image, (x1, y1), (x2, y2), (0, 0, 255), 1)
+                cv2.putText(
+                    debug_image, f'{score:.2f}', (x1, max(y1 - 10, 10)),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2, cv2.LINE_AA
+                )
+                cv2.putText(
+                    debug_image, f'{score:.2f}', (x1, max(y1 - 10, 10)),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 1, cv2.LINE_AA
+                )
 
-                        for idx, lm in enumerate(face_landmarks.landmark):
-                            if idx == 33 or idx == 263 or idx == 1 or idx == 61 or idx == 291 or idx == 199:
-                                if idx == 1:
-                                    nose_2d = (lm.x * img_w, lm.y * img_h)
-                                    nose_3d = (lm.x * img_w, lm.y * img_h, lm.z * 3000)
-                                x, y = int(lm.x * img_w), int(lm.y * img_h)
+            # Display looking results at the top-left corner
+            y_offset = 30  # Starting y position for text
+            for idx, looking in enumerate(looking_results):
+                text = f'Face {idx + 1}: {looking}'
+                cv2.putText(
+                    debug_image, text, (10, y_offset),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2, cv2.LINE_AA
+                )
+                cv2.putText(
+                    debug_image, text, (10, y_offset),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 1, cv2.LINE_AA
+                )
+                y_offset += 30  # Move to the next line
 
-                                face_2d.append([x, y])
-                                face_3d.append([x, y, lm.z])
+        try:
+            output_msg = self.bridge.cv2_to_imgmsg(debug_image, 'bgr8')
+            self.image_pub.publish(output_msg)
+        except CvBridgeError as e:
+            rospy.logerr("CvBridge Error: {}".format(e))
+            return
 
-                        # Calculate centroid
-                        centroid_x = np.mean([pt[0] for pt in face_2d])
-                        centroid_y = np.mean([pt[1] for pt in face_2d])
-                        centroid = Point(x=centroid_x, y=centroid_y, z=0)  # z = 0 for 2D image coordinates
+        cv2.imshow("GoldYOLO Output", debug_image)
+        cv2.waitKey(1)
 
-                        # Convert face_2d and face_3d to NumPy arrays for solvePnP
-                        face_2d = np.array(face_2d, dtype=np.float64)
-                        face_3d = np.array(face_3d, dtype=np.float64)
+def main():
+    GoldYOLONode()
+    rospy.spin()
 
-                        focal_length = 1 * img_w
-                        cam_matrix = np.array([[focal_length, 0, img_h / 2],
-                                            [0, focal_length, img_w / 2],
-                                            [0, 0, 1]])
-
-                        distortion_matrix = np.zeros((4, 1), dtype=np.float64)
-
-                        success, rotation_vec, translation_vec = cv2.solvePnP(face_3d, face_2d, cam_matrix, distortion_matrix)
-
-                        rmat, jac = cv2.Rodrigues(rotation_vec)
-                        angles, mtxR, mtxQ, Qx, Qy, Qz = cv2.RQDecomp3x3(rmat)
-
-                        x_angle = angles[0] * 360
-                        y_angle = angles[1] * 360
-                        z_angle = angles[2] * 360
-
-                        # Determine if head is facing forward
-                        mutualGaze = abs(x_angle) <= 5 and abs(y_angle) <= 5
-                        mutualGaze_list.append(mutualGaze)
-
-                        # Draw nose projection
-                        nose_3d_projection, jacobian = cv2.projectPoints(nose_3d, rotation_vec, translation_vec, cam_matrix, distortion_matrix)
-
-                        p1 = (int(nose_2d[0]), int(nose_2d[1]))
-                        p2 = (int(nose_2d[0] + y_angle * 10), int(nose_2d[1] - x_angle * 10))
-
-                        cv2.line(cv_image, p1, p2, (255, 0, 0), 3)
-
-                        # Display text (forward or not forward)
-                        text = "Forward" if mutualGaze else "Not Forward"
-                        label = f"Face {face_id + 1}: {text}"
-                        cv2.putText(cv_image, label, (int(centroid_x), int(centroid_y) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
-
-                        # Draw landmarks on image
-                        self.mp_drawing.draw_landmarks(
-                            image=cv_image,
-                            landmark_list=face_landmarks,
-                            connections=self.mp_face_mesh.FACEMESH_CONTOURS,
-                            landmark_drawing_spec=self.drawing_spec,
-                            connection_drawing_spec=self.drawing_spec)
-
-            else:
-                # No face detected by MTCNN, do not run face mesh
-                pass
-
-            # Display the image with face detection, pose estimation, and the blue line
-            cv2.imshow('Face Detection and Pose Estimation', cv_image)
-            cv2.waitKey(1)
-
-            # Convert OpenCV image back to ROS Image message
-            processed_image_msg = self.bridge.cv2_to_imgmsg(cv_image, 'bgr8')
-
-            # Publish the processed image
-            self.image_pub.publish(processed_image_msg)
-
-        except Exception as e:
-            rospy.logerr(f"Error in image_callback: {e}")
-
-    def shutdown_hook(self):
-        cv2.destroyAllWindows()
-
-if __name__ == '__main__':
-    try:
-        node = FaceDetectionAndPoseEstimationNode()
-        rospy.on_shutdown(node.shutdown_hook)
-        rospy.spin()
-    except rospy.ROSInterruptException:
-        pass
+if __name__ == "__main__":
+    main()
