@@ -588,11 +588,11 @@ std::vector<std::vector<double>> calculateTargetPosition(const std::vector<doubl
                     throw std::runtime_error("Not enough maximum range values for joint type: " + jointType);
                 }
 
-                // if (j == 0) {
-                //     // For the first joint, always set the value to the home position
-                //     singleTargetPosition.push_back(homePosition[j]);
-                // } 
-                // else {
+                if (j == 0) {
+                    // For the first joint, always set the value to the home position
+                    singleTargetPosition.push_back(homePosition[j]);
+                } 
+                else {
                     double maxRange = maximumRange[j];
                     double fullRange = maxPosition[j] - minPosition[j];
                     double maximumRangeOffset = fullRange * maxRange;
@@ -603,7 +603,7 @@ std::vector<std::vector<double>> calculateTargetPosition(const std::vector<doubl
 
                     double randomPosition = generateRandomPosition(tempPositionMin, tempPositionMax);
                     singleTargetPosition.push_back(randomPosition);
-                // }
+                }
             }
             targetPositions.push_back(singleTargetPosition);  
         }
