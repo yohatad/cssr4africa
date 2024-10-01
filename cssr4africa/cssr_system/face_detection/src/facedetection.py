@@ -2,13 +2,15 @@
 
 import rospy
 import cv2
-import copy
 import numpy as np
 import onnxruntime
 from math import cos, sin, pi
-from typing import Tuple, Optional, List
+from typing import Tuple, List
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
+import multiprocessing
+import threading
+from queue import Queue
 
 class GoldYOLOONNX:
     def __init__(
@@ -17,12 +19,15 @@ class GoldYOLOONNX:
         class_score_th: float = 0.65,
         providers: List[str] = ['CUDAExecutionProvider', 'CPUExecutionProvider'],
     ):
-        
         self.class_score_th = class_score_th
         session_option = onnxruntime.SessionOptions()
         session_option.log_severity_level = 3
-        self.onnx_session = onnxruntime.InferenceSession(model_path, sess_options=session_option, providers=providers)
-
+        # Optimize ONNX Runtime session options
+        session_option.intra_op_num_threads = multiprocessing.cpu_count()
+        session_option.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_ALL
+        self.onnx_session = onnxruntime.InferenceSession(
+            model_path, sess_options=session_option, providers=providers
+        )
         self.input_shape = self.onnx_session.get_inputs()[0].shape
         self.input_names = [inp.name for inp in self.onnx_session.get_inputs()]
         self.output_names = [out.name for out in self.onnx_session.get_outputs()]
@@ -88,8 +93,14 @@ class GoldYOLONode:
         self.model = GoldYOLOONNX(model_path=model_path)
         session_option = onnxruntime.SessionOptions()
         session_option.log_severity_level = 3
-        self.sixdrepnet_session = onnxruntime.InferenceSession(sixdrepnet_model_path, 
-                                                               sess_options=session_option, providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
+        # Optimize ONNX Runtime session options
+        session_option.intra_op_num_threads = multiprocessing.cpu_count()
+        session_option.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_ALL
+        self.sixdrepnet_session = onnxruntime.InferenceSession(
+            sixdrepnet_model_path,
+            sess_options=session_option,
+            providers=['CUDAExecutionProvider', 'CPUExecutionProvider']
+        )
 
         self.bridge = CvBridge()
         self.image_sub = rospy.Subscriber(self.image_topic, Image, self.image_callback, queue_size=1)
@@ -97,18 +108,31 @@ class GoldYOLONode:
         self.mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)
         self.std = np.array([0.229, 0.224, 0.225], dtype=np.float32)
 
+        # Initialize image queue and processing thread
+        self.image_queue = Queue()
+        self.processing_thread = threading.Thread(target=self.process_images)
+        self.processing_thread.daemon = True
+        self.processing_thread.start()
+
     def image_callback(self, msg):
         try:
             cv_image = self.bridge.imgmsg_to_cv2(msg, 'bgr8')
+            self.image_queue.put(cv_image)
         except CvBridgeError as e:
             rospy.logerr("CvBridge Error: {}".format(e))
-            return
 
-        debug_image = copy.deepcopy(cv_image)
+    def process_images(self):
+        while not rospy.is_shutdown():
+            if not self.image_queue.empty():
+                cv_image = self.image_queue.get()
+                self.process_frame(cv_image)
+
+    def process_frame(self, cv_image):
+        # Avoid unnecessary deep copies
+        debug_image = cv_image.copy()
         boxes, scores = self.model(debug_image)
         img_h, img_w = debug_image.shape[:2]
 
-        # Sort the boxes and scores from left to right based on x1 coordinate
         if len(boxes) > 0:
             boxes = np.array(boxes)
             indices = np.argsort(boxes[:, 0])
@@ -116,6 +140,9 @@ class GoldYOLONode:
             scores = scores[indices]
 
             looking_results = []
+            input_tensors = []
+            centers = []
+            boxes_scores = []
 
             for idx, (box, score) in enumerate(zip(boxes, scores)):
                 x1, y1, x2, y2 = box
@@ -128,31 +155,35 @@ class GoldYOLONode:
                 ey1, ey2 = max(ey1, 0), min(ey2, img_h)
 
                 head_image = debug_image[ey1:ey2, ex1:ex2]
-                resized_image = cv2.resize(head_image, (256, 256))[16:240, 16:240]
+                # Optimize image preprocessing
+                resized_image = cv2.resize(head_image, (224, 224))
                 normalized_image = (resized_image[..., ::-1] / 255.0 - self.mean) / self.std
                 input_tensor = normalized_image.transpose(2, 0, 1)[np.newaxis, ...].astype(np.float32)
+                input_tensors.append(input_tensor)
+                centers.append((cx, cy))
+                boxes_scores.append((box, score))
 
-                yaw_pitch_roll = self.sixdrepnet_session.run(None, {'input': input_tensor})[0][0]
+            # Batch processing for head pose estimation
+            input_batch = np.vstack(input_tensors)
+            yaw_pitch_rolls = self.sixdrepnet_session.run(None, {'input': input_batch})[0]
+
+            for idx, (yaw_pitch_roll, (cx, cy), (box, score)) in enumerate(zip(yaw_pitch_rolls, centers, boxes_scores)):
                 yaw_deg, pitch_deg, roll_deg = yaw_pitch_roll
                 draw_axis(debug_image, yaw_deg, pitch_deg, roll_deg, tdx=cx, tdy=cy, size=100)
 
-                # Determine if the person is looking at the camera
+                # Determine if the person is looking forward
                 if abs(yaw_deg) < 15 and abs(pitch_deg) < 15:
-                    looking = "Forward "
+                    looking = "Forward"
                 else:
                     looking = "Not Forward"
                 looking_results.append(looking)
 
-                # Draw bounding box and score
-                cv2.rectangle(debug_image, (x1, y1), (x2, y2), (255, 255, 255), 2)
-                cv2.rectangle(debug_image, (x1, y1), (x2, y2), (0, 0, 255), 1)
+                x1, y1, x2, y2 = box
+                # Minimize drawing operations
+                cv2.rectangle(debug_image, (x1, y1), (x2, y2), (0, 255, 0), 1)
                 cv2.putText(
-                    debug_image, f'{score:.2f}', (x1, max(y1 - 10, 10)),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2, cv2.LINE_AA
-                )
-                cv2.putText(
-                    debug_image, f'{score:.2f}', (x1, max(y1 - 10, 10)),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 1, cv2.LINE_AA
+                    debug_image, f'{score:.2f}', (x1, max(y1 - 5, 10)),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1, cv2.LINE_AA
                 )
 
             # Display looking results at the top-left corner
@@ -176,6 +207,7 @@ class GoldYOLONode:
             rospy.logerr("CvBridge Error: {}".format(e))
             return
 
+        # Reduce display overhead by commenting out the display code
         cv2.imshow("GoldYOLO Output", debug_image)
         cv2.waitKey(1)
 
