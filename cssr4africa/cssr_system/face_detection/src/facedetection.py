@@ -1,16 +1,50 @@
 #!/usr/bin/env python
 
 import rospy
+import rospkg
+import os
 import cv2
 import numpy as np
 import onnxruntime
+import multiprocessing
+import threading
 from math import cos, sin, pi
 from typing import Tuple, List
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
-import multiprocessing
-import threading
 from queue import Queue
+
+def draw_axis(img, yaw, pitch, roll, tdx=None, tdy=None, size=100):
+    pitch = pitch * pi / 180
+    yaw = -yaw * pi / 180
+    roll = roll * pi / 180
+    height, width = img.shape[:2]
+    tdx = tdx if tdx is not None else width / 2
+    tdy = tdy if tdy is not None else height / 2
+
+    x1 = size * (cos(yaw) * cos(roll)) + tdx
+    y1 = size * (cos(pitch) * sin(roll) + sin(pitch) * sin(yaw) * cos(roll)) + tdy
+    x2 = size * (-cos(yaw) * sin(roll)) + tdx
+    y2 = size * (cos(pitch) * cos(roll) - sin(pitch) * sin(yaw) * sin(roll)) + tdy
+    x3 = size * sin(yaw) + tdx
+    y3 = size * (-cos(yaw) * sin(pitch)) + tdy
+
+    cv2.line(img, (int(tdx), int(tdy)), (int(x1), int(y1)), (0, 0, 255), 2)
+    cv2.line(img, (int(tdx), int(tdy)), (int(x2), int(y2)), (0, 255, 0), 2)
+    cv2.line(img, (int(tdx), int(tdy)), (int(x3), int(y3)), (255, 0, 0), 2)
+
+def resolve_model_path(path):
+    if path.startswith('package://'):
+        # Remove 'package://' prefix
+        path = path[len('package://'):]
+        # Split package name and the relative path
+        package_name, relative_path = path.split('/', 1)
+        # Get the absolute path to the package
+        rospack = rospkg.RosPack()
+        package_path = rospack.get_path(package_name)
+        # Join the package path with the relative path
+        path = os.path.join(package_path, relative_path)
+    return path
 
 class GoldYOLOONNX:
     def __init__(
@@ -63,32 +97,18 @@ class GoldYOLOONNX:
                 result_scores.append(box[6])
         return np.array(result_boxes), np.array(result_scores)
 
-def draw_axis(img, yaw, pitch, roll, tdx=None, tdy=None, size=100):
-    pitch = pitch * pi / 180
-    yaw = -yaw * pi / 180
-    roll = roll * pi / 180
-    height, width = img.shape[:2]
-    tdx = tdx if tdx is not None else width / 2
-    tdy = tdy if tdy is not None else height / 2
-
-    x1 = size * (cos(yaw) * cos(roll)) + tdx
-    y1 = size * (cos(pitch) * sin(roll) + sin(pitch) * sin(yaw) * cos(roll)) + tdy
-    x2 = size * (-cos(yaw) * sin(roll)) + tdx
-    y2 = size * (cos(pitch) * cos(roll) - sin(pitch) * sin(yaw) * sin(roll)) + tdy
-    x3 = size * sin(yaw) + tdx
-    y3 = size * (-cos(yaw) * sin(pitch)) + tdy
-
-    cv2.line(img, (int(tdx), int(tdy)), (int(x1), int(y1)), (0, 0, 255), 2)
-    cv2.line(img, (int(tdx), int(tdy)), (int(x2), int(y2)), (0, 255, 0), 2)
-    cv2.line(img, (int(tdx), int(tdy)), (int(x3), int(y3)), (255, 0, 0), 2)
 
 class GoldYOLONode:
     def __init__(self):
         rospy.init_node('gold_yolo_node')
-        model_path = rospy.get_param('~model', '/root/workspace/pepper_rob_ws/src/cssr4africa/cssr_system/face_detection/models/gold_yolo_n_head_post_0277_0.5071_1x3x480x640.onnx')
-        sixdrepnet_model_path = rospy.get_param('~sixdrepnet_model', '/root/workspace/pepper_rob_ws/src/cssr4africa/cssr_system/face_detection/models/sixdrepnet360_Nx3x224x224.onnx')
+        model_path_param = rospy.get_param('~model', 'package://face_detection/models/gold_yolo_n_head_post_0277_0.5071_1x3x480x640.onnx')
+        sixdrepnet_model_path_param = rospy.get_param('~sixdrepnet_model', 'package://face_detection/models/sixdrepnet360_Nx3x224x224.onnx')
         self.image_topic = rospy.get_param('~image_topic', '/camera/color/image_raw')
         self.output_topic = rospy.get_param('~output_topic', '/gold_yolo/output_image')
+
+        # Resolve the package paths
+        model_path = resolve_model_path(model_path_param)
+        sixdrepnet_model_path = resolve_model_path(sixdrepnet_model_path_param)
 
         self.model = GoldYOLOONNX(model_path=model_path)
         session_option = onnxruntime.SessionOptions()
