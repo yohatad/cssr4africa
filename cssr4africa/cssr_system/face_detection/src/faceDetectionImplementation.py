@@ -8,7 +8,7 @@ import rospy
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 from geometry_msgs.msg import Point
-from face_detection.msg import facePose  # Replace with your actual package name
+from face_detection.msg import faceDetection  # Replace with your actual package name
 
 # Initialize Mediapipe for face mesh and face detection
 mp_face_mesh = mp.solutions.face_mesh
@@ -27,7 +27,7 @@ class MediapipeFaceNode:
         # ROS subscribers and publishers
         self.image_sub = rospy.Subscriber("/camera/color/image_raw", Image, self.image_callback)
         self.bridge = CvBridge()
-        self.pub_gaze = rospy.Publisher("/face_pose", facePose, queue_size=10)  # Publisher for the facePose message
+        self.pub_gaze = rospy.Publisher("/faceDetection/data", faceDetection, queue_size=10)  # Publisher for the faceDetection message
 
         # For FPS calculation
         self.frame_counter = 0
@@ -159,7 +159,7 @@ class MediapipeFaceNode:
                     connection_drawing_spec=drawing_spec)
 
         # Publish centroids and mutual gaze status
-        gaze_msg = facePose()
+        gaze_msg = faceDetection()
         gaze_msg.centroids = centroids
         gaze_msg.mutualGaze = mutualGaze_list
         self.pub_gaze.publish(gaze_msg)
