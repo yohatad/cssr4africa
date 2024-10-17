@@ -141,16 +141,13 @@ class MediaPipeFaceNode(FaceDetectionNode):
                 )
 
         # Publish centroids and mutual gaze status
-        gaze_msg = faceDetection()
-        gaze_msg.centroids = centroids
-        gaze_msg.mutualGaze = mutualGaze_list
-        self.pub_gaze.publish(gaze_msg)
+        faceMsg = faceDetection()
+        faceMsg.centroids = centroids
+        faceMsg.mutualGaze = mutualGaze_list
+        self.pub_gaze.publish(faceMsg)
 
 class YOLOONNX:
-    def __init__(
-        self,
-        model_path: str = 'gold_yolo_n_head_post_0277_0.5071_1x3x480x640.onnx',
-        class_score_th: float = 0.65,
+    def __init__(self, model_path: str, class_score_th: float = 0.65,
         providers: List[str] = ['CUDAExecutionProvider', 'CPUExecutionProvider'],
     ):
         self.class_score_th = class_score_th
@@ -203,37 +200,31 @@ class SixDrepNet(FaceDetectionNode):
         super().__init__()
         model_path_param = 'package://face_detection/models/gold_yolo_n_head_post_0277_0.5071_1x3x480x640.onnx'
         sixdrepnet_model_path_param = 'package://face_detection/models/sixdrepnet360_Nx3x224x224.onnx'
-
+        
         # Resolve the package paths
         model_path = self.resolve_model_path(model_path_param)
         sixdrepnet_model_path = self.resolve_model_path(sixdrepnet_model_path_param)
 
+        self.image_queue = Queue()
         self.model = YOLOONNX(model_path=model_path)
+        session_option = onnxruntime.SessionOptions()
+        session_option.log_severity_level = 3
+
+         # Optimize ONNX Runtime session options
+        session_option.intra_op_num_threads = multiprocessing.cpu_count()
+        session_option.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_ALL
         self.sixdrepnet_session = onnxruntime.InferenceSession(
             sixdrepnet_model_path,
-            sess_options=onnxruntime.SessionOptions(),
+            sess_options=session_option,
             providers=['CUDAExecutionProvider', 'CPUExecutionProvider']
         )
 
         self.mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)
         self.std = np.array([0.229, 0.224, 0.225], dtype=np.float32)
-        self.image_queue = Queue()
+           
         threading.Thread(target=self.process_images, daemon=True).start()
-
-    def image_callback(self, msg):
-        try:
-            cv_image = self.bridge.imgmsg_to_cv2(msg, 'bgr8')
-            self.image_queue.put(cv_image)
-        except CvBridgeError as e:
-            rospy.logerr("CvBridge Error: {}".format(e))
-
-    def process_images(self):
-        while not rospy.is_shutdown():
-            if not self.image_queue.empty():
-                cv_image = self.image_queue.get()
-                self.process_frame(cv_image)
-
-    def draw_axis(img, yaw, pitch, roll, tdx=None, tdy=None, size=100):
+    
+    def draw_axis(self, img, yaw, pitch, roll, tdx=None, tdy=None, size=100):
         pitch = pitch * pi / 180
         yaw = -yaw * pi / 180
         roll = roll * pi / 180
@@ -252,35 +243,42 @@ class SixDrepNet(FaceDetectionNode):
         cv2.line(img, (int(tdx), int(tdy)), (int(x2), int(y2)), (0, 255, 0), 2)
         cv2.line(img, (int(tdx), int(tdy)), (int(x3), int(y3)), (255, 0, 0), 2)
 
+    def image_callback(self, msg):
+        try:
+            cv_image = self.bridge.imgmsg_to_cv2(msg, 'bgr8')
+            self.image_queue.put(cv_image)
+        except CvBridgeError as e:
+            rospy.logerr("CvBridge Error: {}".format(e))
+
+    def process_images(self):
+        while not rospy.is_shutdown():
+            if not self.image_queue.empty():
+                cv_image = self.image_queue.get()
+                self.process_frame(cv_image)
+
     def process_frame(self, cv_image):
-        # Avoid unnecessary deep copies
         debug_image = cv_image.copy()
         boxes, scores = self.model(debug_image)
         img_h, img_w = debug_image.shape[:2]
 
+        centroids, mutual_gaze_list = [], []
+
         if len(boxes) > 0:
-            boxes = np.array(boxes)
-            indices = np.argsort(boxes[:, 0])
-            boxes = boxes[indices]
-            scores = scores[indices]
+            boxes = np.array(boxes)[np.argsort(np.array(boxes)[:, 0])]  # Sort boxes by x-coordinate
+            scores = np.array(scores)[np.argsort(np.array(boxes)[:, 0])]  # Sort scores accordingly
 
-            looking_results = []
-            input_tensors = []
-            centers = []
-            boxes_scores = []
+            input_tensors, centers, boxes_scores = [], [], []
 
-            for idx, (box, score) in enumerate(zip(boxes, scores)):
+            for box, score in zip(boxes, scores):
                 x1, y1, x2, y2 = box
                 cx, cy = (x1 + x2) // 2, (y1 + y2) // 2
                 w, h = x2 - x1, y2 - y1
                 ew, eh = w * 1.2, h * 1.2
-                ex1, ex2 = int(cx - ew / 2), int(cx + ew / 2)
-                ey1, ey2 = int(cy - eh / 2), int(cy + eh / 2)
-                ex1, ex2 = max(ex1, 0), min(ex2, img_w)
-                ey1, ey2 = max(ey1, 0), min(ey2, img_h)
+                ex1, ex2 = max(int(cx - ew / 2), 0), min(int(cx + ew / 2), img_w)
+                ey1, ey2 = max(int(cy - eh / 2), 0), min(int(cy + eh / 2), img_h)
 
+                # Preprocess image
                 head_image = debug_image[ey1:ey2, ex1:ex2]
-                # Optimize image preprocessing
                 resized_image = cv2.resize(head_image, (224, 224))
                 normalized_image = (resized_image[..., ::-1] / 255.0 - self.mean) / self.std
                 input_tensor = normalized_image.transpose(2, 0, 1)[np.newaxis, ...].astype(np.float32)
@@ -288,51 +286,43 @@ class SixDrepNet(FaceDetectionNode):
                 centers.append((cx, cy))
                 boxes_scores.append((box, score))
 
-            # Batch processing for head pose estimation
-            input_batch = np.vstack(input_tensors)
-            yaw_pitch_rolls = self.sixdrepnet_session.run(None, {'input': input_batch})[0]
+            # Batch process for head pose estimation
+            yaw_pitch_rolls = self.sixdrepnet_session.run(None, {'input': np.vstack(input_tensors)})[0]
 
-            for idx, (yaw_pitch_roll, (cx, cy), (box, score)) in enumerate(zip(yaw_pitch_rolls, centers, boxes_scores)):
+            for (yaw_pitch_roll, (cx, cy), (box, score)) in zip(yaw_pitch_rolls, centers, boxes_scores):
                 yaw_deg, pitch_deg, roll_deg = yaw_pitch_roll
-                self.draw_axis(debug_image, yaw_deg, pitch_deg, roll_deg, tdx=cx, tdy=cy, size=100)
+                self.draw_axis(debug_image, yaw_deg, pitch_deg, roll_deg, cx, cy, size=100)
 
-                # Determine if the person is looking forward
-                if abs(yaw_deg) < 15 and abs(pitch_deg) < 15:
-                    looking = "Forward"
-                else:
-                    looking = "Not Forward"
-                looking_results.append(looking)
+                # Determine mutual gaze
+                mutual_gaze = abs(yaw_deg) < 10 and abs(pitch_deg) < 10
+                mutual_gaze_list.append(mutual_gaze)
+                centroids.append(Point(x=float(cx), y=float(cy), z=0.0))
 
-                x1, y1, x2, y2 = box
                 # Minimize drawing operations
+                x1, y1, x2, y2 = box
                 cv2.rectangle(debug_image, (x1, y1), (x2, y2), (0, 255, 0), 1)
-                cv2.putText(
-                    debug_image, f'{score:.2f}', (x1, max(y1 - 5, 10)),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1, cv2.LINE_AA
-                )
+                cv2.putText(debug_image, f'{score:.2f}', (x1, max(y1 - 5, 10)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1, cv2.LINE_AA)
 
             # Display looking results at the top-left corner
-            y_offset = 30  # Starting y position for text
-            for idx, looking in enumerate(looking_results):
-                text = f'Face {idx + 1}: {looking}'
-                cv2.putText(
-                    debug_image, text, (10, y_offset),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2, cv2.LINE_AA)
-                
-                cv2.putText(
-                    debug_image, text, (10, y_offset),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 1, cv2.LINE_AA)
-                y_offset += 30  # Move to the next line
+            for idx, mutual_gaze in enumerate(mutual_gaze_list):
+                text = f'Face {idx + 1}: {"Forward" if mutual_gaze else "Not Forward"}'
+                y_offset = 30 + idx * 30
+                cv2.putText(debug_image, text, (10, y_offset), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2, cv2.LINE_AA)
+                cv2.putText(debug_image, text, (10, y_offset), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 1, cv2.LINE_AA)
 
         try:
-            output_msg = self.bridge.cv2_to_imgmsg(debug_image, 'bgr8')
-            self.pub_gaze.publish(output_msg)
+            # Create and publish the faceMsg
+            face_msg = faceDetection()
+            face_msg.centroids = centroids
+            face_msg.mutualGaze = mutual_gaze_list
+            self.pub_gaze.publish(face_msg)
         except CvBridgeError as e:
-            rospy.logerr("CvBridge Error: {}".format(e))
+            rospy.logerr(f"CvBridge Error: {e}")
 
-        # Reduce display overhead by commenting out the display code
+        # Display output (if necessary)
         cv2.imshow("SixDrepNet Output", debug_image)
         cv2.waitKey(1)
+
 
 # Main function to select between MediaPipe and SixDrepNet based on ROS parameter
 if __name__ == '__main__':
