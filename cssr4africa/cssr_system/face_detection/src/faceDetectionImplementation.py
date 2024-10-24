@@ -13,16 +13,18 @@ from math import cos, sin, pi
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 from geometry_msgs.msg import Point
-from face_detection.msg import faceDetection  # Replace with your actual package name
+from face_detection.msg import faceDetection
 from typing import Tuple, List
 from queue import Queue
 
-# ROS Node that supports switching between MediaPipe and SixDrepNet
 class FaceDetectionNode:
     def __init__(self):
         self.image_sub = rospy.Subscriber("/camera/color/image_raw", Image, self.image_callback)
+        self.depth_sub = rospy.Subscriber("/camera/depth/image_rect_raw", Image, self.depth_callback)
         self.bridge = CvBridge()
         self.pub_gaze = rospy.Publisher("/faceDetection/data", faceDetection, queue_size=10)
+        self.image_queue = Queue()
+        self.multi_tracker = cv2.TrackerCSRT_create()
 
     def resolve_model_path(self, path):
         if path.startswith('package://'):
@@ -32,7 +34,32 @@ class FaceDetectionNode:
             package_path = rospack.get_path(package_name)
             path = os.path.join(package_path, relative_path)
         return path
+    
+    def depth_callback(self, data):
+        """Callback to receive the depth image."""
+        try:
+            self.depth_image = self.bridge.imgmsg_to_cv2(data, desired_encoding="passthrough")
+        except CvBridgeError as e:
+            rospy.logerr("CvBridge Error: {}".format(e))
 
+    def get_depth_at_centroid(self, centroid_x, centroid_y):
+        """Get the depth value at the centroid of a face."""
+        if self.depth_image is None:
+            return None
+        # Ensure the centroid values are integers (pixel indices)
+        x = int(centroid_x)
+        y = int(centroid_y)
+        depth_value = self.depth_image[y, x]  # Depth value in millimeters
+        return depth_value / 1000.0  # Convert to meters
+    
+    def publish_face_detection(self, centroids, mutual_gaze_list):
+        """Publish the face detection results."""
+        face_msg = faceDetection()
+        # face_msg.face_label_id= face_label_id
+        face_msg.centroids = centroids
+        face_msg.mutualGaze = mutual_gaze_list
+        self.pub_gaze.publish(face_msg)
+    
 class MediaPipeFaceNode(FaceDetectionNode):
     def __init__(self):
         super().__init__()
@@ -46,13 +73,20 @@ class MediaPipeFaceNode(FaceDetectionNode):
         self.mp_drawing = mp.solutions.drawing_utils
         self.drawing_spec = self.mp_drawing.DrawingSpec(color=(128, 128, 128), thickness=1, circle_radius=1)
         
+        rospy.loginfo("Successfully initialized MediaPipe components")
+     
     def image_callback(self, data):
+        # Check if face_detection is initialized
+        if not hasattr(self, 'face_detection') or self.face_detection is None:
+            return  # Skip this callback if initialization isn't complete
+        
         frame = self.bridge.imgmsg_to_cv2(data, desired_encoding='bgr8')
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         img_h, img_w, _ = frame.shape
 
         # Process with face detection
         self.process_face_detection(frame, rgb_frame, img_h, img_w)
+        
         # Process with face mesh
         self.process_face_mesh(frame, rgb_frame, img_h, img_w)
 
@@ -148,8 +182,7 @@ class MediaPipeFaceNode(FaceDetectionNode):
 
 class YOLOONNX:
     def __init__(self, model_path: str, class_score_th: float = 0.65,
-        providers: List[str] = ['CUDAExecutionProvider', 'CPUExecutionProvider'],
-    ):
+        providers: List[str] = ['CUDAExecutionProvider', 'CPUExecutionProvider']):
         self.class_score_th = class_score_th
         session_option = onnxruntime.SessionOptions()
         session_option.log_severity_level = 3
@@ -158,8 +191,8 @@ class YOLOONNX:
         session_option.intra_op_num_threads = multiprocessing.cpu_count()
         session_option.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_ALL
         self.onnx_session = onnxruntime.InferenceSession(
-            model_path, sess_options=session_option, providers=providers
-        )
+            model_path, sess_options=session_option, providers=providers)
+        
         self.input_shape = self.onnx_session.get_inputs()[0].shape
         self.input_names = [inp.name for inp in self.onnx_session.get_inputs()]
         self.output_names = [out.name for out in self.onnx_session.get_outputs()]
@@ -202,11 +235,10 @@ class SixDrepNet(FaceDetectionNode):
         sixdrepnet_model_path_param = 'package://face_detection/models/sixdrepnet360_Nx3x224x224.onnx'
         
         # Resolve the package paths
-        model_path = self.resolve_model_path(model_path_param)
+        yolo_model_path = self.resolve_model_path(model_path_param)
         sixdrepnet_model_path = self.resolve_model_path(sixdrepnet_model_path_param)
 
-        self.image_queue = Queue()
-        self.model = YOLOONNX(model_path=model_path)
+        self.model = YOLOONNX(model_path=yolo_model_path)
         session_option = onnxruntime.SessionOptions()
         session_option.log_severity_level = 3
 
@@ -261,7 +293,7 @@ class SixDrepNet(FaceDetectionNode):
         boxes, scores = self.model(debug_image)
         img_h, img_w = debug_image.shape[:2]
 
-        centroids, mutual_gaze_list = [], []
+        centroids, mutual_gaze_list, face_id_list = [], [], []
 
         if len(boxes) > 0:
             boxes = np.array(boxes)[np.argsort(np.array(boxes)[:, 0])]  # Sort boxes by x-coordinate
@@ -293,41 +325,37 @@ class SixDrepNet(FaceDetectionNode):
                 yaw_deg, pitch_deg, roll_deg = yaw_pitch_roll
                 self.draw_axis(debug_image, yaw_deg, pitch_deg, roll_deg, cx, cy, size=100)
 
+                # Determine the depth at the centroid
+                cz = self.get_depth_at_centroid(cx, cy)
+
                 # Determine mutual gaze
                 mutual_gaze = abs(yaw_deg) < 10 and abs(pitch_deg) < 10
                 mutual_gaze_list.append(mutual_gaze)
-                centroids.append(Point(x=float(cx), y=float(cy), z=0.0))
+                centroids.append(Point(x=float(cx), y=float(cy), z=float(cz)))
 
                 # Minimize drawing operations
                 x1, y1, x2, y2 = box
                 cv2.rectangle(debug_image, (x1, y1), (x2, y2), (0, 255, 0), 1)
                 cv2.putText(debug_image, f'{score:.2f}', (x1, max(y1 - 5, 10)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1, cv2.LINE_AA)
 
-            # Display looking results at the top-left corner
-            for idx, mutual_gaze in enumerate(mutual_gaze_list):
-                text = f'Face {idx + 1}: {"Forward" if mutual_gaze else "Not Forward"}'
-                y_offset = 30 + idx * 30
-                cv2.putText(debug_image, text, (10, y_offset), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2, cv2.LINE_AA)
-                cv2.putText(debug_image, text, (10, y_offset), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 1, cv2.LINE_AA)
+                for idx, mutual_gaze in enumerate(mutual_gaze_list):
+                    text = f'Face {idx + 1}: {"Forward" if mutual_gaze else "Not Forward"}'
+                    cv2.putText(debug_image, text, (x1, y1), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2, cv2.LINE_AA)
+
+            # Create and publish the faceMsg
+            self.publish_face_detection(face_id_list, centroids, mutual_gaze_list)
 
         try:
-            # Create and publish the faceMsg
-            face_msg = faceDetection()
-            face_msg.centroids = centroids
-            face_msg.mutualGaze = mutual_gaze_list
-            self.pub_gaze.publish(face_msg)
+            # Display output (if necessary)
+            cv2.imshow("SixDrepNet Output", debug_image)
+            cv2.waitKey(1)
         except CvBridgeError as e:
             rospy.logerr(f"CvBridge Error: {e}")
-
-        # Display output (if necessary)
-        cv2.imshow("SixDrepNet Output", debug_image)
-        cv2.waitKey(1)
-
 
 # Main function to select between MediaPipe and SixDrepNet based on ROS parameter
 if __name__ == '__main__':
     rospy.init_node('face_detection_node', anonymous=True)
-    detection_method = rospy.get_param('~detection_method', 'SixDrepNet')  # Choose 'MediaPipe' or 'SixDrepNet'
+    detection_method = rospy.get_param('~detection_method', 'MediaPipe')  # Choose 'MediaPipe' or 'SixDrepNet'
 
     if detection_method == 'MediaPipe':
         mp_node = MediaPipeFaceNode()
