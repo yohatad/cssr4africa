@@ -9,6 +9,8 @@ import os
 import onnxruntime
 import multiprocessing
 import threading
+import torch
+from deep_sort_realtime.deepsort_tracker import DeepSort
 from math import cos, sin, pi
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
@@ -24,7 +26,7 @@ class FaceDetectionNode:
         self.bridge = CvBridge()
         self.pub_gaze = rospy.Publisher("/faceDetection/data", faceDetection, queue_size=10)
         self.image_queue = Queue()
-        self.multi_tracker = cv2.TrackerCSRT_create()
+        self.tracker = DeepSort(max_age=10, n_init=2, max_iou_distance=0.9)
 
     def resolve_model_path(self, path):
         if path.startswith('package://'):
@@ -97,26 +99,48 @@ class MediaPipeFaceNode(FaceDetectionNode):
 
     def process_face_detection(self, frame, rgb_frame, img_h, img_w):
         results = self.face_detection.process(rgb_frame)
+        detections = []
+
         if results.detections:
             for face in results.detections:
-                face_rect = np.multiply(
-                    [
-                        face.location_data.relative_bounding_box.xmin,
-                        face.location_data.relative_bounding_box.ymin,
-                        face.location_data.relative_bounding_box.width,
-                        face.location_data.relative_bounding_box.height,
-                    ],
-                    [img_w, img_h, img_w, img_h]
-                ).astype(int)
-                # Draw bounding box
-                cv2.rectangle(frame, face_rect, color=(255, 255, 255), thickness=2)
+                # Convert bounding box to pixel coordinates
+                bbox = face.location_data.relative_bounding_box
+                x_min = int(bbox.xmin * img_w)
+                y_min = int(bbox.ymin * img_h)
+                width = int(bbox.width * img_w)
+                height = int(bbox.height * img_h)
+                x_max, y_max = x_min + width, y_min + height
 
-                # Extract and draw key points
-                key_points = np.array([(p.x, p.y) for p in face.location_data.relative_keypoints])
-                key_points_coords = np.multiply(key_points, [img_w, img_h]).astype(int)
-                for p in key_points_coords:
-                    cv2.circle(frame, tuple(p), 4, (255, 255, 255), 2)
-                    cv2.circle(frame, tuple(p), 2, (0, 0, 0), -1)
+                # Fine-tune the bounding box to make it tighter around the face
+                # Example: reduce the box by 10% on each side
+                padding_x = int(width * 0.1)  # 10% padding on width
+                padding_y = int(height * 0.1)  # 10% padding on height
+                x_min = max(0, x_min + padding_x)
+                y_min = max(0, y_min + padding_y)
+                x_max = min(img_w, x_max - padding_x)
+                y_max = min(img_h, y_max - padding_y)
+
+                # Extract detection score
+                score = face.score[0]
+
+                # Add to detections list for Deep SORT
+                detections.append(([x_min, y_min, x_max, y_max], score))
+
+            # Update tracker with detections
+            tracks = self.tracker.update_tracks(detections, frame=frame)
+
+            # Draw tracking information
+            for track in tracks:
+                if not track.is_confirmed():
+                    continue
+                track_id = track.track_id
+                bbox = track.to_ltrb()  # Bounding box (left, top, right, bottom)
+
+                # Draw bounding box and ID on frame
+                cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), (0, 255, 0), 2)
+                cv2.putText(frame, f"ID: {track_id}", (int(bbox[0]), int(bbox[1]) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+
+
 
     def process_face_mesh(self, frame, rgb_frame, img_h, img_w):
         results = self.face_mesh.process(rgb_frame)
@@ -175,11 +199,8 @@ class MediaPipeFaceNode(FaceDetectionNode):
                 )
 
         # Publish centroids and mutual gaze status
-        faceMsg = faceDetection()
-        faceMsg.centroids = centroids
-        faceMsg.mutualGaze = mutualGaze_list
-        self.pub_gaze.publish(faceMsg)
-
+        self.publish_face_detection(centroids, mutualGaze_list)
+        
 class YOLOONNX:
     def __init__(self, model_path: str, class_score_th: float = 0.65,
         providers: List[str] = ['CUDAExecutionProvider', 'CPUExecutionProvider']):
@@ -343,7 +364,7 @@ class SixDrepNet(FaceDetectionNode):
                     cv2.putText(debug_image, text, (x1, y1), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2, cv2.LINE_AA)
 
             # Create and publish the faceMsg
-            self.publish_face_detection(face_id_list, centroids, mutual_gaze_list)
+            self.publish_face_detection(centroids, mutual_gaze_list)
 
         try:
             # Display output (if necessary)
