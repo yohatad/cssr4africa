@@ -6,10 +6,12 @@ import numpy as np
 import rospy
 import rospkg
 import os
+import time
 import onnxruntime
 import multiprocessing
 import threading
-import torch
+from collections import OrderedDict
+from scipy.spatial import distance as dist
 from deep_sort_realtime.deepsort_tracker import DeepSort
 from math import cos, sin, pi
 from sensor_msgs.msg import Image
@@ -19,14 +21,104 @@ from face_detection.msg import faceDetection
 from typing import Tuple, List
 from queue import Queue
 
+class CentroidTracker:
+    def __init__(self, max_disappeared=50, distance_threshold=50):
+        # Adjustable parameters
+        self.max_disappeared = max_disappeared
+        self.distance_threshold = distance_threshold
+
+        # Internal variables
+        self.next_object_id = 0
+        self.objects = OrderedDict()
+        self.disappeared = OrderedDict()
+
+    def register(self, centroid):
+        """Registers a new object with the next available ID and resets its disappearance count."""
+        self.objects[self.next_object_id] = centroid
+        self.disappeared[self.next_object_id] = 0
+        self.next_object_id += 1
+
+    def deregister(self, object_id):
+        """Removes an object from tracking."""
+        if object_id in self.objects:
+            del self.objects[object_id]
+            del self.disappeared[object_id]
+
+    def update(self, centroids):
+        """Updates the tracker with new centroids from the current frame."""
+        # If no centroids are detected, increase disappearance count for existing objects
+        if len(centroids) == 0:
+            for object_id in list(self.disappeared.keys()):
+                self.disappeared[object_id] += 1
+                if self.disappeared[object_id] > self.max_disappeared:
+                    self.deregister(object_id)
+            return self.objects
+
+        # Convert input centroids to numpy array for easy computation
+        input_centroids = np.array(centroids)
+
+        # Register each centroid if there are no tracked objects
+        if len(self.objects) == 0:
+            for i in range(0, len(input_centroids)):
+                self.register(input_centroids[i])
+        else:
+            # List of tracked object IDs and their current centroids
+            object_ids = list(self.objects.keys())
+            object_centroids = list(self.objects.values())
+
+            # Compute distances between existing objects and new centroids
+            D = dist.cdist(np.array(object_centroids), input_centroids)
+
+            # Sort rows and columns by closest distances
+            rows = D.min(axis=1).argsort()
+            cols = D.argmin(axis=1)[rows]
+
+            used_rows = set()
+            used_cols = set()
+
+            # Match each tracked object with the closest new centroid if within the distance threshold
+            for (row, col) in zip(rows, cols):
+                if row in used_rows or col in used_cols:
+                    continue
+
+                # Check if distance is within the threshold for matching
+                if D[row, col] > self.distance_threshold:
+                    continue
+
+                # Update the centroid of the matched object
+                object_id = object_ids[row]
+                self.objects[object_id] = input_centroids[col]
+                self.disappeared[object_id] = 0
+
+                used_rows.add(row)
+                used_cols.add(col)
+
+            # Process unmatched rows and columns
+            unused_rows = set(range(0, D.shape[0])).difference(used_rows)
+            unused_cols = set(range(0, D.shape[1])).difference(used_cols)
+
+            # Mark unmatched existing objects as disappeared
+            for row in unused_rows:
+                object_id = object_ids[row]
+                self.disappeared[object_id] += 1
+                if self.disappeared[object_id] > self.max_disappeared:
+                    self.deregister(object_id)
+
+            # Register unmatched new centroids as new objects
+            for col in unused_cols:
+                self.register(input_centroids[col])
+
+        return self.objects
+
 class FaceDetectionNode:
     def __init__(self):
+        self.image_queue = Queue()
+        self.tracker = DeepSort(max_age=15, n_init=5, max_iou_distance=0.9)
         self.image_sub = rospy.Subscriber("/camera/color/image_raw", Image, self.image_callback)
         self.depth_sub = rospy.Subscriber("/camera/depth/image_rect_raw", Image, self.depth_callback)
+        self.pub_gaze = rospy.Publisher("/faceDetection/data", faceDetection, queue_size=100)
+        self.image_pub = rospy.Publisher("/faceDetection/image", Image, queue_size=100)
         self.bridge = CvBridge()
-        self.pub_gaze = rospy.Publisher("/faceDetection/data", faceDetection, queue_size=10)
-        self.image_queue = Queue()
-        self.tracker = DeepSort(max_age=10, n_init=2, max_iou_distance=0.9)
 
     def resolve_model_path(self, path):
         if path.startswith('package://'):
@@ -36,6 +128,11 @@ class FaceDetectionNode:
             package_path = rospack.get_path(package_name)
             path = os.path.join(package_path, relative_path)
         return path
+    
+    def warmup(self):
+        """Warm up the model by running a dummy inference."""
+        dummy_image = np.zeros((480, 640, 3), dtype=np.uint8)
+        self.process_frame(dummy_image)
     
     def depth_callback(self, data):
         """Callback to receive the depth image."""
@@ -61,7 +158,7 @@ class FaceDetectionNode:
         face_msg.centroids = centroids
         face_msg.mutualGaze = mutual_gaze_list
         self.pub_gaze.publish(face_msg)
-    
+
 class MediaPipeFaceNode(FaceDetectionNode):
     def __init__(self):
         super().__init__()
@@ -74,14 +171,11 @@ class MediaPipeFaceNode(FaceDetectionNode):
         
         self.mp_drawing = mp.solutions.drawing_utils
         self.drawing_spec = self.mp_drawing.DrawingSpec(color=(128, 128, 128), thickness=1, circle_radius=1)
+
+        # Initialize the CentroidTracker
+        self.centroid_tracker = CentroidTracker(max_disappeared=50, distance_threshold=50)
         
-        rospy.loginfo("Successfully initialized MediaPipe components")
-     
     def image_callback(self, data):
-        # Check if face_detection is initialized
-        if not hasattr(self, 'face_detection') or self.face_detection is None:
-            return  # Skip this callback if initialization isn't complete
-        
         frame = self.bridge.imgmsg_to_cv2(data, desired_encoding='bgr8')
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         img_h, img_w, _ = frame.shape
@@ -99,48 +193,42 @@ class MediaPipeFaceNode(FaceDetectionNode):
 
     def process_face_detection(self, frame, rgb_frame, img_h, img_w):
         results = self.face_detection.process(rgb_frame)
-        detections = []
+        centroids = []  # List of centroids for tracking
 
         if results.detections:
             for face in results.detections:
-                # Convert bounding box to pixel coordinates
-                bbox = face.location_data.relative_bounding_box
-                x_min = int(bbox.xmin * img_w)
-                y_min = int(bbox.ymin * img_h)
-                width = int(bbox.width * img_w)
-                height = int(bbox.height * img_h)
-                x_max, y_max = x_min + width, y_min + height
+                # Calculate the bounding box coordinates and centroid
+                face_rect = np.multiply(
+                    [
+                        face.location_data.relative_bounding_box.xmin,
+                        face.location_data.relative_bounding_box.ymin,
+                        face.location_data.relative_bounding_box.width,
+                        face.location_data.relative_bounding_box.height,
+                    ],
+                    [img_w, img_h, img_w, img_h]
+                ).astype(int)
+                
+                centroid_x = face_rect[0] + face_rect[2] // 2
+                centroid_y = face_rect[1] + face_rect[3] // 2
+                centroids.append((centroid_x, centroid_y))
 
-                # Fine-tune the bounding box to make it tighter around the face
-                # Example: reduce the box by 10% on each side
-                padding_x = int(width * 0.1)  # 10% padding on width
-                padding_y = int(height * 0.1)  # 10% padding on height
-                x_min = max(0, x_min + padding_x)
-                y_min = max(0, y_min + padding_y)
-                x_max = min(img_w, x_max - padding_x)
-                y_max = min(img_h, y_max - padding_y)
+                # Draw bounding box around the face
+                cv2.rectangle(frame, face_rect, color=(255, 255, 255), thickness=2)
 
-                # Extract detection score
-                score = face.score[0]
+                # # Draw key points for the face
+                # key_points = np.array([(p.x, p.y) for p in face.location_data.relative_keypoints])
+                # key_points_coords = np.multiply(key_points, [img_w, img_h]).astype(int)
+                # for p in key_points_coords:
+                #     cv2.circle(frame, tuple(p), 4, (255, 255, 255), 2)
+                #     cv2.circle(frame, tuple(p), 2, (0, 0, 0), -1)
 
-                # Add to detections list for Deep SORT
-                detections.append(([x_min, y_min, x_max, y_max], score))
+        # Update the centroid tracker with the detected centroids
+        tracked_faces = self.centroid_tracker.update(centroids)
 
-            # Update tracker with detections
-            tracks = self.tracker.update_tracks(detections, frame=frame)
-
-            # Draw tracking information
-            for track in tracks:
-                if not track.is_confirmed():
-                    continue
-                track_id = track.track_id
-                bbox = track.to_ltrb()  # Bounding box (left, top, right, bottom)
-
-                # Draw bounding box and ID on frame
-                cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), (0, 255, 0), 2)
-                cv2.putText(frame, f"ID: {track_id}", (int(bbox[0]), int(bbox[1]) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-
-
+        # Annotate the frame with tracked face IDs
+        for object_id, (centroid_x, centroid_y) in tracked_faces.items():
+            cv2.putText(frame, f"ID {object_id}", (int(centroid_x), int(centroid_y) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+            cv2.circle(frame, (int(centroid_x), int(centroid_y)), 4, (0, 255, 0), -1)
 
     def process_face_mesh(self, frame, rgb_frame, img_h, img_w):
         results = self.face_mesh.process(rgb_frame)
@@ -190,17 +278,16 @@ class MediaPipeFaceNode(FaceDetectionNode):
 
                 label = f"Face {face_id + 1}: {'Forward' if mutualGaze else 'Not Forward'}"
                 cv2.putText(frame, label, (int(centroid_x), int(centroid_y) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
-                self.mp_drawing.draw_landmarks(
-                    image=frame,
-                    landmark_list=face_landmarks,
-                    connections=self.mp_face_mesh.FACEMESH_CONTOURS,
-                    landmark_drawing_spec=self.drawing_spec,
-                    connection_drawing_spec=self.drawing_spec
-                )
+                # self.mp_drawing.draw_landmarks(
+                #     image=frame,
+                #     landmark_list=face_landmarks,
+                #     connections=self.mp_face_mesh.FACEMESH_CONTOURS,
+                #     landmark_drawing_spec=self.drawing_spec,
+                #     connection_drawing_spec=self.drawing_spec)
 
         # Publish centroids and mutual gaze status
         self.publish_face_detection(centroids, mutualGaze_list)
-        
+             
 class YOLOONNX:
     def __init__(self, model_path: str, class_score_th: float = 0.65,
         providers: List[str] = ['CUDAExecutionProvider', 'CPUExecutionProvider']):
@@ -259,7 +346,7 @@ class SixDrepNet(FaceDetectionNode):
         yolo_model_path = self.resolve_model_path(model_path_param)
         sixdrepnet_model_path = self.resolve_model_path(sixdrepnet_model_path_param)
 
-        self.model = YOLOONNX(model_path=yolo_model_path)
+        self.yolo_model = YOLOONNX(model_path=yolo_model_path)
         session_option = onnxruntime.SessionOptions()
         session_option.log_severity_level = 3
 
@@ -271,6 +358,15 @@ class SixDrepNet(FaceDetectionNode):
             sess_options=session_option,
             providers=['CUDAExecutionProvider', 'CPUExecutionProvider']
         )
+
+        # Check if CUDAExecutionProvider is active
+        active_providers = self.sixdrepnet_session.get_providers()
+        print("Active providers:", active_providers)
+
+        if "CUDAExecutionProvider" not in active_providers:
+            rospy.logwarn("CUDAExecutionProvider is not available. Running on CPU may slow down inference.")
+        else:
+            rospy.loginfo("CUDAExecutionProvider is active. Running on GPU for faster inference.")
 
         self.mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)
         self.std = np.array([0.229, 0.224, 0.225], dtype=np.float32)
@@ -298,30 +394,55 @@ class SixDrepNet(FaceDetectionNode):
 
     def image_callback(self, msg):
         try:
+            start_time = time.time()
             cv_image = self.bridge.imgmsg_to_cv2(msg, 'bgr8')
+            capture_time = time.time() - start_time
+            rospy.loginfo(f"Image capture time: {capture_time:.4f} seconds")
             self.image_queue.put(cv_image)
+            rospy.loginfo(f"Queue size after adding frame: {self.image_queue.qsize()}")
         except CvBridgeError as e:
             rospy.logerr("CvBridge Error: {}".format(e))
 
     def process_images(self):
         while not rospy.is_shutdown():
+            queue_size = self.image_queue.qsize()
+            rospy.loginfo(f"Current queue size before processing: {queue_size}")
             if not self.image_queue.empty():
                 cv_image = self.image_queue.get()
-                self.process_frame(cv_image)
+                
+                # Timing for inference
+                start_time = time.time()
+                processed_frame = self.process_frame(cv_image)
+                inference_time = time.time() - start_time
+                rospy.loginfo(f"Inference time: {inference_time:.4f} seconds")
+
+                # Display the processed frame
+                try:
+                    start_time = time.time()
+                    cv2.imshow("SixDrepNet Output", processed_frame)
+                    if cv2.waitKey(1) & 0xFF == ord("q"):
+                        rospy.signal_shutdown("User requested shutdown")
+                    display_time = time.time() - start_time
+                    rospy.loginfo(f"Display time: {display_time:.4f} seconds")
+                except CvBridgeError as e:
+                    rospy.logerr(f"CvBridge Error: {e}")
 
     def process_frame(self, cv_image):
         debug_image = cv_image.copy()
-        boxes, scores = self.model(debug_image)
+
+        # Timing for object detection (YOLO)
+        start_time = time.time()
+        boxes, scores = self.yolo_model(debug_image)
+        detection_time = time.time() - start_time
+        rospy.loginfo(f"YOLO detection time: {detection_time:.4f} seconds")
+
         img_h, img_w = debug_image.shape[:2]
+        centroids, mutual_gaze_list, detection = [], [], []
 
-        centroids, mutual_gaze_list, face_id_list = [], [], []
-
+        # Timing for head pose estimation (SixDrepNet)
         if len(boxes) > 0:
-            boxes = np.array(boxes)[np.argsort(np.array(boxes)[:, 0])]  # Sort boxes by x-coordinate
-            scores = np.array(scores)[np.argsort(np.array(boxes)[:, 0])]  # Sort scores accordingly
-
+            start_time = time.time()
             input_tensors, centers, boxes_scores = [], [], []
-
             for box, score in zip(boxes, scores):
                 x1, y1, x2, y2 = box
                 cx, cy = (x1 + x2) // 2, (y1 + y2) // 2
@@ -330,7 +451,6 @@ class SixDrepNet(FaceDetectionNode):
                 ex1, ex2 = max(int(cx - ew / 2), 0), min(int(cx + ew / 2), img_w)
                 ey1, ey2 = max(int(cy - eh / 2), 0), min(int(cy + eh / 2), img_h)
 
-                # Preprocess image
                 head_image = debug_image[ey1:ey2, ex1:ex2]
                 resized_image = cv2.resize(head_image, (224, 224))
                 normalized_image = (resized_image[..., ::-1] / 255.0 - self.mean) / self.std
@@ -339,44 +459,36 @@ class SixDrepNet(FaceDetectionNode):
                 centers.append((cx, cy))
                 boxes_scores.append((box, score))
 
-            # Batch process for head pose estimation
             yaw_pitch_rolls = self.sixdrepnet_session.run(None, {'input': np.vstack(input_tensors)})[0]
+            head_pose_time = time.time() - start_time
+            rospy.loginfo(f"Head pose estimation time: {head_pose_time:.4f} seconds")
 
+            # Timing for drawing
+            start_time = time.time()
             for (yaw_pitch_roll, (cx, cy), (box, score)) in zip(yaw_pitch_rolls, centers, boxes_scores):
                 yaw_deg, pitch_deg, roll_deg = yaw_pitch_roll
                 self.draw_axis(debug_image, yaw_deg, pitch_deg, roll_deg, cx, cy, size=100)
 
-                # Determine the depth at the centroid
                 cz = self.get_depth_at_centroid(cx, cy)
-
-                # Determine mutual gaze
                 mutual_gaze = abs(yaw_deg) < 10 and abs(pitch_deg) < 10
                 mutual_gaze_list.append(mutual_gaze)
                 centroids.append(Point(x=float(cx), y=float(cy), z=float(cz)))
 
-                # Minimize drawing operations
                 x1, y1, x2, y2 = box
                 cv2.rectangle(debug_image, (x1, y1), (x2, y2), (0, 255, 0), 1)
                 cv2.putText(debug_image, f'{score:.2f}', (x1, max(y1 - 5, 10)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1, cv2.LINE_AA)
 
-                for idx, mutual_gaze in enumerate(mutual_gaze_list):
-                    text = f'Face {idx + 1}: {"Forward" if mutual_gaze else "Not Forward"}'
-                    cv2.putText(debug_image, text, (x1, y1), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2, cv2.LINE_AA)
+            drawing_time = time.time() - start_time
+            rospy.loginfo(f"Drawing time: {drawing_time:.4f} seconds")
 
-            # Create and publish the faceMsg
-            self.publish_face_detection(centroids, mutual_gaze_list)
-
-        try:
-            # Display output (if necessary)
-            cv2.imshow("SixDrepNet Output", debug_image)
-            cv2.waitKey(1)
-        except CvBridgeError as e:
-            rospy.logerr(f"CvBridge Error: {e}")
+        # Publish the face detection results
+        self.publish_face_detection(centroids, mutual_gaze_list)
+        return debug_image
 
 # Main function to select between MediaPipe and SixDrepNet based on ROS parameter
 if __name__ == '__main__':
     rospy.init_node('face_detection_node', anonymous=True)
-    detection_method = rospy.get_param('~detection_method', 'MediaPipe')  # Choose 'MediaPipe' or 'SixDrepNet'
+    detection_method = rospy.get_param('~detection_method', 'SixDrepNet')  # Choose 'MediaPipe' or 'SixDrepNet'
 
     if detection_method == 'MediaPipe':
         mp_node = MediaPipeFaceNode()
