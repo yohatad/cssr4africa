@@ -112,12 +112,15 @@ class CentroidTracker:
 
 class FaceDetectionNode:
     def __init__(self):
-        self.image_queue = Queue()
+        self.image_sub = None
+        self.depth_sub = None
+        self.pub_gaze = rospy.Publisher("/faceDetection/data", faceDetection, queue_size=10)
+        self.image_pub = rospy.Publisher("/faceDetection/image", Image, queue_size=10)
+        self.bridge = CvBridge()
+
+    def subscribe_topics(self):
         self.image_sub = rospy.Subscriber("/camera/color/image_raw", Image, self.image_callback)
         self.depth_sub = rospy.Subscriber("/camera/depth/image_rect_raw", Image, self.depth_callback)
-        self.pub_gaze = rospy.Publisher("/faceDetection/data", faceDetection, queue_size=100)
-        self.image_pub = rospy.Publisher("/faceDetection/image", Image, queue_size=100)
-        self.bridge = CvBridge()
 
     def resolve_model_path(self, path):
         if path.startswith('package://'):
@@ -172,7 +175,10 @@ class MediaPipeFaceNode(FaceDetectionNode):
         self.drawing_spec = self.mp_drawing.DrawingSpec(color=(128, 128, 128), thickness=1, circle_radius=1)
 
         # Initialize the CentroidTracker
-        self.centroid_tracker = CentroidTracker(max_disappeared=50, distance_threshold=50)
+        self.centroid_tracker = CentroidTracker(max_disappeared=15, distance_threshold=100)
+
+        # Subscribe to the image topic
+        self.subscribe_topics()
         
     def image_callback(self, data):
         frame = self.bridge.imgmsg_to_cv2(data, desired_encoding='bgr8')
@@ -338,43 +344,61 @@ class YOLOONNX:
 class SixDrepNet(FaceDetectionNode):
     def __init__(self):
         super().__init__()
+        self.initialized = False
+        rospy.loginfo("Initializing SixDrepNet...")
+
+        # Set up model paths
         model_path_param = 'package://face_detection/models/gold_yolo_n_head_post_0277_0.5071_1x3x480x640.onnx'
         sixdrepnet_model_path_param = 'package://face_detection/models/sixdrepnet360_Nx3x224x224.onnx'
         
-        # Resolve the package paths
         yolo_model_path = self.resolve_model_path(model_path_param)
         sixdrepnet_model_path = self.resolve_model_path(sixdrepnet_model_path_param)
 
-        self.yolo_model = YOLOONNX(model_path=yolo_model_path)
-        session_option = onnxruntime.SessionOptions()
-        session_option.log_severity_level = 3
+        # Initialize YOLOONNX model early and check success
+        try:
+            self.yolo_model = YOLOONNX(model_path=yolo_model_path)
+            rospy.loginfo("YOLOONNX model initialized successfully.")
+        except Exception as e:
+            self.yolo_model = None
+            rospy.logerr(f"Failed to initialize YOLOONNX model: {e}")
+            return  # Exit early if initialization fails
 
-         # Optimize ONNX Runtime session options
-        session_option.intra_op_num_threads = multiprocessing.cpu_count()
-        session_option.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_ALL
-        self.sixdrepnet_session = onnxruntime.InferenceSession(
-            sixdrepnet_model_path,
-            sess_options=session_option,
-            providers=['CUDAExecutionProvider', 'CPUExecutionProvider']
-        )
+        # Initialize SixDrepNet ONNX session
+        try:
+            session_option = onnxruntime.SessionOptions()
+            session_option.log_severity_level = 3
+            session_option.intra_op_num_threads = multiprocessing.cpu_count()
+            session_option.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_ALL
+            self.sixdrepnet_session = onnxruntime.InferenceSession(
+                sixdrepnet_model_path,
+                sess_options=session_option,
+                providers=['CUDAExecutionProvider', 'CPUExecutionProvider']
+            )
 
-        # Check if CUDAExecutionProvider is active
-        active_providers = self.sixdrepnet_session.get_providers()
-        print("Active providers:", active_providers)
+            active_providers = self.sixdrepnet_session.get_providers()
+            rospy.loginfo(f"Active providers: {active_providers}")
+            if "CUDAExecutionProvider" not in active_providers:
+                rospy.logwarn("CUDAExecutionProvider is not available. Running on CPU may slow down inference.")
+            else:
+                rospy.loginfo("CUDAExecutionProvider is active. Running on GPU for faster inference.")
+        except Exception as e:
+            rospy.logerr(f"Failed to initialize SixDrepNet ONNX session: {e}")
+            return  # Exit early if initialization fails
 
-        if "CUDAExecutionProvider" not in active_providers:
-            rospy.logwarn("CUDAExecutionProvider is not available. Running on CPU may slow down inference.")
-        else:
-            rospy.loginfo("CUDAExecutionProvider is active. Running on GPU for faster inference.")
-
+        # Set up remaining attributes
         self.mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)
         self.std = np.array([0.229, 0.224, 0.225], dtype=np.float32)
+        self.tracker = DeepSort(max_age=7, n_init=2, max_iou_distance=0.7, embedder='mobilenet', 
+                                half=False, bgr=True, embedder_gpu=True)
         
-        self.tracker = DeepSort(max_age=15, n_init=3, max_iou_distance=0.7, embedder='mobilenet', 
-                                half=True, bgr=True, embedder_gpu=True)
-           
-        # threading.Thread(target=self.process_images(cv_image), daemon=True).start()
-        self.processed_frame = None
+        self.frame_counter = 0
+        self.tracks = [] 
+
+        # Mark initialization as complete
+        self.initialized = True
+        rospy.loginfo("SixDrepNet initialization complete.")
+
+        self.subscribe_topics()
     
     def draw_axis(self, img, yaw, pitch, roll, tdx=None, tdy=None, size=100):
         pitch = pitch * pi / 180
@@ -396,22 +420,27 @@ class SixDrepNet(FaceDetectionNode):
         cv2.line(img, (int(tdx), int(tdy)), (int(x3), int(y3)), (255, 0, 0), 2)
 
     def image_callback(self, msg):
+        if not self.initialized:
+            rospy.logwarn("SixDrepNet is not fully initialized; skipping image callback.")
+            return  # Skip processing if initialization is incomplete
+
         try:
-            self.cv_image = self.bridge.imgmsg_to_cv2(msg, 'bgr8')
-            while not rospy.is_shutdown():
-                self.processed_frame = self.process_frame()
-                # Display the processed frame
-                try:
-                    cv2.imshow("SixDrepNet Output", self.processed_frame)
-                    if cv2.waitKey(1) & 0xFF == ord("q"):
-                        rospy.signal_shutdown("User requested shutdown")
-                except CvBridgeError as e:
-                    rospy.logerr(f"CvBridge Error: {e}")
+            # Convert the ROS image message to an OpenCV image
+            cv_image = self.bridge.imgmsg_to_cv2(msg, 'bgr8')
+            # Process the frame
+            processed_frame = self.process_frame(cv_image)
+            # Display the processed frame
+            try:
+                cv2.imshow("SixDrepNet Output", processed_frame)
+                if cv2.waitKey(1) & 0xFF == ord("q"):
+                    rospy.signal_shutdown("User requested shutdown")
+            except CvBridgeError as e:
+                rospy.logerr(f"CvBridge Error: {e}")
         except CvBridgeError as e:
             rospy.logerr("CvBridge Error: {}".format(e))
 
-    def process_frame(self):
-        debug_image = self.cv_image.copy()
+    def process_frame(self,cv_image):
+        debug_image = cv_image.copy()
 
         # Timing for object detection (YOLO)
         boxes, scores = self.yolo_model(debug_image)
@@ -441,16 +470,19 @@ class SixDrepNet(FaceDetectionNode):
                     boxes_scores.append((box, score))
                     detections.append(([int(x1) , int(y1), int(w), int(h)], score))
             
-            # tracks = self.tracker.update_tracks(detections, frame=debug_image)
+            if self.frame_counter % 5 == 0:
+                self.tracks = self.tracker.update_tracks(detections, frame=debug_image)
+
+            self.frame_counter += 1
 
             # Draw bounding boxes and tracking IDs
-            # for track in tracks:
-            #     if not track.is_confirmed():
-            #         continue
-            #     track_id = track.track_id
-            #     bbox = track.to_ltrb()  # Get bounding box (left, top, right, bottom)
-            #     cv2.putText(debug_image, f"ID: {track_id}", (int(bbox[0]), int(bbox[1]) - 10),
-            #                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+            for track in self.tracks:
+                if not track.is_confirmed():
+                    continue
+                track_id = track.track_id
+                bbox = track.to_ltrb()  # Get bounding box (left, top, right, bottom)
+                cv2.putText(debug_image, f"ID: {track_id}", (int(bbox[0]) + 100, int(bbox[1]) - 10),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
             yaw_pitch_rolls = self.sixdrepnet_session.run(None, {'input': np.vstack(input_tensors)})[0]
             for (yaw_pitch_roll, (cx, cy), (box, score)) in zip(yaw_pitch_rolls, centers, boxes_scores):
@@ -464,7 +496,7 @@ class SixDrepNet(FaceDetectionNode):
 
                 x1, y1, x2, y2 = box
                 cv2.rectangle(debug_image, (x1, y1), (x2, y2), (0, 255, 0), 1)
-                # cv2.putText(debug_image, f'{score:.2f}', (x1 + 10, max(y1 - 5, 10)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1, cv2.LINE_AA)
+                cv2.putText(debug_image, f'{score:.2f}', (x1 + 10, max(y1 - 5, 10)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1, cv2.LINE_AA)
 
         # Publish the face detection results
         self.publish_face_detection(centroids, mutual_gaze_list)
