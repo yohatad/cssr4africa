@@ -6,10 +6,8 @@ import numpy as np
 import rospy
 import rospkg
 import os
-import time
 import onnxruntime
 import multiprocessing
-import threading
 from collections import OrderedDict
 from scipy.spatial import distance as dist
 from deep_sort_realtime.deepsort_tracker import DeepSort
@@ -19,7 +17,6 @@ from cv_bridge import CvBridge, CvBridgeError
 from geometry_msgs.msg import Point
 from face_detection.msg import faceDetection
 from typing import Tuple, List
-from queue import Queue
 
 class CentroidTracker:
     def __init__(self, max_disappeared=50, distance_threshold=50):
@@ -130,12 +127,7 @@ class FaceDetectionNode:
             package_path = rospack.get_path(package_name)
             path = os.path.join(package_path, relative_path)
         return path
-    
-    def warmup(self):
-        """Warm up the model by running a dummy inference."""
-        dummy_image = np.zeros((480, 640, 3), dtype=np.uint8)
-        self.process_frame(dummy_image)
-    
+        
     def depth_callback(self, data):
         """Callback to receive the depth image."""
         try:
@@ -166,7 +158,7 @@ class MediaPipeFaceNode(FaceDetectionNode):
         super().__init__()
         # Initialize MediaPipe components
         self.mp_face_mesh = mp.solutions.face_mesh
-        self.face_mesh = self.mp_face_mesh.FaceMesh(max_num_faces=10, min_detection_confidence=0.5, min_tracking_confidence=0.5)
+        self.face_mesh = self.mp_face_mesh.FaceMesh(max_num_faces=10, min_detection_confidence=0.5)
         
         self.mp_face_detection = mp.solutions.face_detection
         self.face_detection = self.mp_face_detection.FaceDetection(model_selection=1, min_detection_confidence=0.5)
@@ -453,22 +445,21 @@ class SixDrepNet(FaceDetectionNode):
             # start_time = time.time()
             input_tensors, centers, boxes_scores = [], [], []
             for box, score in zip(boxes, scores):
-                if score > 0.5:
-                    x1, y1, x2, y2 = box
-                    cx, cy = (x1 + x2) // 2, (y1 + y2) // 2
-                    w, h = x2 - x1, y2 - y1
-                    ew, eh = w * 1.2, h * 1.2
-                    ex1, ex2 = max(int(cx - ew / 2), 0), min(int(cx + ew / 2), img_w)
-                    ey1, ey2 = max(int(cy - eh / 2), 0), min(int(cy + eh / 2), img_h)
+                x1, y1, x2, y2 = box
+                cx, cy = (x1 + x2) // 2, (y1 + y2) // 2
+                w, h = x2 - x1, y2 - y1
+                ew, eh = w * 1.2, h * 1.2
+                ex1, ex2 = max(int(cx - ew / 2), 0), min(int(cx + ew / 2), img_w)
+                ey1, ey2 = max(int(cy - eh / 2), 0), min(int(cy + eh / 2), img_h)
 
-                    head_image = debug_image[ey1:ey2, ex1:ex2]
-                    resized_image = cv2.resize(head_image, (224, 224))
-                    normalized_image = (resized_image[..., ::-1] / 255.0 - self.mean) / self.std
-                    input_tensor = normalized_image.transpose(2, 0, 1)[np.newaxis, ...].astype(np.float32)
-                    input_tensors.append(input_tensor)
-                    centers.append((cx, cy))
-                    boxes_scores.append((box, score))
-                    detections.append(([int(x1) , int(y1), int(w), int(h)], score))
+                head_image = debug_image[ey1:ey2, ex1:ex2]
+                resized_image = cv2.resize(head_image, (224, 224))
+                normalized_image = (resized_image[..., ::-1] / 255.0 - self.mean) / self.std
+                input_tensor = normalized_image.transpose(2, 0, 1)[np.newaxis, ...].astype(np.float32)
+                input_tensors.append(input_tensor)
+                centers.append((cx, cy))
+                boxes_scores.append((box, score))
+                detections.append(([int(x1) , int(y1), int(w), int(h)], score))
             
             if self.frame_counter % 5 == 0:
                 self.tracks = self.tracker.update_tracks(detections, frame=debug_image)
