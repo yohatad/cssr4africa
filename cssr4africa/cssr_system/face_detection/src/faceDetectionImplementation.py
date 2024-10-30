@@ -113,7 +113,6 @@ class CentroidTracker:
 class FaceDetectionNode:
     def __init__(self):
         self.image_queue = Queue()
-        self.tracker = DeepSort(max_age=15, n_init=5, max_iou_distance=0.9)
         self.image_sub = rospy.Subscriber("/camera/color/image_raw", Image, self.image_callback)
         self.depth_sub = rospy.Subscriber("/camera/depth/image_rect_raw", Image, self.depth_callback)
         self.pub_gaze = rospy.Publisher("/faceDetection/data", faceDetection, queue_size=100)
@@ -370,8 +369,12 @@ class SixDrepNet(FaceDetectionNode):
 
         self.mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)
         self.std = np.array([0.229, 0.224, 0.225], dtype=np.float32)
+        
+        self.tracker = DeepSort(max_age=15, n_init=3, max_iou_distance=0.7, embedder='mobilenet', 
+                                half=True, bgr=True, embedder_gpu=True)
            
-        threading.Thread(target=self.process_images, daemon=True).start()
+        # threading.Thread(target=self.process_images(cv_image), daemon=True).start()
+        self.processed_frame = None
     
     def draw_axis(self, img, yaw, pitch, roll, tdx=None, tdy=None, size=100):
         pitch = pitch * pi / 180
@@ -394,77 +397,62 @@ class SixDrepNet(FaceDetectionNode):
 
     def image_callback(self, msg):
         try:
-            start_time = time.time()
-            cv_image = self.bridge.imgmsg_to_cv2(msg, 'bgr8')
-            capture_time = time.time() - start_time
-            rospy.loginfo(f"Image capture time: {capture_time:.4f} seconds")
-            self.image_queue.put(cv_image)
-            rospy.loginfo(f"Queue size after adding frame: {self.image_queue.qsize()}")
+            self.cv_image = self.bridge.imgmsg_to_cv2(msg, 'bgr8')
+            while not rospy.is_shutdown():
+                self.processed_frame = self.process_frame()
+                # Display the processed frame
+                try:
+                    cv2.imshow("SixDrepNet Output", self.processed_frame)
+                    if cv2.waitKey(1) & 0xFF == ord("q"):
+                        rospy.signal_shutdown("User requested shutdown")
+                except CvBridgeError as e:
+                    rospy.logerr(f"CvBridge Error: {e}")
         except CvBridgeError as e:
             rospy.logerr("CvBridge Error: {}".format(e))
 
-    def process_images(self):
-        while not rospy.is_shutdown():
-            queue_size = self.image_queue.qsize()
-            rospy.loginfo(f"Current queue size before processing: {queue_size}")
-            if not self.image_queue.empty():
-                cv_image = self.image_queue.get()
-                
-                # Timing for inference
-                start_time = time.time()
-                processed_frame = self.process_frame(cv_image)
-                inference_time = time.time() - start_time
-                rospy.loginfo(f"Inference time: {inference_time:.4f} seconds")
-
-                # Display the processed frame
-                try:
-                    start_time = time.time()
-                    cv2.imshow("SixDrepNet Output", processed_frame)
-                    if cv2.waitKey(1) & 0xFF == ord("q"):
-                        rospy.signal_shutdown("User requested shutdown")
-                    display_time = time.time() - start_time
-                    rospy.loginfo(f"Display time: {display_time:.4f} seconds")
-                except CvBridgeError as e:
-                    rospy.logerr(f"CvBridge Error: {e}")
-
-    def process_frame(self, cv_image):
-        debug_image = cv_image.copy()
+    def process_frame(self):
+        debug_image = self.cv_image.copy()
 
         # Timing for object detection (YOLO)
-        start_time = time.time()
         boxes, scores = self.yolo_model(debug_image)
-        detection_time = time.time() - start_time
-        rospy.loginfo(f"YOLO detection time: {detection_time:.4f} seconds")
 
         img_h, img_w = debug_image.shape[:2]
-        centroids, mutual_gaze_list, detection = [], [], []
+        centroids, mutual_gaze_list, detections = [], [], []
 
         # Timing for head pose estimation (SixDrepNet)
         if len(boxes) > 0:
-            start_time = time.time()
+            # start_time = time.time()
             input_tensors, centers, boxes_scores = [], [], []
             for box, score in zip(boxes, scores):
-                x1, y1, x2, y2 = box
-                cx, cy = (x1 + x2) // 2, (y1 + y2) // 2
-                w, h = x2 - x1, y2 - y1
-                ew, eh = w * 1.2, h * 1.2
-                ex1, ex2 = max(int(cx - ew / 2), 0), min(int(cx + ew / 2), img_w)
-                ey1, ey2 = max(int(cy - eh / 2), 0), min(int(cy + eh / 2), img_h)
+                if score > 0.5:
+                    x1, y1, x2, y2 = box
+                    cx, cy = (x1 + x2) // 2, (y1 + y2) // 2
+                    w, h = x2 - x1, y2 - y1
+                    ew, eh = w * 1.2, h * 1.2
+                    ex1, ex2 = max(int(cx - ew / 2), 0), min(int(cx + ew / 2), img_w)
+                    ey1, ey2 = max(int(cy - eh / 2), 0), min(int(cy + eh / 2), img_h)
 
-                head_image = debug_image[ey1:ey2, ex1:ex2]
-                resized_image = cv2.resize(head_image, (224, 224))
-                normalized_image = (resized_image[..., ::-1] / 255.0 - self.mean) / self.std
-                input_tensor = normalized_image.transpose(2, 0, 1)[np.newaxis, ...].astype(np.float32)
-                input_tensors.append(input_tensor)
-                centers.append((cx, cy))
-                boxes_scores.append((box, score))
+                    head_image = debug_image[ey1:ey2, ex1:ex2]
+                    resized_image = cv2.resize(head_image, (224, 224))
+                    normalized_image = (resized_image[..., ::-1] / 255.0 - self.mean) / self.std
+                    input_tensor = normalized_image.transpose(2, 0, 1)[np.newaxis, ...].astype(np.float32)
+                    input_tensors.append(input_tensor)
+                    centers.append((cx, cy))
+                    boxes_scores.append((box, score))
+                    detections.append(([int(x1) , int(y1), int(w), int(h)], score))
+            
+            # tracks = self.tracker.update_tracks(detections, frame=debug_image)
+
+            # Draw bounding boxes and tracking IDs
+            # for track in tracks:
+            #     if not track.is_confirmed():
+            #         continue
+            #     track_id = track.track_id
+            #     bbox = track.to_ltrb()  # Get bounding box (left, top, right, bottom)
+            #     cv2.putText(debug_image, f"ID: {track_id}", (int(bbox[0]), int(bbox[1]) - 10),
+            #                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
             yaw_pitch_rolls = self.sixdrepnet_session.run(None, {'input': np.vstack(input_tensors)})[0]
-            head_pose_time = time.time() - start_time
-            rospy.loginfo(f"Head pose estimation time: {head_pose_time:.4f} seconds")
-
-            # Timing for drawing
-            start_time = time.time()
             for (yaw_pitch_roll, (cx, cy), (box, score)) in zip(yaw_pitch_rolls, centers, boxes_scores):
                 yaw_deg, pitch_deg, roll_deg = yaw_pitch_roll
                 self.draw_axis(debug_image, yaw_deg, pitch_deg, roll_deg, cx, cy, size=100)
@@ -476,10 +464,7 @@ class SixDrepNet(FaceDetectionNode):
 
                 x1, y1, x2, y2 = box
                 cv2.rectangle(debug_image, (x1, y1), (x2, y2), (0, 255, 0), 1)
-                cv2.putText(debug_image, f'{score:.2f}', (x1, max(y1 - 5, 10)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1, cv2.LINE_AA)
-
-            drawing_time = time.time() - start_time
-            rospy.loginfo(f"Drawing time: {drawing_time:.4f} seconds")
+                # cv2.putText(debug_image, f'{score:.2f}', (x1 + 10, max(y1 - 5, 10)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1, cv2.LINE_AA)
 
         # Publish the face detection results
         self.publish_face_detection(centroids, mutual_gaze_list)
