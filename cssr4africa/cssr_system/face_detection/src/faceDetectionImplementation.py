@@ -246,9 +246,6 @@ class MediaPipeFaceNode(FaceDetectionNode):
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         img_h, img_w, _ = frame.shape
 
-        # Process with face detection
-        # self.process_face_detection(frame, rgb_frame, img_h, img_w)
-        
         # Process with face mesh
         self.process_face_mesh(frame, rgb_frame, img_h, img_w)
 
@@ -256,47 +253,6 @@ class MediaPipeFaceNode(FaceDetectionNode):
         cv2.imshow("Face Detection & Mesh", frame)
         if cv2.waitKey(1) & 0xFF == ord("q"):
             rospy.signal_shutdown("User requested shutdown")
-
-    def process_face_detection(self, frame, rgb_frame, img_h, img_w):
-        results = self.face_detection.process(rgb_frame)
-        centroids = []  # List of centroids for tracking
-
-        if results.detections:
-            for face in results.detections:
-                # Calculate the bounding box coordinates and centroid
-                face_rect = np.multiply(
-                    [
-                        face.location_data.relative_bounding_box.xmin,
-                        face.location_data.relative_bounding_box.ymin,
-                        face.location_data.relative_bounding_box.width,
-                        face.location_data.relative_bounding_box.height,
-                    ],
-                    [img_w, img_h, img_w, img_h]
-                ).astype(int)
-                
-                centroid_x = face_rect[0] + face_rect[2] // 2
-                centroid_y = face_rect[1] + face_rect[3] // 2
-                centroids.append((centroid_x, centroid_y))
-
-                print("Face detection", centroids)
-
-                # Draw bounding box around the face
-                cv2.rectangle(frame, face_rect, color=(255, 255, 255), thickness=2)
-
-                # # Draw key points for the face
-                # key_points = np.array([(p.x, p.y) for p in face.location_data.relative_keypoints])
-                # key_points_coords = np.multiply(key_points, [img_w, img_h]).astype(int)
-                # for p in key_points_coords:
-                #     cv2.circle(frame, tuple(p), 4, (255, 255, 255), 2)
-                #     cv2.circle(frame, tuple(p), 2, (0, 0, 0), -1)
-
-        # Update the centroid tracker with the detected centroids
-        tracked_faces = self.centroid_tracker.update(centroids)
-
-        # Annotate the frame with tracked face IDs
-        for object_id, (centroid_x, centroid_y) in tracked_faces.items():
-            cv2.putText(frame, f"ID {object_id}", (int(centroid_x), int(centroid_y) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
-            cv2.circle(frame, (int(centroid_x), int(centroid_y)), 4, (0, 255, 0), -1)
 
     def process_face_mesh(self, frame, rgb_frame, img_h, img_w):
         results = self.face_mesh.process(rgb_frame)
