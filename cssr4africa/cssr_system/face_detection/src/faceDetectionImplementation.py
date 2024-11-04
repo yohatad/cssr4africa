@@ -1,5 +1,34 @@
 #!/usr/bin/env python
 
+""""
+faceDetectionImplementation.py
+
+Author: Yohannes Tadesse Haile
+Date: November 1, 2024
+Version: v1.0
+
+Copyright (C) 2023 CSSR4Africa Consortium
+
+This project is funded by the African Engineering and Technology Network (Afretec)
+Inclusive Digital Transformation Research Grant Programme.
+
+Website: www.cssr4africa.org
+
+This program comes with ABSOLUTELY NO WARRANTY.
+
+"""
+
+"""
+Description:
+This file contains the implementation of the face detection using MediaPipe and SixDrepNet. The face detection
+is implemented using the ROS image topic that could be configured to be the intel realsense camera or pepper robot
+camera. It uses OpenCV to visualize the detected faces and gaze direction. The gaze direction is calculated using face
+mesh landmarks which uses Google's MediaPipe library. The media pipe utilizes CPU for face detection and gaze direction.
+The SixDrepNet uses YOLOONNX for face detection and SixDrepNet for gaze direction. The SixDrepNet utilizes GPU for faster
+inference and better performance.
+
+"""
+
 import cv2
 import mediapipe as mp
 import numpy as np
@@ -18,6 +47,7 @@ from geometry_msgs.msg import Point
 from face_detection.msg import faceDetection
 from typing import Tuple, List
 
+# Centroid tracker class for tracking objects. 
 class CentroidTracker:
     def __init__(self, max_disappeared=50, distance_threshold=50):
         # Adjustable parameters
@@ -111,6 +141,7 @@ class FaceDetectionNode:
     def __init__(self):
         self.image_sub = None
         self.depth_sub = None
+        self.config = self.parse_config()
         self.pub_gaze = rospy.Publisher("/faceDetection/data", faceDetection, queue_size=10)
         self.image_pub = rospy.Publisher("/faceDetection/image", Image, queue_size=10)
         self.bridge = CvBridge()
@@ -127,7 +158,45 @@ class FaceDetectionNode:
             package_path = rospack.get_path(package_name)
             path = os.path.join(package_path, relative_path)
         return path
+    
+    def parse_config(self):
+        config = {}
+        rospack = rospkg.RosPack()
+        try:
+            package_path = rospack.get_path('face_detection')
+            config_path = os.path.join(package_path, 'config', 'faceDetectionConfiguration.ini')
+            
+            if os.path.exists(config_path):
+                with open(config_path, 'r') as file:
+                    for line in file:
+                        line = line.strip()
+                        if not line or line.startswith('#'):
+                            continue
+                        
+                        key, value = line.split(maxsplit=1)
+                        try:
+                            if '.' in value:
+                                value = float(value)
+                            else:
+                                value = int(value)
+                        except ValueError:
+                            if value.lower() == "true":
+                                value = True
+                            elif value.lower() == "false":
+                                value = False
+                        config[key] = value
+
+                # Colorize output: green for keys, cyan for values
+                for key, value in config.items():
+                    print(f"\033[36m{key}\033[0m: \033[93m{value}\033[0m")
+            else:
+                print(f"\033[91mConfiguration file not found at {config_path}\033[0m")
         
+        except rospkg.ResourceNotFound as e:
+            print(f"\033[91mROS package 'face_detection' not found: {e}\033[0m")
+        
+        return config
+      
     def depth_callback(self, data):
         """Callback to receive the depth image."""
         try:
@@ -145,12 +214,12 @@ class FaceDetectionNode:
         depth_value = self.depth_image[y, x]  # Depth value in millimeters
         return depth_value / 1000.0  # Convert to meters
     
-    def publish_face_detection(self, centroids, mutual_gaze_list):
+    def publish_face_detection(self, centroids, mutual_gaze, facelabel_id):
         """Publish the face detection results."""
         face_msg = faceDetection()
-        # face_msg.face_label_id= face_label_id
+        face_msg.face_label_id= facelabel_id
         face_msg.centroids = centroids
-        face_msg.mutualGaze = mutual_gaze_list
+        face_msg.mutualGaze = mutual_gaze
         self.pub_gaze.publish(face_msg)
 
 class MediaPipeFaceNode(FaceDetectionNode):
@@ -178,7 +247,7 @@ class MediaPipeFaceNode(FaceDetectionNode):
         img_h, img_w, _ = frame.shape
 
         # Process with face detection
-        self.process_face_detection(frame, rgb_frame, img_h, img_w)
+        # self.process_face_detection(frame, rgb_frame, img_h, img_w)
         
         # Process with face mesh
         self.process_face_mesh(frame, rgb_frame, img_h, img_w)
@@ -208,6 +277,8 @@ class MediaPipeFaceNode(FaceDetectionNode):
                 centroid_x = face_rect[0] + face_rect[2] // 2
                 centroid_y = face_rect[1] + face_rect[3] // 2
                 centroids.append((centroid_x, centroid_y))
+
+                print("Face detection", centroids)
 
                 # Draw bounding box around the face
                 cv2.rectangle(frame, face_rect, color=(255, 255, 255), thickness=2)
@@ -247,8 +318,7 @@ class MediaPipeFaceNode(FaceDetectionNode):
 
                 centroid_x = np.mean([pt[0] for pt in face_2d])
                 centroid_y = np.mean([pt[1] for pt in face_2d])
-                centroid = Point(x=centroid_x, y=centroid_y, z=0)
-                centroids.append(centroid)
+                centroids.append((centroid_x, centroid_y))
 
                 face_2d = np.array(face_2d, dtype=np.float64)
                 face_3d = np.array(face_3d, dtype=np.float64)
@@ -275,6 +345,8 @@ class MediaPipeFaceNode(FaceDetectionNode):
 
                 label = f"Face {face_id + 1}: {'Forward' if mutualGaze else 'Not Forward'}"
                 cv2.putText(frame, label, (int(centroid_x), int(centroid_y) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+                
+                
                 # self.mp_drawing.draw_landmarks(
                 #     image=frame,
                 #     landmark_list=face_landmarks,
@@ -282,8 +354,15 @@ class MediaPipeFaceNode(FaceDetectionNode):
                 #     landmark_drawing_spec=self.drawing_spec,
                 #     connection_drawing_spec=self.drawing_spec)
 
+        tracked_faces = self.centroid_tracker.update(centroids)
+
+        # # Annotate the frame with tracked face IDs
+        for object_id, (centroid_x, centroid_y) in tracked_faces.items():
+            cv2.putText(frame, f"ID {object_id}", (int(centroid_x), int(centroid_y) - 30), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+            cv2.circle(frame, (int(centroid_x), int(centroid_y)), 4, (0, 255, 0), -1)
+
         # Publish centroids and mutual gaze status
-        self.publish_face_detection(centroids, mutualGaze_list)
+        self.publish_face_detection(centroids, mutualGaze_list, object_id)
              
 class YOLOONNX:
     def __init__(self, model_path: str, class_score_th: float = 0.65,
@@ -438,7 +517,7 @@ class SixDrepNet(FaceDetectionNode):
         boxes, scores = self.yolo_model(debug_image)
 
         img_h, img_w = debug_image.shape[:2]
-        centroids, mutual_gaze_list, detections = [], [], []
+        centroids, mutual_gaze_list, detections, track_no = [], [], [], []
 
         # Timing for head pose estimation (SixDrepNet)
         if len(boxes) > 0:
@@ -472,6 +551,7 @@ class SixDrepNet(FaceDetectionNode):
                     continue
                 track_id = track.track_id
                 bbox = track.to_ltrb()  # Get bounding box (left, top, right, bottom)
+                track_no.append(track_id)
                 cv2.putText(debug_image, f"ID: {track_id}", (int(bbox[0]) + 100, int(bbox[1]) - 10),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
@@ -487,16 +567,20 @@ class SixDrepNet(FaceDetectionNode):
 
                 x1, y1, x2, y2 = box
                 cv2.rectangle(debug_image, (x1, y1), (x2, y2), (0, 255, 0), 1)
+                cv2.putText(debug_image, f"{'Forward' if mutual_gaze else 'Not Forward'}", (20, 20),
+                            cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 0, 0), 3)
                 cv2.putText(debug_image, f'{score:.2f}', (x1 + 10, max(y1 - 5, 10)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1, cv2.LINE_AA)
 
         # Publish the face detection results
-        self.publish_face_detection(centroids, mutual_gaze_list)
+        self.publish_face_detection(centroids, mutual_gaze_list, track_no)
         return debug_image
 
 # Main function to select between MediaPipe and SixDrepNet based on ROS parameter
 if __name__ == '__main__':
     rospy.init_node('face_detection_node', anonymous=True)
     detection_method = rospy.get_param('~detection_method', 'SixDrepNet')  # Choose 'MediaPipe' or 'SixDrepNet'
+
+    # face_node = FaceDetectionNode()
 
     if detection_method == 'MediaPipe':
         mp_node = MediaPipeFaceNode()
