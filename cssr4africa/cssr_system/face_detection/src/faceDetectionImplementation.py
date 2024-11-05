@@ -53,8 +53,8 @@ class FaceDetectionNode:
         self.depth_sub = None
         self.config = self.parse_config()
         self.pub_gaze = rospy.Publisher("/faceDetection/data", faceDetection, queue_size=10)
-        self.image_pub = rospy.Publisher("/faceDetection/image", Image, queue_size=10)
         self.bridge = CvBridge()
+        self.depth_image = None  # Initialize depth_image
 
     def subscribe_topics(self):
         if self.config.get("camera") == "realsense":
@@ -149,27 +149,60 @@ class FaceDetectionNode:
     def depth_callback(self, data):
         """Callback to receive the depth image."""
         try:
+            # Convert the ROS Image message to a NumPy array
             self.depth_image = self.bridge.imgmsg_to_cv2(data, desired_encoding="passthrough")
-
-            # try:
-            #     cv2.imshow("Depth Image", self.depth_image)
-            #     if cv2.waitKey(1) & 0xFF == ord("q"):
-            #         rospy.signal_shutdown("User requested shutdown")
-            # except CvBridgeError as e:
-            #     rospy.logerr("CvBridge Error: {}".format(e))
         except CvBridgeError as e:
             rospy.logerr("CvBridge Error: {}".format(e))
+
+    def display_depth_image(self):
+        if self.depth_image is not None:
+            try:
+                # Convert depth image to float32 for processing
+                depth_array = np.array(self.depth_image, dtype=np.float32)
+
+                # Handle invalid depth values (e.g., NaNs, infs)
+                depth_array = np.nan_to_num(depth_array, nan=0.0, posinf=0.0, neginf=0.0)
+
+                # Normalize the depth image to the 0-255 range
+                normalized_depth = cv2.normalize(depth_array, None, 0, 255, cv2.NORM_MINMAX)
+
+                # Convert to 8-bit image
+                normalized_depth = np.uint8(normalized_depth)
+
+                # Apply a colormap for better visualization (optional)
+                depth_colormap = cv2.applyColorMap(normalized_depth, cv2.COLORMAP_JET)
+
+                # Display the depth image
+                cv2.imshow("Depth Image", depth_colormap)
+
+            except Exception as e:
+                rospy.logerr("Error displaying depth image: {}".format(e))
 
     def get_depth_at_centroid(self, centroid_x, centroid_y):
         """Get the depth value at the centroid of a face."""
         if self.depth_image is None:
             return None
-        # Ensure the centroid values are integers (pixel indices)
-        x = int(centroid_x)
-        y = int(centroid_y)
-        depth_value = self.depth_image[y, x]  # Depth value in millimeters
-        return depth_value / 1000.0  # Convert to meters
-    
+
+        height, width = self.depth_image.shape[:2]
+        x = int(round(centroid_x))
+        y = int(round(centroid_y))
+
+        # Check bounds
+        if x < 0 or x >= width or y < 0 or y >= height:
+            rospy.logwarn(f"Centroid coordinates ({x}, {y}) are out of bounds.")
+            return None
+
+        depth_value = self.depth_image[y, x]
+
+        # Handle invalid depth values
+        if np.isfinite(depth_value) and depth_value > 0:
+            # Convert to meters if necessary
+            depth_in_meters = depth_value / 1000.0
+            return depth_in_meters
+        else:
+            rospy.logwarn(f"Invalid depth value at coordinates ({x}, {y}): {depth_value}")
+            return None
+
     def publish_face_detection(self, tracking_data):
         """Publish the face detection results."""
         face_msg = faceDetection()
@@ -288,6 +321,8 @@ class MediaPipeFaceNode(FaceDetectionNode):
         # Initialize the CentroidTracker
         self.centroid_tracker = CentroidTracker(max_disappeared=15, distance_threshold=100)
 
+        self.latest_frame = None
+
         # Subscribe to the image topic
         self.subscribe_topics()
         
@@ -299,10 +334,28 @@ class MediaPipeFaceNode(FaceDetectionNode):
         # Process with face mesh
         self.process_face_mesh(frame, rgb_frame, img_h, img_w)
 
-        # Display the frame using OpenCV
-        cv2.imshow("Face Detection & Mesh", frame)
-        if cv2.waitKey(1) & 0xFF == ord("q"):
-            rospy.signal_shutdown("User requested shutdown")
+        # Store the processed frame for dispay
+        self.latest_frame = frame.copy()
+
+    def spin(self):
+        """Main loop to display processed frames and depth images."""
+        rate = rospy.Rate(30)  # Adjust the rate as needed
+        while not rospy.is_shutdown():
+            if self.latest_frame is not None:
+                # Display the processed frame
+                cv2.imshow("Face Detection & Mesh", self.latest_frame)
+
+            # Display the depth image
+            self.display_depth_image()
+
+            # Wait for GUI events
+            if cv2.waitKey(1) & 0xFF == ord("q"):
+                rospy.signal_shutdown("User requested shutdown")
+
+            rate.sleep()
+
+        # Clean up OpenCV windows on shutdown
+        cv2.destroyAllWindows()
 
     def process_face_mesh(self, frame, rgb_frame, img_h, img_w):
         results = self.face_mesh.process(rgb_frame)
@@ -383,7 +436,7 @@ class MediaPipeFaceNode(FaceDetectionNode):
             point = Point()
             point.x = centroid[0]
             point.y = centroid[1]
-            point.z = 0.0  # You can set this to an appropriate value if available
+            point.z = self.get_depth_at_centroid(centroid[0], centroid[1])
 
             # Collect the tracking data with the correct data types
             tracking_data.append({
@@ -397,11 +450,10 @@ class MediaPipeFaceNode(FaceDetectionNode):
                 centroid[1]) - 30), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
             cv2.circle(frame, (int(centroid[0]), int(centroid[1])),
                     4, (0, 255, 0), -1)
-
+            
         # Publish centroids and mutual gaze status
         self.publish_face_detection(tracking_data)
-
-             
+        
 class YOLOONNX:
     def __init__(self, model_path: str, class_score_th: float = 0.65,
         providers: List[str] = ['CUDAExecutionProvider', 'CPUExecutionProvider']):
@@ -462,6 +514,8 @@ class SixDrepNet(FaceDetectionNode):
         
         yolo_model_path = self.resolve_model_path(model_path_param)
         sixdrepnet_model_path = self.resolve_model_path(sixdrepnet_model_path_param)
+
+        self.latest_frame = None
 
         # Initialize YOLOONNX model early and check success
         try:
@@ -531,105 +585,128 @@ class SixDrepNet(FaceDetectionNode):
         if not self.initialized:
             rospy.logwarn("SixDrepNet is not fully initialized; skipping image callback.")
             return  # Skip processing if initialization is incomplete
-
+             
         try:
             # Convert the ROS image message to an OpenCV image
             cv_image = self.bridge.imgmsg_to_cv2(msg, 'bgr8')
+            
             # Process the frame
-            processed_frame = self.process_frame(cv_image)
-            # Display the processed frame
-            try:
-                cv2.imshow("SixDrepNet Output", processed_frame)
-                if cv2.waitKey(1) & 0xFF == ord("q"):
-                    rospy.signal_shutdown("User requested shutdown")
-            except CvBridgeError as e:
-                rospy.logerr(f"CvBridge Error: {e}")
+            self.latest_frame = self.process_frame(cv_image)
 
         except CvBridgeError as e:
             rospy.logerr("CvBridge Error: {}".format(e))
 
     def process_frame(self, cv_image):
         debug_image = cv_image.copy()
+        img_h, img_w = debug_image.shape[:2]
+        tracking_data = []
 
-        # Timing for object detection (YOLO)
+        # Object detection (YOLO)
         boxes, scores = self.yolo_model(debug_image)
 
-        img_h, img_w = debug_image.shape[:2]
+        # Prepare detections for tracker ([x, y, w, h], score)
         detections = []
-        tracking_data = []  # Store (track_id, centroid, mutual_gaze) for each track
+        for box, score in zip(boxes, scores):
+            x1, y1, x2, y2 = box
+            w, h = x2 - x1, y2 - y1
+            detections.append(([x1, y1, w, h], score))
 
-        # Timing for head pose estimation (SixDrepNet)
-        if len(boxes) > 0:
-            input_tensors, centers, boxes_scores = [], [], []
-            for box, score in zip(boxes, scores):
-                x1, y1, x2, y2 = box
-                cx, cy = (x1 + x2) // 2, (y1 + y2) // 2
-                w, h = x2 - x1, y2 - y1
-                ew, eh = w * 1.2, h * 1.2
-                ex1, ex2 = max(int(cx - ew / 2), 0), min(int(cx + ew / 2), img_w)
-                ey1, ey2 = max(int(cy - eh / 2), 0), min(int(cy + eh / 2), img_h)
+        # Update tracker with detections
+        self.tracks = self.tracker.update_tracks(detections, frame=debug_image)
 
-                head_image = debug_image[ey1:ey2, ex1:ex2]
-                resized_image = cv2.resize(head_image, (224, 224))
-                normalized_image = (resized_image[..., ::-1] / 255.0 - self.mean) / self.std
-                input_tensor = normalized_image.transpose(2, 0, 1)[np.newaxis, ...].astype(np.float32)
-                input_tensors.append(input_tensor)
-                centers.append((cx, cy))
-                boxes_scores.append((box, score))
-                detections.append(([int(x1), int(y1), int(w), int(h)], score))
-            
-            if self.frame_counter % 4 == 0:
-                self.tracks = self.tracker.update_tracks(detections, frame=debug_image)
+        for track in self.tracks:
+            if not track.is_confirmed():
+                continue
 
-            self.frame_counter += 1
+            track_id = track.track_id
+            ltrb = track.to_ltrb()
+            x1, y1, x2, y2 = map(int, ltrb)
+            cx, cy = (x1 + x2) // 2, (y1 + y2) // 2
 
-            # Draw bounding boxes and tracking IDs
-            for track in self.tracks:
-                if not track.is_confirmed():
-                    continue
-                track_id = track.track_id
-                bbox = track.to_ltrb()  # Get bounding box (left, top, right, bottom)
+            # Crop the face region for head pose estimation
+            w, h = x2 - x1, y2 - y1
+            ew, eh = w * 1.2, h * 1.2
+            cx_center, cy_center = (x1 + x2) / 2, (y1 + y2) / 2
+            ex1 = max(int(cx_center - ew / 2), 0)
+            ex2 = min(int(cx_center + ew / 2), img_w)
+            ey1 = max(int(cy_center - eh / 2), 0)
+            ey2 = min(int(cy_center + eh / 2), img_h)
 
-                # Find matching center and perform head pose estimation
-                yaw_pitch_rolls = self.sixdrepnet_session.run(None, {'input': np.vstack(input_tensors)})[0]
-                for (yaw_pitch_roll, (cx, cy), (box, score)) in zip(yaw_pitch_rolls, centers, boxes_scores):
-                    yaw_deg, pitch_deg, roll_deg = yaw_pitch_roll
-                    self.draw_axis(debug_image, yaw_deg, pitch_deg, roll_deg, cx, cy, size=100)
+            head_image = debug_image[ey1:ey2, ex1:ex2]
+            if head_image.size == 0:
+                continue  # Skip if the cropped image is empty
 
-                    cz = self.get_depth_at_centroid(cx, cy)
-                    mutual_gaze = abs(yaw_deg) < 10 and abs(pitch_deg) < 10
+            # Preprocess for SixDrepNet
+            resized_image = cv2.resize(head_image, (224, 224))
+            normalized_image = (resized_image[..., ::-1] / 255.0 - self.mean) / self.std
+            input_tensor = normalized_image.transpose(2, 0, 1)[np.newaxis, ...].astype(np.float32)
 
-                    # Store (track_id, centroid, mutual_gaze)
-                    tracking_data.append({
-                    'track_id': track_id,
-                    'centroid': Point(x=float(cx), y=float(cy), z=float(cz)),
-                    'mutual_gaze': mutual_gaze})
+            # Run head pose estimation
+            yaw_pitch_roll = self.sixdrepnet_session.run(None, {'input': input_tensor})[0][0]
+            yaw_deg, pitch_deg, roll_deg = yaw_pitch_roll
 
-                    # Draw bounding box and additional information
-                    x1, y1, x2, y2 = box
-                    cv2.rectangle(debug_image, (x1, y1), (x2, y2), (0, 255, 0), 1)
-                    cv2.putText(debug_image, f"ID: {track_id}", (int(bbox[0]) + 200, int(bbox[1]) - 10),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-                    cv2.putText(debug_image, f"{'Forward' if mutual_gaze else 'Not Forward'}", (20, 20),
-                                cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 0, 0), 3)
-                    cv2.putText(debug_image, f"{cz:.2f} m", (x1 + 10, max(y1 - 5, 10)), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0), 2, cv2.LINE_AA)
+            # Draw head pose axes
+            self.draw_axis(debug_image, yaw_deg, pitch_deg, roll_deg, cx, cy, size=100)
 
+            # Get depth at centroid
+            cz = self.get_depth_at_centroid(cx, cy)
+            mutual_gaze = abs(yaw_deg) < 10 and abs(pitch_deg) < 10
+
+            # Store tracking data
+            tracking_data.append({
+                'track_id': str(track_id),
+                'centroid': Point(x=float(cx), y=float(cy), z=float(cz) if cz else 0.0),
+                'mutual_gaze': mutual_gaze
+            })
+
+            # Draw bounding box and additional information
+            cv2.rectangle(debug_image, (x1, y1), (x2, y2), (0, 255, 0), 1)
+            cv2.putText(debug_image, f"ID: {track_id}", (x1 + 10, y1 - 10),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+            cv2.putText(debug_image, f"{'Forward' if mutual_gaze else 'Not Forward'}", (x1 + 10, y2 + 20),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
+            if cz is not None:
+                cv2.putText(debug_image, f"{cz:.2f} m", (x1 + 10, y2 + 40),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+
+        # Publish tracking data
         self.publish_face_detection(tracking_data)
+
         return debug_image
 
+    
+    def spin(self):
+        """Main loop to display processed frames and depth images."""
+        rate = rospy.Rate(30)  # Adjust the rate as needed
+        while not rospy.is_shutdown():
+            if self.latest_frame is not None:
+                # Display the processed frame
+                cv2.imshow("Face Detection & Mesh", self.latest_frame)
+
+            # Display the depth image
+            self.display_depth_image()
+
+            # Wait for GUI events
+            if cv2.waitKey(1) & 0xFF == ord("q"):
+                rospy.signal_shutdown("User requested shutdown")
+
+            rate.sleep()
+
+        # Clean up OpenCV windows on shutdown
+        cv2.destroyAllWindows()
+    
 
 # Main function to select between MediaPipe and SixDrepNet based on ROS parameter
 if __name__ == '__main__':
     rospy.init_node('face_detection_node', anonymous=True)
-    detection_method = rospy.get_param('~detection_method', 'MediaPipe')  # Choose 'MediaPipe' or 'SixDrepNet'
-
-    # face_node = FaceDetectionNode()
-    # face_node.subscribe_topics()
+    detection_method = rospy.get_param('~detection_method', 'SixDrepNet')  # Choose 'MediaPipe' or 'SixDrepNet'
 
     if detection_method == 'MediaPipe':
         mp_node = MediaPipeFaceNode()
+        mp_node.spin()
     elif detection_method == 'SixDrepNet':
         yolo_node = SixDrepNet()
+        yolo_node.spin() 
     else:
         rospy.logerr("Invalid detection method specified")
         rospy.signal_shutdown("Invalid detection method")
