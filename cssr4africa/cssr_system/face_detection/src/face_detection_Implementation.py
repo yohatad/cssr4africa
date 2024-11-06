@@ -94,7 +94,7 @@ class FaceDetectionNode:
         rospack = rospkg.RosPack()
         try:
             package_path = rospack.get_path('face_detection')
-            config_path = os.path.join(package_path, 'config', 'faceDetectionConfiguration.ini')
+            config_path = os.path.join(package_path, 'config', 'face_detection_configuration.ini')
             
             if os.path.exists(config_path):
                 with open(config_path, 'r') as file:
@@ -142,7 +142,7 @@ class FaceDetectionNode:
         rospack = rospkg.RosPack()
         try:
             package_path = rospack.get_path('face_detection')
-            config_path = os.path.join(package_path, 'data', 'pepperTopics.dat')
+            config_path = os.path.join(package_path, 'data', 'pepper_topics.dat')
 
             if os.path.exists(config_path):
                 with open(config_path, 'r') as file:
@@ -527,8 +527,8 @@ class SixDrepNet(FaceDetectionNode):
         rospy.loginfo("Initializing SixDrepNet...")
 
         # Set up model paths
-        model_path_param = 'package://face_detection/models/gold_yolo_n_head_post_0277_0.5071_1x3x480x640.onnx'
-        sixdrepnet_model_path_param = 'package://face_detection/models/sixdrepnet360_Nx3x224x224.onnx'
+        model_path_param = 'package://face_detection/models/face_detection_goldYOLO.onnx'
+        sixdrepnet_model_path_param = 'package://face_detection/models/face_detection_sixdrepnet360.onnx'
         
         yolo_model_path = self.resolve_model_path(model_path_param)
         sixdrepnet_model_path = self.resolve_model_path(sixdrepnet_model_path_param)

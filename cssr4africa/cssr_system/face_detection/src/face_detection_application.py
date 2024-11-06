@@ -13,10 +13,10 @@ Website: www.cssr4africa.org
 This program comes with ABSOLUTELY NO WARRANTY
 
 <detailed functional description of the program>
-This code containes the main function that initializes the face detection node and starts the face detection algorithm
+This code contains the main function that initializes the face detection node and starts the face detection algorithm
 The face detection algorithm can be either MediaPipe Face Detection or SixDrepNet that can be configured from the 
-configuration file. It is also reponsible for detecting the head pose esimation of the detected face. It publishes three 
-one topic: /faceDetection/data that contains the face label ID, the centorid of the face, mutual gaze direction. 
+configuration file. It is also responsible for detecting the head pose esimation of the detected face. It publishes three 
+one topic: /faceDetection/data that contains the face label ID, the centroid of the face, mutual gaze direction. 
 
 Libraries:
     - cv2: OpenCV library for image processing
@@ -39,8 +39,8 @@ Parameters:
 Configuration file parameters:
 
     Key                             Value
-    algorithm                       mediapipe
     camera                          realsense
+    algorithm                       mediapipe
     centroid_max_distance           15
     centroid_max_disappeared        100
     mp_facedet_confidence           0.5
@@ -83,7 +83,7 @@ Version: v1.0
 """
 
 import rospy
-from faceDetectionImplementation import MediaPipeFaceNode, SixDrepNet, FaceDetectionNode
+from face_detection_Implementation import MediaPipeFaceNode, SixDrepNet, FaceDetectionNode
 
 def main():
     rospy.init_node('face_detection_node', anonymous=True)
