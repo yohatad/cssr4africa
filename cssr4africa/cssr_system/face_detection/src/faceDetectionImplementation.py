@@ -48,29 +48,38 @@ from face_detection.msg import faceDetection
 from typing import Tuple, List
 
 class FaceDetectionNode:
-    def __init__(self):
-        self.image_sub = None
-        self.depth_sub = None
-        self.config = self.parse_config()
+    def __init__(self, config=None):
+        if config is not None:
+            self.config = config
+        else:
+            self.config = self.parse_config()
+        self.algorithm = self.config.get("algorithm", "mediapipe")
         self.pub_gaze = rospy.Publisher("/faceDetection/data", faceDetection, queue_size=10)
         self.bridge = CvBridge()
         self.depth_image = None  # Initialize depth_image
 
     def subscribe_topics(self):
-        if self.config.get("camera") == "realsense":
+        camera_type = self.config.get("camera")
+        if camera_type == "realsense":
             self.rgb_topic = self.extract_topics("realsensecamerargb")
             self.depth_topic = self.extract_topics("realsensecameradepth")
-        elif self.config.get("camera") == "pepper":
+        elif camera_type == "pepper":
             self.rgb_topic = self.extract_topics("PepperFrontCamera")
             self.depth_topic = None
         else:
             rospy.logerr("Invalid camera type specified")
             rospy.signal_shutdown("Invalid camera type")
+            return  # Ensure the function exits after shutdown
 
-        if self.rgb_topic:
-            self.image_sub = rospy.Subscriber(self.rgb_topic, Image, self.image_callback)
+        if not self.rgb_topic:
+            rospy.logerr("RGB topic not found.")
+            rospy.signal_shutdown("RGB topic not found")
+            return
+
+        self.image_sub = rospy.Subscriber(self.rgb_topic, Image, self.image_callback)
         if self.depth_topic:
             self.depth_sub = rospy.Subscriber(self.depth_topic, Image, self.depth_callback)
+
         
     def resolve_model_path(self, path):
         if path.startswith('package://'):
@@ -81,7 +90,8 @@ class FaceDetectionNode:
             path = os.path.join(package_path, relative_path)
         return path
     
-    def parse_config(self):
+    @staticmethod
+    def parse_config():
         config = {}
         rospack = rospkg.RosPack()
         try:
@@ -95,8 +105,11 @@ class FaceDetectionNode:
                         if not line or line.startswith('#'):
                             continue
                         
-                        # Split the line by the first space
-                        key, value = line.split(maxsplit=1)
+                        parts = line.split(maxsplit=1)
+                        if len(parts) != 2:
+                            print(f"Invalid configuration line: '{line}'")
+                            continue
+                        key, value = parts
                         key = key.lower()  # Ensure the key is lowercase
                         
                         # Convert the value appropriately
@@ -125,8 +138,9 @@ class FaceDetectionNode:
             print(f"\033[91mROS package 'face_detection' not found: {e}\033[0m")
         
         return config
-
-    def extract_topics(self, image_topic):
+    
+    @staticmethod
+    def extract_topics(image_topic):
         rospack = rospkg.RosPack()
         try:
             package_path = rospack.get_path('face_detection')
@@ -306,11 +320,11 @@ class CentroidTracker:
         return self.objects
 
 class MediaPipeFaceNode(FaceDetectionNode):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, config):
+        super().__init__(config)
         # Initialize MediaPipe components
         self.mp_face_mesh = mp.solutions.face_mesh
-        self.face_mesh = self.mp_face_mesh.FaceMesh(max_num_faces=10, min_detection_confidence=0.5)
+        self.face_mesh = self.mp_face_mesh.FaceMesh(self.config.get("mediapipe_confidence", 0.5), max_num_faces=10)
         
         self.mp_face_detection = mp.solutions.face_detection
         self.face_detection = self.mp_face_detection.FaceDetection(model_selection=1, min_detection_confidence=0.5)
@@ -319,9 +333,10 @@ class MediaPipeFaceNode(FaceDetectionNode):
         self.drawing_spec = self.mp_drawing.DrawingSpec(color=(128, 128, 128), thickness=1, circle_radius=1)
 
         # Initialize the CentroidTracker
-        self.centroid_tracker = CentroidTracker(max_disappeared=15, distance_threshold=100)
+        self.centroid_tracker = CentroidTracker(self.config.get("max_disappeared", 15), self.config.get("distance_threshold", 100))
 
         self.latest_frame = None
+        self.verbose_mode = bool(self.config.get("verbosemode", False))
 
         # Subscribe to the image topic
         self.subscribe_topics()
@@ -342,11 +357,13 @@ class MediaPipeFaceNode(FaceDetectionNode):
         rate = rospy.Rate(30)  # Adjust the rate as needed
         while not rospy.is_shutdown():
             if self.latest_frame is not None:
-                # Display the processed frame
-                cv2.imshow("Face Detection & Mesh", self.latest_frame)
+                if self.verbose_mode:
+                    # Display the processed frame
+                    cv2.imshow("Face Detection & Head Pose Estimation", self.latest_frame)
 
-            # Display the depth image
-            self.display_depth_image()
+            # Display the depth image if verbose mode is enabled
+            if self.verbose_mode:
+                self.display_depth_image()
 
             # Wait for GUI events
             if cv2.waitKey(1) & 0xFF == ord("q"):
@@ -433,10 +450,11 @@ class MediaPipeFaceNode(FaceDetectionNode):
                     matched_object_id = object_id
 
             # Convert centroid to geometry_msgs/Point
+            cz = self.get_depth_at_centroid(centroid[0], centroid[1])
             point = Point()
-            point.x = centroid[0]
-            point.y = centroid[1]
-            point.z = self.get_depth_at_centroid(centroid[0], centroid[1])
+            point.x = float(centroid[0])
+            point.y = float(centroid[1])
+            point.z = float(cz) if cz else 0.0
 
             # Collect the tracking data with the correct data types
             tracking_data.append({
@@ -503,8 +521,8 @@ class YOLOONNX:
         return np.array(result_boxes), np.array(result_scores)
 
 class SixDrepNet(FaceDetectionNode):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, config):
+        super().__init__(config)
         self.initialized = False
         rospy.loginfo("Initializing SixDrepNet...")
 
@@ -519,7 +537,7 @@ class SixDrepNet(FaceDetectionNode):
 
         # Initialize YOLOONNX model early and check success
         try:
-            self.yolo_model = YOLOONNX(model_path=yolo_model_path)
+            self.yolo_model = YOLOONNX(model_path=yolo_model_path, class_score_th = self.config.get("sixdrepnet_confidence", 0.65))
             rospy.loginfo("YOLOONNX model initialized successfully.")
         except Exception as e:
             self.yolo_model = None
@@ -551,13 +569,24 @@ class SixDrepNet(FaceDetectionNode):
         # Set up remaining attributes
         self.mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)
         self.std = np.array([0.229, 0.224, 0.225], dtype=np.float32)
-        self.tracker = DeepSort(max_age=15, n_init=5, max_iou_distance=0.7, embedder='mobilenet', 
-                                half=False, bgr=True, embedder_gpu=True)
-        
+
+        self.tracker = DeepSort(
+                max_age=self.config.get("deepsort_max_age", 15),
+                n_init=self.config.get("deepsort_n_init", 5),
+                max_iou_distance=self.config.get("deepsort_max_iou_distance", 0.7),
+                embedder='mobilenet',
+                half=False,
+                bgr=True,
+                embedder_gpu=True
+            )
+                    
         self.frame_counter = 0
         self.tracks = [] 
+        
         # Mark initialization as complete
         self.initialized = True
+
+        self.verbose_mode = self.config.get("verbosemode", False)
         rospy.loginfo("SixDrepNet initialization complete.")
 
         self.subscribe_topics()
@@ -665,26 +694,23 @@ class SixDrepNet(FaceDetectionNode):
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
             cv2.putText(debug_image, f"{'Forward' if mutual_gaze else 'Not Forward'}", (x1 + 10, y2 + 20),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
-            if cz is not None:
-                cv2.putText(debug_image, f"{cz:.2f} m", (x1 + 10, y2 + 40),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-
         # Publish tracking data
         self.publish_face_detection(tracking_data)
 
         return debug_image
-
-    
+   
     def spin(self):
         """Main loop to display processed frames and depth images."""
         rate = rospy.Rate(30)  # Adjust the rate as needed
         while not rospy.is_shutdown():
             if self.latest_frame is not None:
-                # Display the processed frame
-                cv2.imshow("Face Detection & Mesh", self.latest_frame)
+                if self.verbose_mode:
+                    # Display the processed frame
+                    cv2.imshow("Face Detection & Head Pose Estimation", self.latest_frame)
 
-            # Display the depth image
-            self.display_depth_image()
+            # Display the depth image if verbose mode is enabled
+            if self.verbose_mode:
+                self.display_depth_image()
 
             # Wait for GUI events
             if cv2.waitKey(1) & 0xFF == ord("q"):
@@ -699,17 +725,17 @@ class SixDrepNet(FaceDetectionNode):
 # Main function to select between MediaPipe and SixDrepNet based on ROS parameter
 if __name__ == '__main__':
     rospy.init_node('face_detection_node', anonymous=True)
-    detection_method = rospy.get_param('~detection_method', 'SixDrepNet')  # Choose 'MediaPipe' or 'SixDrepNet'
 
-    if detection_method == 'MediaPipe':
-        mp_node = MediaPipeFaceNode()
+    config = FaceDetectionNode.parse_config()
+    algorithm = config.get('algorithm', 'mediapipe')  # Default to 'mediapipe' if not specified
+    print(f"Selected face detection algorithm: {algorithm}")
+
+    if algorithm == 'mediapipe':
+        mp_node = MediaPipeFaceNode(config)
         mp_node.spin()
-    elif detection_method == 'SixDrepNet':
-        yolo_node = SixDrepNet()
-        yolo_node.spin() 
+    elif algorithm == 'sixdrepnet':
+        yolo_node = SixDrepNet(config)
+        yolo_node.spin()
     else:
         rospy.logerr("Invalid detection method specified")
         rospy.signal_shutdown("Invalid detection method")
-    
-    rospy.spin()
-    cv2.destroyAllWindows()
