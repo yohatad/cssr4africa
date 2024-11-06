@@ -1,5 +1,14 @@
 /* actuatorTestApplication.cpp
 *
+* Copyright (C) 2023 CSSR4Africa Consortium
+*
+* This project is funded by the African Engineering and Technology Network (Afretec)
+* Inclusive Digital Transformation Research Grant Programme.
+*
+* Website: www.cssr4africa.org
+*
+* This program comes with ABSOLUTELY NO WARRANTY.
+
 * <detailed functional description>
 * The component test the functionality of the actuator of the robot using the ROS interface.
 * The test is performed by sending commands to the robot and checking if the robot performs the

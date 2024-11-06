@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """"
 faceDetectionImplementation.py
 
@@ -413,7 +411,9 @@ class MediaPipeFaceNode(FaceDetectionNode):
                 x_angle = angles[0] * 360
                 y_angle = angles[1] * 360
 
-                mutualGaze = abs(x_angle) <= 5 and abs(y_angle) <= 5
+                mp_angle = self.config.get('mp_headpose_angle', 5)
+
+                mutualGaze = abs(x_angle) <= mp_angle and abs(y_angle) <= mp_angle
                 mutualGaze_list.append(mutualGaze)
 
                 p1 = (int(nose_2d[0]), int(nose_2d[1]))
@@ -626,6 +626,11 @@ class SixDrepNet(FaceDetectionNode):
             rospy.logerr("CvBridge Error: {}".format(e))
 
     def process_frame(self, cv_image):
+        
+        """
+        Process the input frame for face detection and head pose estimation.
+        Args: cv_image: Input frame as a NumPy array (BGR format)     
+        """
         debug_image = cv_image.copy()
         img_h, img_w = debug_image.shape[:2]
         tracking_data = []
@@ -679,7 +684,9 @@ class SixDrepNet(FaceDetectionNode):
 
             # Get depth at centroid
             cz = self.get_depth_at_centroid(cx, cy)
-            mutual_gaze = abs(yaw_deg) < 10 and abs(pitch_deg) < 10
+
+            sixdrep_angle = self.config.get('sixdrepnet_headpose_angle', 10)
+            mutual_gaze = abs(yaw_deg) < sixdrep_angle and abs(pitch_deg) < sixdrep_angle
 
             # Store tracking data
             tracking_data.append({
@@ -696,7 +703,6 @@ class SixDrepNet(FaceDetectionNode):
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
         # Publish tracking data
         self.publish_face_detection(tracking_data)
-
         return debug_image
    
     def spin(self):
@@ -720,22 +726,3 @@ class SixDrepNet(FaceDetectionNode):
 
         # Clean up OpenCV windows on shutdown
         cv2.destroyAllWindows()
-    
-
-# Main function to select between MediaPipe and SixDrepNet based on ROS parameter
-if __name__ == '__main__':
-    rospy.init_node('face_detection_node', anonymous=True)
-
-    config = FaceDetectionNode.parse_config()
-    algorithm = config.get('algorithm', 'mediapipe')  # Default to 'mediapipe' if not specified
-    print(f"Selected face detection algorithm: {algorithm}")
-
-    if algorithm == 'mediapipe':
-        mp_node = MediaPipeFaceNode(config)
-        mp_node.spin()
-    elif algorithm == 'sixdrepnet':
-        yolo_node = SixDrepNet(config)
-        yolo_node.spin()
-    else:
-        rospy.logerr("Invalid detection method specified")
-        rospy.signal_shutdown("Invalid detection method")
