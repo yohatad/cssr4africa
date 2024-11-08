@@ -59,26 +59,30 @@ class FaceDetectionNode:
     def subscribe_topics(self):
         camera_type = self.config.get("camera")
         if camera_type == "realsense":
-            self.rgb_topic = self.extract_topics("realsensecamerargb")
-            self.depth_topic = self.extract_topics("realsensecameradepth")
+            self.rgb_topic = self.extract_topics("RealSenseCameraRGB")
+            self.depth_topic = self.extract_topics("RealSenseCameraDepth")
         elif camera_type == "pepper":
             self.rgb_topic = self.extract_topics("PepperFrontCamera")
-            self.depth_topic = None
+            self.depth_topic = self.extract_topics("PepperDepthCamera")
         else:
             rospy.logerr("Invalid camera type specified")
             rospy.signal_shutdown("Invalid camera type")
-            return  # Ensure the function exits after shutdown
+            return
 
-        if not self.rgb_topic:
-            rospy.logerr("RGB topic not found.")
-            rospy.signal_shutdown("RGB topic not found")
+        if not self.rgb_topic or not self.depth_topic:
+            rospy.logerr("Camera topic not found.")
+            rospy.signal_shutdown("Camera topic not found")
             return
 
         self.image_sub = rospy.Subscriber(self.rgb_topic, Image, self.image_callback)
-        if self.depth_topic:
-            self.depth_sub = rospy.Subscriber(self.depth_topic, Image, self.depth_callback)
+        self.depth_sub = rospy.Subscriber(self.depth_topic, Image, self.depth_callback)
 
-        
+    # check if the depth camera and color camera have the same resolution.
+    def check_camera_resolution(self, rgb_image, depth_image):
+        rgb_h, rgb_w = rgb_image.shape[:2]
+        depth_h, depth_w = depth_image.shape[:2]
+        return rgb_h == depth_h and rgb_w == depth_w
+
     def resolve_model_path(self, path):
         if path.startswith('package://'):
             path = path[len('package://'):]
@@ -151,7 +155,7 @@ class FaceDetectionNode:
                         if not line or line.startswith('#'):
                             continue
                         key, value = line.split(maxsplit=1)
-                        if key.lower() == image_topic:
+                        if key.lower() == image_topic.lower():
                             return value
             else:
                 print(f"\033[91mData file not found at {config_path}\033[0m")
@@ -338,6 +342,12 @@ class MediaPipeFaceNode(FaceDetectionNode):
 
         # Subscribe to the image topic
         self.subscribe_topics()
+
+        # check if the depth camera and color camera have the same resolution.
+        if self.depth_image is not None:
+            if not self.check_camera_resolution(self.latest_frame, self.depth_image):
+                rospy.logerr("Color camera and depth camera have different resolutions.")
+                rospy.signal_shutdown("Resolution mismatch")
         
     def image_callback(self, data):
         frame = self.bridge.imgmsg_to_cv2(data, desired_encoding='bgr8')

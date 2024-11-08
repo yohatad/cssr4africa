@@ -1,3 +1,4 @@
 **/microphone.wav
 *.mp4
 **/sensorTestOutput.dat
+**/models/**

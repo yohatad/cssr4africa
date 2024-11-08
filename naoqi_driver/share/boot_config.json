@@ -18,7 +18,7 @@
     },
     "depth_camera":
     {
-      "enabled"       : false,
+      "enabled"       : true,
       "xtion_resolution": 2,
       "stereo_resolution": 9,
       "fps"           : 10,
@@ -26,7 +26,7 @@
     },
     "stereo_camera":
     {
-      "enabled"       : false,
+      "enabled"       : true,
       "resolution"    : 15,
       "fps"           : 10,
       "recorder_fps"  : 5
@@ -40,17 +40,17 @@
     },
     "info":
     {
-      "enabled"       : false,
+      "enabled"       : true,
       "frequency"     : 1
     },
     "logs":
     {
-      "enabled"       : false,
+      "enabled"       : true,
       "frequency"     : 1
     },
     "diag":
     {
-      "enabled"       : false,
+      "enabled"       : true,
       "frequency"     : 1
     },
     "imu_torso":

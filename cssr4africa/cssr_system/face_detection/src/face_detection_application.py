@@ -56,6 +56,7 @@ Subscribed Topics:
     RealSenseCameraRGB      /camera/color/image_raw
     RealSenseCameraDepth    /camera/depth/image_rect_raw
     PepperFrontCamera       /naoqi_driver/camera/front/image_raw
+    PepperDepthCamera       /naoqi_driver/camera/depth/image_raw
 
 Published Topics:
     /faceDetection/data
@@ -70,10 +71,10 @@ Output Data Files:
     None
 
 Configuration File:
-    faceDetectionConfiguration.ini
+    face_detection_configuration.ini
 
 Example of instantiation of the module:
-    rosrun face_detection faceDetectionApplication.py
+    rosrun face_detection face_detection_application.py
 
 
 Author: Yohannes Tadesse Haile
@@ -83,7 +84,7 @@ Version: v1.0
 """
 
 import rospy
-from face_detection_Implementation import MediaPipeFaceNode, SixDrepNet, FaceDetectionNode
+from face_detection_implementation import MediaPipeFaceNode, SixDrepNet, FaceDetectionNode
 
 def main():
     rospy.init_node('face_detection_node', anonymous=True)
