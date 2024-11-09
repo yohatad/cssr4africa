@@ -87,7 +87,7 @@ import rospy
 from face_detection_implementation import MediaPipeFaceNode, SixDrepNet, FaceDetectionNode
 
 def main():
-    rospy.init_node('face_detection_node', anonymous=True)
+    rospy.init_node('face_detection', anonymous=True)
     
     config = FaceDetectionNode.parse_config()
     algorthim = config.get('algorithm', 'mediapipe')
