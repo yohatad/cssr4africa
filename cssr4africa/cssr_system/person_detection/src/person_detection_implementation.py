@@ -10,8 +10,6 @@ import multiprocessing
 from deep_sort_realtime.deepsort_tracker import DeepSort
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
-from ultralytics import YOLO
-from std_msgs.msg import String
 from person_detection.msg import person_detection
 
 class_names = ['person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat', 'traffic light',
