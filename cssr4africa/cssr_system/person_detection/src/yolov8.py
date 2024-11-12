@@ -29,8 +29,6 @@ class YOLOv8:
     def detect_objects(self, image):
         input_tensor = self.prepare_input(image)
 
-        print(input_tensor.shape)
-
         # Perform inference on the image
         outputs = self.inference(input_tensor)
 
@@ -120,7 +118,6 @@ class YOLOv8:
     def get_output_details(self):
         model_outputs = self.session.get_outputs()
         self.output_names = [model_outputs[i].name for i in range(len(model_outputs))]
-
 
 if __name__ == '__main__':
     from imread_from_url import imread_from_url

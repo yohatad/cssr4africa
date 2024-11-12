@@ -139,7 +139,7 @@ class PersonDetectionNode:
             else:
                 print(f"\033[91mData file not found at {config_path}\033[0m")
         except rospkg.ResourceNotFound as e:
-            print(f"\033[91mROS package 'face_detection' not found: {e}\033[0m")
+            print(f"\033[91mROS package 'person_detection' not found: {e}\033[0m")
 
     def depth_callback(self, data):
         """Callback to receive the depth image."""
