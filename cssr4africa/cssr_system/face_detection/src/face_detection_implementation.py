@@ -42,7 +42,7 @@ from math import cos, sin, pi
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 from geometry_msgs.msg import Point
-from face_detection.msg import faceDetection
+from face_detection.msg import face_detection
 from typing import Tuple, List
 
 class FaceDetectionNode:
@@ -52,7 +52,7 @@ class FaceDetectionNode:
         else:
             self.config = self.parse_config()
         self.algorithm = self.config.get("algorithm", "mediapipe")
-        self.pub_gaze = rospy.Publisher("/faceDetection/data", faceDetection, queue_size=10)
+        self.pub_gaze = rospy.Publisher("/faceDetection/data", face_detection, queue_size=10)
         self.bridge = CvBridge()
         self.depth_image = None  # Initialize depth_image
 
@@ -221,7 +221,7 @@ class FaceDetectionNode:
 
     def publish_face_detection(self, tracking_data):
         """Publish the face detection results."""
-        face_msg = faceDetection()
+        face_msg = face_detection()
 
         # Initialize lists for each attribute in the message
         face_msg.face_label_id = [data['track_id'] for data in tracking_data]
@@ -468,9 +468,9 @@ class MediaPipeFaceNode(FaceDetectionNode):
 
             # Collect the tracking data with the correct data types
             tracking_data.append({
-                'track_id': str(matched_object_id),  # Convert to string
-                'centroid': point,                   # geometry_msgs/Point object
-                'mutual_gaze': bool(mutualGaze_list[idx])  # Ensure it's a bool
+                'track_id': str(matched_object_id),             # Convert to string
+                'centroid': point,                              # geometry_msgs/Point object
+                'mutual_gaze': bool(mutualGaze_list[idx])       # Ensure it's a bool
             })
 
             # Annotate the frame with tracked face IDs
