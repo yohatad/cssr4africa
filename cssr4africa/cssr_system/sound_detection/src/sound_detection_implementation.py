@@ -8,7 +8,7 @@ from pathlib import Path
 class NSnet2Enhancer(object):
     """NSnet2 enhancer class."""
 
-    def __init__(self, fs=48000): 
+    def __init__(self, fs=48000, model_path=None): 
         """Instantiate NSnet2 given a trained model path."""
         
         self.cfg = self._config(fs)
@@ -23,8 +23,7 @@ class NSnet2Enhancer(object):
         self.N_hop = int(self.N_fft * float(self.cfg["hopfrac"]))
 
         """load onnx model"""
-        modelfile = Path.home() / 'workspace/pepper_rob_ws/src/cssr4africa/cssr_system/sound_detection/models/sound_detection_nsnet2-20ms-48k.onnx'
-        self.ort = ort.InferenceSession(modelfile)
+        self.ort = ort.InferenceSession(model_path)
         self.dtype = np.float32
         self.win = np.sqrt(scipy.signal.windows.hann(self.N_win, sym=False))
         self.win_buf = torch.from_numpy(self.win).float()

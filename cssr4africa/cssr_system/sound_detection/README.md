@@ -13,47 +13,28 @@ First create a virtual environment and install the required packages. You need t
 
 ```sh
 cd $HOME
-python3 -m venv sound_detection
-source sound_detection/bin/activate
-pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
-pip install -r face_detection_requirements.txt
+sudo apt install python3.8-venv
+python3.8 -m venv testdsound
+source testdsound/bin/activate
+pip install torch==1.13.1+cu117 torchvision==0.14.1+cu117 torchaudio==0.13.1 --extra-index-url https://download.pytorch.org/whl/cu117
+pip install scipy soundfile webrtcvad pyYaml onnxruntime rospkg rospy
 ```
 
 ## Download the model
 You need to download the [NSNet](https://drive.google.com/file/d/1G8OPmx8RlrEbagMmK0-OG023XqB45ta_/view?usp=sharing). Put them in the models folder of the sound detection package. 
 
-## Running the node
-First, the configuration file must be setup with the right key-value pair before running the node. The configuration file is shown below. The configuration file can be in the package folder then the config folder. 
+Use the launch file of the pepper_interface_package and set the right network_interface. 
+1. roslaunch pepper_interface_tests sensorTestLaunchRobot.launch network_interface:=wlp0s20f3
 
-| Parameter                   | Description                                                | Range/Values               |
-|-----------------------------|------------------------------------------------------------|----------------------------|
-| `camera`                    | Type of camera used for input                              | `RealSense` or `Pepper`    |
-| `algorithm`                 | Algorithm selected for face detection                      | `mediapipe` or `sixdrep`   |
-| `centroid_max_distance`     | Maximum centroid distance for tracking                     | Positive integer           |
-| `centroid_max_disappeared`  | Maximum frames an object can disappear before deregistering| Positive integer           |
-| `mp_facedet_confidence`     | Face detection confidence threshold (MediaPipe)            | 0.0 - 1.0                  |
-| `mp_headpose_angle`         | Head pose angle threshold (MediaPipe)                      | Degrees                    |
-| `sixdrepnet_confidence`     | Face detection confidence threshold (SixDrepNet)           | 0.0 - 1.0                  |
-| `sixdrepnet_headpose_angle` | Head pose angle threshold (SixDrepNet)                     | Degrees                    |
-| `deepsort_max_age`          | Maximum age for DeepSort tracker                           | Positive integer           |
-| `deepsort_max_iou_distance` | Maximum IoU distance for DeepSort tracker                  | 0.0 - 1.0                  |
-| `deepsort_n_init`           | Consecutive detections to confirm a track (DeepSort)       | Positive integer           |
-| `verboseMode`               | Enable verbose logging                                     | `True` or `False`          |
-
-After setting up the right configuration, run the following command. 
-1. Launch Pepper's camera or Intel real sense cameara. `Make sure the resoution of the depth and color camera is the same` 
-
-2. Then run the Face and gaze detection and Localization.
+2. Then run the sound detection and localization.
     ```sh
-    rosrun face_detection faceDetectionApplication.py
+    rosrun sound_detection sound_detection_application.py
     ```
 
 ## Output
-The node publishes the detected faces and their corresponding centroid, and the a boolean array whether a mutual gaze is established or not. When running in the verbose it display the OpenCv annotated color image and depth image that could help to visualize the result obtained. 
-
+The node publishes the sound signal in the **soundDetection/signal** and the angle of the direction of the sound in the **soundDetection/direction**.
 
 ## License
-
 Copyright (C) 2023 CSSR4Africa Consortium  
 Funded by African Engineering and Technology Network (Afretec)  
 Inclusive Digital Transformation Research Grant Programme
