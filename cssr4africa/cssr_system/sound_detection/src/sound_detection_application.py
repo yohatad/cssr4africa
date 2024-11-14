@@ -1,22 +1,20 @@
 #!/usr/bin/env python3
-from sound_detection.msg import AudioCustomMsg
-from sound_detection_implementation import NSnet2Enhancer  # Update the import path to match your setup
-from pathlib import Path
-from threading import Lock
 import math
-import time
 import rospy
 import std_msgs.msg
-from silero_vad import load_silero_vad, get_speech_timestamps
 import logging
 import numpy as np
 import matplotlib.pyplot as plt
+from sound_detection.msg import sound_detection
+from sound_detection_implementation import NSnet2Enhancer  # Update the import path to match your setup
+from silero_vad import load_silero_vad, get_speech_timestamps
+from pathlib import Path
+from threading import Lock
+from scipy.signal import resample
 
 class soundDetectionNode:
     def __init__(self):
         try:
-            rospy.init_node('soundDetection', anonymous=True)
-
             # Dynamically get the user's home directory
             default_output_dir = Path.home() / 'workspace/pepper_rob_ws'
             output_dir_path = rospy.get_param('~output_dir', str(default_output_dir))
@@ -39,27 +37,20 @@ class soundDetectionNode:
 
             self.frontleft_buffer = np.zeros(self.localization_buffer_size, dtype=np.float32)
             self.frontright_buffer = np.zeros(self.localization_buffer_size, dtype=np.float32)
-            self.rearleft_buffer = np.zeros(self.localization_buffer_size, dtype=np.float32)
-            self.rearright_buffer = np.zeros(self.localization_buffer_size, dtype=np.float32)
 
             self.speed_of_sound = 343.0         # Speed of sound in m/s
             self.distance_between_ears = 0.07   # Distance between microphones in meters
 
             # Initialize NSnet2Enhancer
             self.enhancer = NSnet2Enhancer(fs=self.fs)
-            self.vad = webrtcvad.Vad(3)         # Set aggressiveness level (0-3)
+            self.vad_model = load_silero_vad()  # Load Silero VAD model
 
-            self.vad_frame_duration = 0.02      # 20ms frames for VAD
-            self.vad_frame_size = int(self.fs * self.vad_frame_duration)
-
-            self.audio_sub  = rospy.Subscriber('/naoqi_driver/audio', AudioCustomMsg, self.audio_callback)
+            self.audio_sub  = rospy.Subscriber('/naoqi_driver/audio', sound_detection, self.audio_callback)
             self.signal_pub = rospy.Publisher('/soundDetection/signal', std_msgs.msg.Float32MultiArray, queue_size=10)
             self.local_pub  = rospy.Publisher('/soundDetection/direction', std_msgs.msg.Float32, queue_size=10)
 
-            # self.output_dir.mkdir(parents=True, exist_ok=True)
             rospy.loginfo('Sound detection node initialized')
 
-            # self.timer = rospy.Timer(rospy.Duration(self.save_interval), self.save_audio)
             logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')
             self.logger = logging.getLogger('soundDetectionNode')
             
@@ -85,67 +76,9 @@ class soundDetectionNode:
             max_shift = min(int(fs * max_tau), max_shift)
         cc = np.concatenate((cc[-max_shift:], cc[:max_shift+1]))
         shift = np.argmax(np.abs(cc)) - max_shift
-        tau = shift / float(fs)
+        tau = shift / float(fs) 
         return tau
     
-    def direction(self, sigIn_frontLeft, sigIn_frontRight, sigIn_rearLeft, sigIn_rearRight):
-        
-        """
-        Estimate the direction of the sound source based on dynamically selected microphone pairs
-        depending on whether the sound is coming from the front, back, left, or right.
-
-        Parameters:
-        - sigIn_frontLeft: Signal from the front-left microphone
-        - sigIn_frontRight: Signal from the front-right microphone
-        - sigIn_rearLeft: Signal from the rear-left microphone
-        - sigIn_rearRight: Signal from the rear-right microphone
-
-        Returns:
-        - azimuth_angle: The estimated azimuth angle in degrees.
-        - direction: The estimated direction (front, back, left, right).
-        """
-
-        # Step 1: Compute ITDs based on the general direction
-        # Front/Back: Use FL-FR and BL-BR
-        itd_front = self.gcc_phat(sigIn_frontLeft, sigIn_frontRight, fs=self.fs)
-        itd_back = self.gcc_phat(sigIn_rearLeft, sigIn_rearRight, fs=self.fs)
-        
-        # Left/Right: Use FL-BL and FR-BR
-        itd_left = self.gcc_phat(sigIn_frontLeft, sigIn_rearLeft, fs=self.fs)
-        itd_right = self.gcc_phat(sigIn_frontRight, sigIn_rearRight, fs=self.fs)
-        
-        # Step 2: Determine the general direction using the ITDs
-        if (itd_left > 0 and itd_right > 0):
-            direction = 'front'
-            # Use FL-FR and BL-BR for final azimuth estimation
-            angle_front = self.calculate_angle(itd_front)
-            angle_back = self.calculate_angle(itd_back)
-            final_angle = (angle_front + angle_back) / 2.0
-        elif (itd_left < 0 and itd_right < 0):
-            direction = 'back'
-            # Use FL-BL and FR-BR for final azimuth estimation
-            angle_left = self.calculate_angle(itd_left)
-            angle_right = self.calculate_angle(itd_right)
-            final_angle = (angle_left + angle_right) / 2.0
-
-        elif (itd_front > 0 and itd_back > 0):
-            direction = 'right'
-            # Use FL-FR and BL-BR for final azimuth estimation
-            angle_front = self.calculate_angle(itd_front)
-            angle_back = self.calculate_angle(itd_back)
-            final_angle = (angle_front + angle_back) / 2.0
-        else:
-            direction = 'left'
-            # Use FL-BL and FR-BR for final azimuth estimation
-            angle_left = self.calculate_angle(itd_left)
-            angle_right = self.calculate_angle(itd_right)
-            final_angle = (angle_left + angle_right) / 2.0
-
-        rospy.loginfo(f'Final estimated direction: {direction} at angle: {final_angle:.2f} degrees')
-        
-        # Return the final angle and direction
-        return final_angle, direction
-
     def calculate_angle(self, itd):
         """
         Calculate the angle of arrival of the sound source based on ITD.
@@ -167,7 +100,7 @@ class soundDetectionNode:
         
         return angle
     
-    def localize(self, sigIn_frontLeft, sigIn_frontRight, sigIn_rearLeft, sigIn_rearRight):
+    def localize(self, sigIn_frontLeft, sigIn_frontRight):
         """
         Localizes the sound source based on the time delay between signals received by two microphones.
 
@@ -179,18 +112,24 @@ class soundDetectionNode:
         # Step 1: Normalize the signals
         normalized_frontLeft = self.normalize_signal(sigIn_frontLeft)
         normalized_frontRight = self.normalize_signal(sigIn_frontRight)
-        normalized_rearLeft = self.normalize_signal(sigIn_rearLeft)
-        normalized_rearRight = self.normalize_signal(sigIn_rearRight)
 
         # Step 2: Localize and estimate the direction of the sound source
-        self.direction(normalized_frontLeft, normalized_frontRight, normalized_rearLeft, normalized_rearRight)
+        itd_front = self.gcc_phat(normalized_frontLeft, normalized_frontRight, fs=self.fs)
 
-    def audio_callback(self, msg):
+        # Step 3: Calculate the angle of arrival based on the ITD
+        angle = self.calculate_angle(itd_front)
+
+        print(f'Estimated angle of arrival: {angle:.2f} degrees')
+
+        # Step 4: Publish the estimated angle of arrival to the 'soundDetection/direction' topic
+        out_msg = std_msgs.msg.Float32()
+        out_msg.data = angle
+        self.local_pub.publish(out_msg)
+
+    def  audio_callback(self, msg):
         # Step 1: Convert incoming message data to float32 format and normalize it to the range [-1, 1]
         sigIn_frontLeft = np.array(msg.frontLeft, dtype=np.float32) / 32767.0
         sigIn_frontRight = np.array(msg.frontRight, dtype=np.float32) / 32767.0
-        sigIn_rearLeft = np.array(msg.rearLeft, dtype=np.float32) / 32767.0
-        sigIn_rearRight = np.array(msg.rearRight, dtype=np.float32) / 32767.0
 
         # Step 2: Calculate the intensity of the front left signal (RMS) and skip processing if below threshold
         intensity_sigIn_frontLeft = np.sqrt(np.mean(sigIn_frontLeft ** 2))
@@ -207,21 +146,17 @@ class soundDetectionNode:
             # Step 4: Roll the front left and right buffers to make space for new data
             self.frontleft_buffer = np.roll(self.frontleft_buffer, -new_data_length)
             self.frontright_buffer = np.roll(self.frontright_buffer, -new_data_length)
-            self.rearleft_buffer = np.roll(self.rearleft_buffer, -new_data_length)
-            self.rearright_buffer = np.roll(self.rearright_buffer, -new_data_length)
 
             # Step 5: Insert the new data at the end of the buffers
             self.frontleft_buffer[-new_data_length:] = sigIn_frontLeft
             self.frontright_buffer[-new_data_length:] = sigIn_frontRight
-            self.rearleft_buffer[-new_data_length:] = sigIn_rearLeft
-            self.rearright_buffer[-new_data_length:] = sigIn_rearRight
 
             # Step 6: If enough samples are accumulated (equal or more than the localization buffer size), process localization
             if self.accumulated_samples >= self.localization_buffer_size:
                 # Check if a voice is detected in the buffer before performing sound localization
                 if self.is_voice_detected(self.frontleft_buffer):
                     # Localize the sound source based on the signals in the buffers
-                    self.localize(self.frontleft_buffer, self.frontright_buffer, self.rearleft_buffer, self.rearright_buffer)
+                    self.localize(self.frontleft_buffer, self.frontright_buffer)
                 
                 # Reset the accumulated samples counter after processing the buffers
                 self.accumulated_samples = 0
@@ -259,21 +194,30 @@ class soundDetectionNode:
         self.signal_pub.publish(out_msg)
 
     def is_voice_detected(self, audio_frame):
-        if len(audio_frame) < self.vad_frame_size:
-            return False
-        
-        for start in range(0, len(audio_frame) - self.vad_frame_size + 1, self.vad_frame_size):
-            frame = audio_frame[start:start + self.vad_frame_size]
-            frame_bytes = (frame * 32767).astype(np.int16).tobytes()
-            if self.vad.is_speech(frame_bytes, self.fs):
-                return True
-        return False
+        """
+        Use Silero VAD to detect voice activity in the audio frame.
+        """
+        # Step 1: Downsample the audio frame from 48000 Hz to 16000 Hz
+        target_sample_rate = 16000
+        num_samples = int(len(audio_frame) * (target_sample_rate / self.fs))
+        downsampled_audio = resample(audio_frame, num_samples)
 
+        # Step 2: Convert the downsampled audio to a format compatible with Silero VAD (int16 PCM)
+        audio_int16 = (downsampled_audio * 32767).astype(np.int16)
+
+        # Step 3: Run Silero VAD on the downsampled audio
+        speech_timestamps = get_speech_timestamps(audio_int16, self.vad_model, sampling_rate=target_sample_rate)
+        print(f'Speech timestamps: {speech_timestamps}')
+
+        return len(speech_timestamps) > 0  # True if any speech segment is detected
+    
     def spin(self):
         rospy.spin()
 
 if __name__ == "__main__":
     try:
+        rospy.init_node('soundDetection', anonymous=True)
+
         node = soundDetectionNode()
         node.spin()
     except rospy.ROSInterruptException:

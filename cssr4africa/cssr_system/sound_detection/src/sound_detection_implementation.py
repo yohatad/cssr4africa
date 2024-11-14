@@ -1,12 +1,9 @@
 import numpy as np
-import soundfile as sf
-from io import BytesIO
-from os.path import dirname
-from pathlib import Path
 import onnxruntime as ort
 import torch
 import scipy
 import scipy.signal
+from pathlib import Path
 
 class NSnet2Enhancer(object):
     """NSnet2 enhancer class."""
@@ -26,7 +23,7 @@ class NSnet2Enhancer(object):
         self.N_hop = int(self.N_fft * float(self.cfg["hopfrac"]))
 
         """load onnx model"""
-        modelfile = Path.home() / 'workspace/pepper_rob_ws/src/cssr4africa/cssr_system/soundDetection/models/nsnet2-20ms-48k-baseline.onnx'
+        modelfile = Path.home() / 'workspace/pepper_rob_ws/src/cssr4africa/cssr_system/sound_detection/models/sound_detection_nsnet2-20ms-48k.onnx'
         self.ort = ort.InferenceSession(modelfile)
         self.dtype = np.float32
         self.win = np.sqrt(scipy.signal.windows.hann(self.N_win, sym=False))
@@ -240,6 +237,3 @@ class NSnet2Enhancer(object):
             x = np.squeeze(x)
 
         return x
-    
-
-
