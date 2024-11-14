@@ -1148,7 +1148,7 @@ string extractTopic(string key){
     if (debug) printf("Topic file: %s\n", topicFileName.c_str());
 
     // set the topic path and file
-    topicPathFile = packagePath + "/config/" + topicFileName;
+    topicPathFile = packagePath + "/data/" + topicFileName;
 
     if (debug) printf("Topic file is %s\n", topicPathFile.c_str());
 

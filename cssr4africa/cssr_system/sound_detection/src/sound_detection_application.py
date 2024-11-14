@@ -197,17 +197,14 @@ class soundDetectionNode:
         """
         Use Silero VAD to detect voice activity in the audio frame.
         """
-        # Step 1: Downsample the audio frame from 48000 Hz to 16000 Hz
+        # # Step 1: Downsample the audio frame from 48000 Hz to 16000 Hz
         target_sample_rate = 16000
-        num_samples = int(len(audio_frame) * (target_sample_rate / self.fs))
-        downsampled_audio = resample(audio_frame, num_samples)
-
+    
         # Step 2: Convert the downsampled audio to a format compatible with Silero VAD (int16 PCM)
-        audio_int16 = (downsampled_audio * 32767).astype(np.int16)
+        audio_int16 = (audio_frame * 32767).astype(np.int16)
 
         # Step 3: Run Silero VAD on the downsampled audio
         speech_timestamps = get_speech_timestamps(audio_int16, self.vad_model, sampling_rate=target_sample_rate)
-        print(f'Speech timestamps: {speech_timestamps}')
 
         return len(speech_timestamps) > 0  # True if any speech segment is detected
     
