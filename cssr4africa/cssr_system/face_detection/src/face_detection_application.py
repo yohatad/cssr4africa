@@ -1,7 +1,11 @@
 #!/usr/bin/env python
 
 """
-faceDetectionApplication.py
+face_detection_application.py   Application code to run the face and mutual gaze detection algorithm.
+
+Author: Yohannes Tadesse Haile
+Date: November 1, 2024
+Version: v1.0
 
 Copyright (C) 2023 CSSR4Africa Consortium
 
@@ -10,15 +14,24 @@ Inclusive Digital Transformation Research Grant Programme.
 
 Website: www.cssr4africa.org
 
-This program comes with ABSOLUTELY NO WARRANTY
+This program comes with ABSOLUTELY NO WARRANTY.
+"""
 
-<detailed functional description of the program>
-This code contains the main function that initializes the face detection node and starts the face detection algorithm
-The face detection algorithm can be either MediaPipe Face Detection or SixDrepNet that can be configured from the 
-configuration file. It is also responsible for detecting the head pose esimation of the detected face. It publishes three 
-one topic: /faceDetection/data that contains the face label ID, the centroid of the face, mutual gaze direction. 
+"""
+face_detection_application.py   Application code to run the face and mutual gaze detection algorithm.
 
-Libraries:
+The face detectionis implemented using the ROS image topic that could be configured to be the intel realsense camera or pepper robot
+camera. It uses OpenCV to visualize the detected faces and gaze direction. The gaze direction is calculated using face
+mesh landmarks which uses Google's MediaPipe library. The media pipe utilizes CPU for face detection and gaze direction.
+The SixDrepNet uses YOLOONNX for face detection and SixDrepNet for gaze direction. The SixDrepNet utilizes GPU for faster
+inference and better performance. This code contains the main function that initializes the face detection node and 
+starts the face detection algorithm. The face detection algorithm can be either MediaPipe Face Detection or SixDrepNet 
+that can be configured from the configuration file. It is also responsible for detecting the head pose esimation of the 
+detected face. It subscribes to the intel realsense camera or pepper robot camera topics for the RGB and depth images.
+It publishes three one topic: /faceDetection/data that contains the face label ID, the centroid of the face, 
+mutual gaze direction. 
+
+Libraries
     - cv2: OpenCV library for image processing
     - mediapipe: Google's MediaPipe library for face detection and gaze direction
     - numpy: NumPy library for numerical operations
@@ -33,10 +46,10 @@ Libraries:
     - Point: ROS geometry_msgs library for Point operations
     - faceDetection: ROS face_detection library for face detection operations
 
-Parameters:
+Parameters
     Command line arguments: None
 
-Configuration file parameters:
+Configuration file parameters
 
     Key                             Value
     camera                          realsense
@@ -52,30 +65,29 @@ Configuration file parameters:
     deepsort_n_init                 2
     verboseMode                     True
 
-Subscribed Topics:
+Subscribed Topics
     RealSenseCameraRGB      /camera/color/image_raw
     RealSenseCameraDepth    /camera/depth/image_rect_raw
     PepperFrontCamera       /naoqi_driver/camera/front/image_raw
     PepperDepthCamera       /naoqi_driver/camera/depth/image_raw
 
-Published Topics:
+Published Topics
     /faceDetection/data
 
-Input Data Files:
+Input Data Files
     - faceDetectionConfiguration.ini: Configuration file for face detection parameters
     - pepperTopics.dat: Data file for Pepper robot camera topics
-    - gold_yolo_n_head_post_0277_0.5071_1x3x480x640: YOLOONNX model for face detection
-    - sixdrepnet360_Nx3x224x224: SixDrepNet model for gaze direction
+    - face_detection_YOLO.onnx: YOLOONNX model for face detection
+    - face_detection_sixdrepnet360.onnx: SixDrepNet model for gaze direction
 
-Output Data Files: 
+Output Data Files
     None
 
-Configuration File:
+Configuration File
     face_detection_configuration.ini
 
-Example of instantiation of the module:
+Example of instantiation of the module
     rosrun face_detection face_detection_application.py
-
 
 Author: Yohannes Tadesse Haile
 Email: yohanneh@andrew.cmu.edu

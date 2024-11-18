@@ -1,5 +1,5 @@
 """"
-faceDetectionImplementation.py
+face_detection_implementation.py
 
 Author: Yohannes Tadesse Haile
 Date: November 1, 2024
@@ -13,18 +13,6 @@ Inclusive Digital Transformation Research Grant Programme.
 Website: www.cssr4africa.org
 
 This program comes with ABSOLUTELY NO WARRANTY.
-
-"""
-
-"""
-Description:
-This file contains the implementation of the face detection using MediaPipe and SixDrepNet. The face detection
-is implemented using the ROS image topic that could be configured to be the intel realsense camera or pepper robot
-camera. It uses OpenCV to visualize the detected faces and gaze direction. The gaze direction is calculated using face
-mesh landmarks which uses Google's MediaPipe library. The media pipe utilizes CPU for face detection and gaze direction.
-The SixDrepNet uses YOLOONNX for face detection and SixDrepNet for gaze direction. The SixDrepNet utilizes GPU for faster
-inference and better performance.
-
 """
 
 import cv2
@@ -132,8 +120,8 @@ class FaceDetectionNode:
                         config[key] = value
 
                 # Colorize output: green for keys, cyan for values
-                for key, value in config.items():
-                    print(f"\033[36m{key}\033[0m: \033[93m{value}\033[0m")
+                # for key, value in config.items():
+                #     print(f"\033[36m{key}\033[0m: \033[93m{value}\033[0m")
             else:
                 print(f"\033[91mConfiguration file not found at {config_path}\033[0m")
         except rospkg.ResourceNotFound as e:
