@@ -1,5 +1,5 @@
 """"
-face_detection_implementation.py
+face_detection_implementation.py Implementation code for running the face and Head Pose detection algorithm
 
 Author: Yohannes Tadesse Haile
 Date: November 1, 2024

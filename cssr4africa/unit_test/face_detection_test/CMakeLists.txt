@@ -13,7 +13,6 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   geometry_msgs
   cv_bridge
-  message_generation
 )
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -49,11 +48,6 @@ find_package(catkin REQUIRED COMPONENTS
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Add service and message files
-add_message_files(
-  FILES
-  face_detection.msg
-)
-
 ## Generate services in the 'srv' folder
 # add_service_files(
 #   FILES
@@ -69,11 +63,11 @@ add_message_files(
 # )
 
 ## Generate added messages and services with any dependencies listed here
-generate_messages(
-  DEPENDENCIES
-  sensor_msgs
-  geometry_msgs
-)
+# generate_messages(
+#   DEPENDENCIES
+#   sensor_msgs
+#   geometry_msgs
+# )
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -105,7 +99,7 @@ generate_messages(
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-  CATKIN_DEPENDS rospy std_msgs sensor_msgs cv_bridge geometry_msgs message_runtime
+  CATKIN_DEPENDS rospy std_msgs sensor_msgs cv_bridge geometry_msgs
 )
 
 ###########

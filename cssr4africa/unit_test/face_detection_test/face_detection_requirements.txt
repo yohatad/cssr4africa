@@ -1,7 +1,0 @@
-opencv-python 
-mediapipe 
-numpy 
-onnxruntime-gpu
-scipy 
-deep_sort_realtime
-rospkg

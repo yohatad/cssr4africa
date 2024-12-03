@@ -1,0 +1,4 @@
+<launch>
+    <!-- Run the shell script -->
+    <node pkg="face_detection_test" type="face_detection_configuration_loader.sh" name="launch_with_params" output="screen" />
+</launch>
