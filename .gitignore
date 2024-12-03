@@ -2,3 +2,4 @@
 *.mp4
 **/sensorTestOutput.dat
 **/models/**
+**/*.bag
