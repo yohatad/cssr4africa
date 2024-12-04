@@ -49,7 +49,6 @@ class FaceDetectionNode:
         camera_type = self.config.get("camera")
         if camera_type == "realsense":
             self.rgb_topic = self.extract_topics("RealSenseCameraRGB")
-            print(self.rgb_topic)
             self.depth_topic = self.extract_topics("RealSenseCameraDepth")
         elif camera_type == "pepper":
             self.rgb_topic = self.extract_topics("PepperFrontCamera")
