@@ -10,6 +10,7 @@ import numpy as np
 from sound_detection.msg import sound_detection
 from sound_detection_implementation import NSnet2Enhancer
 from threading import Lock
+from std_msgs.msg import Float32MultiArray
 
 class soundDetectionNode:
     def __init__(self):
@@ -22,6 +23,9 @@ class soundDetectionNode:
             self.intensity_threshold = 3.9e-3
             self.buffer_size = int(self.fs * self.max_buffer_duration)
             self.audio_buffer = np.zeros(self.buffer_size, dtype=np.float32)
+
+            self.audio_buffer2 = []
+            self.processing_audio_buffer2 = []
             
             self.buffer_start = 0
             self.buffer_end = 0
@@ -77,11 +81,31 @@ class soundDetectionNode:
                 if self.is_voice_detected(self.frontleft_buffer):
                     self.localize(self.frontleft_buffer, self.frontright_buffer)
                 self.accumulated_samples = 0
-            if self.check_audio_buffer_ready():
-                self.process_audio()
+            
+            signal_fontleft = np.array(msg.frontLeft)
+
+            with self.lock:
+                self.audio_buffer2.extend(signal_fontleft.tolist())
+                self.processing_audio_buffer2.extend(signal_fontleft.tolist())
+
+            if len(self.audio_buffer2) >= self.fs:
+                self.process_audio2()
+
         except Exception as e:
             rospy.logerr(f"Error in audio_callback: {e}")
             self.logger.error(f"Error in audio_callback: {e}")
+
+    def process_audio2(self):
+        with self.lock:
+            sigIn = np.array(self.audio_buffer2[:self.fs ]) / 32767
+            self.audio_buffer = self.audio_buffer2[self.fs:]
+
+        outSig = self.enhancer(sigIn, self.fs)
+        with self.lock:
+            self.processing_audio_buffer2.extend(outSig.tolist())
+
+        out_msg = Float32MultiArray(data=outSig)
+        self.signal_pub.publish(out_msg)
 
     def process_audio_data(self, msg):
         """ Convert incoming message data to float32 format and normalize to [-1, 1]. """
