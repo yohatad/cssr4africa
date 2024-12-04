@@ -32,6 +32,7 @@ from cv_bridge import CvBridge, CvBridgeError
 from geometry_msgs.msg import Point
 from face_detection.msg import face_detection
 from typing import Tuple, List
+from sensor_msgs.msg import CompressedImage
 
 class FaceDetectionNode:
     def __init__(self, config=None):
@@ -48,6 +49,7 @@ class FaceDetectionNode:
         camera_type = self.config.get("camera")
         if camera_type == "realsense":
             self.rgb_topic = self.extract_topics("RealSenseCameraRGB")
+            print(self.rgb_topic)
             self.depth_topic = self.extract_topics("RealSenseCameraDepth")
         elif camera_type == "pepper":
             self.rgb_topic = self.extract_topics("PepperFrontCamera")
@@ -62,8 +64,8 @@ class FaceDetectionNode:
             rospy.signal_shutdown("Camera topic not found")
             return
 
-        self.image_sub = rospy.Subscriber(self.rgb_topic, Image, self.image_callback)
-        self.depth_sub = rospy.Subscriber(self.depth_topic, Image, self.depth_callback)
+        self.image_sub = rospy.Subscriber(self.rgb_topic, CompressedImage, self.image_callback)
+        self.depth_sub = rospy.Subscriber(self.depth_topic, CompressedImage, self.depth_callback)
 
     # check if the depth camera and color camera have the same resolution.
     def check_camera_resolution(self, rgb_image, depth_image):
@@ -153,10 +155,12 @@ class FaceDetectionNode:
     def depth_callback(self, data):
         """Callback to receive the depth image."""
         try:
-            # Convert the ROS Image message to a NumPy array
-            self.depth_image = self.bridge.imgmsg_to_cv2(data, desired_encoding="passthrough")
-        except CvBridgeError as e:
-            rospy.logerr("CvBridge Error: {}".format(e))
+            # Decompress the image
+            np_arr = np.frombuffer(data.data, np.uint8)  # Convert compressed data to NumPy array
+            self.depth_image = cv2.imdecode(np_arr, cv2.IMREAD_UNCHANGED)  # Decode as a grayscale image (depth data)
+
+        except Exception as e:
+            rospy.logerr(f"Error processing compressed depth image: {e}")
 
     def display_depth_image(self):
         if self.depth_image is not None:
@@ -338,15 +342,24 @@ class MediaPipeFaceNode(FaceDetectionNode):
                 rospy.signal_shutdown("Resolution mismatch")
         
     def image_callback(self, data):
-        frame = self.bridge.imgmsg_to_cv2(data, desired_encoding='bgr8')
+        # frame = self.bridge.imgmsg_to_cv2(data, desired_encoding='bgr8')
+        # rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        
+        # Decode the compressed image
+        np_arr = np.frombuffer(data.data, np.uint8)  # Convert compressed data to NumPy array
+        frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)  # Decode the image (BGR format)
+    
+        # Convert BGR to RGB if needed
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        
         img_h, img_w, _ = frame.shape
 
         # Process with face mesh
-        self.process_face_mesh(frame, rgb_frame, img_h, img_w)
+        # self.process_face_mesh(frame, rgb_frame, img_h, img_w)
 
         # Store the processed frame for dispay
         self.latest_frame = frame.copy()
+        # Process or display the image as needed
 
     def spin(self):
         """Main loop to display processed frames and depth images."""
@@ -612,16 +625,17 @@ class SixDrepNet(FaceDetectionNode):
         if not self.initialized:
             rospy.logwarn("SixDrepNet is not fully initialized; skipping image callback.")
             return  # Skip processing if initialization is incomplete
-             
+                
         try:
-            # Convert the ROS image message to an OpenCV image
-            cv_image = self.bridge.imgmsg_to_cv2(msg, 'bgr8')
-            
+            # Decode the compressed image
+            np_arr = np.frombuffer(msg.data, np.uint8)  # Convert compressed data to a NumPy array
+            cv_image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)  # Decode the image (BGR format)
+
             # Process the frame
             self.latest_frame = self.process_frame(cv_image)
 
-        except CvBridgeError as e:
-            rospy.logerr("CvBridge Error: {}".format(e))
+        except Exception as e:
+            rospy.logerr("Error processing compressed image: {}".format(e))
 
     def process_frame(self, cv_image):
         
