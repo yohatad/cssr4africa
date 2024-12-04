@@ -161,7 +161,7 @@ class FaceDetectionNode:
         except Exception as e:
             rospy.logerr(f"Error processing compressed depth image: {e}")
 
-    def display_depth_image_bw(self):
+    def display_depth_image(self):
         if self.depth_image is not None:
             try:
                 # Convert depth image to float32 for processing
