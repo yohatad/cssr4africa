@@ -162,7 +162,7 @@ class FaceDetectionNode:
         except Exception as e:
             rospy.logerr(f"Error processing compressed depth image: {e}")
 
-    def display_depth_image(self):
+    def display_depth_image_bw(self):
         if self.depth_image is not None:
             try:
                 # Convert depth image to float32 for processing
@@ -174,17 +174,15 @@ class FaceDetectionNode:
                 # Normalize the depth image to the 0-255 range
                 normalized_depth = cv2.normalize(depth_array, None, 0, 255, cv2.NORM_MINMAX)
 
-                # Convert to 8-bit image
-                normalized_depth = np.uint8(normalized_depth)
+                # Convert to 8-bit image for display
+                depth_grayscale = np.uint8(normalized_depth)
 
-                # Apply a colormap for better visualization (optional)
-                depth_colormap = cv2.applyColorMap(normalized_depth, cv2.COLORMAP_JET)
-
-                # Display the depth image
-                cv2.imshow("Depth Image", depth_colormap)
+                # Display the grayscale depth image
+                cv2.imshow("Depth Image (Grayscale)", depth_grayscale)
 
             except Exception as e:
-                rospy.logerr("Error displaying depth image: {}".format(e))
+                rospy.logerr(f"Error displaying depth image: {e}")
+
 
     def get_depth_at_centroid(self, centroid_x, centroid_y):
         """Get the depth value at the centroid of a face."""
