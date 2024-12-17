@@ -49,27 +49,29 @@ Libraries
 Parameters
     Command line arguments: None
 
-Configuration file parameters
+    Configuration File Parameters
 
-    Key                             Value
-    camera                          realsense
-    algorithm                       mediapipe
-    centroid_max_distance           15
-    centroid_max_disappeared        100
-    mp_facedet_confidence           0.5
-    mp_headpose_angle               5
-    sixdrepnet_confidence           0.65
-    sixdrepnet_headpose_angle       10
-    verboseMode                     True
+        Key                             Value
+        camera                          realsense
+        algorithm                       mediapipe
+        centroid_max_distance           15
+        centroid_max_disappeared        100
+        mp_facedet_confidence           0.5
+        mp_headpose_angle               5
+        sixdrepnet_confidence           0.65
+        sixdrepnet_headpose_angle       10
+        verboseMode                     True
 
 Subscribed Topics
-    RealSenseCameraRGB      /camera/color/image_raw
-    RealSenseCameraDepth    /camera/depth/image_rect_raw
-    PepperFrontCamera       /naoqi_driver/camera/front/image_raw
-    PepperDepthCamera       /naoqi_driver/camera/depth/image_raw
+    Topic Name                              Message Type
+    /camera/color/image_raw                 sensor_msgs/Image              
+    /camera/depth/image_rect_raw            sensor_msgs/Image
+    /naoqi_driver/camera/front/image_raw    sensor_msgs/Image
+    /naoqi_driver/camera/depth/image_raw    sensor_msgs/Image
 
 Published Topics
-    /faceDetection/data
+    Topic Name                              Message Type
+/faceDetection/data                         faceDetection/faceDetectionData
 
 Input Data Files
     - faceDetectionConfiguration.ini: Configuration file for face detection parameters

@@ -1,21 +1,59 @@
-# Face and Mutual Gaze Detection
+<div align="center">
+<h1> Face and Mutual Gaze Detection </h1>
+</div>
 
-<img src="../../CSSR4AfricaLogo.svg" alt="CSSR4Africa Logo" style="width:50%; height:auto;">
+<div align="center">
+  <img src="CSSR4AfricaLogo.svg" alt="CSSR4Africa Logo" style="width:50%; height:auto;">
+</div>
+
 
 The **Face and Mutual Gaze Detection and Localization** package is a ROS package designed to detect multiple faces and evaluate their **mutual gaze** in real-time by subscribing to an image topic. It publishes an array of detected faces and their mutual gaze status to the **/faceDetection/data** topic. Each entry in the published data includes the **label ID** of the detected face, the **centroid** coordinates representing the center point of each face, and a boolean value indicating **mutual gaze** status as either **True** or **False**. 
 
 ## Documentation
-The main documentation for this deliverable is found in [D5.5.1 Face and Mutual Gaze Detection and Localization](https://cssr4africa.github.io/deliverables/CSSR4Africa_Deliverable_D4.2.1.pdf) that provides more details.
+The main documentation for this deliverable is found in [D4.2.1 Face and Mutual Gaze Detection and Localization](https://cssr4africa.github.io/deliverables/CSSR4Africa_Deliverable_D4.2.1.pdf) that provides more details.
 
 ## Installation 
-To install the face and mutual gaze detection package, install the following packages.
-First create a virtual environment and install the required packages. You need to configure the right GPU driver to use torch with CUDA support. 
+To set up the Face and Mutual Gaze Detection package on a Linux system, follow these steps:
 
+1. Prerequisites
+Make sure you are running a supported Linux distribution (e.g., Ubuntu 20.04 or later).
+Install Python 3.10 and required tools.
+
+2. Install Python 3.10 and Virtual Environment.
 ```sh
+# Update system packages
+sudo apt update && sudo apt upgrade -y
+
+# Add the deadsnakes PPA for Python versions
+sudo apt install software-properties-common -y
+sudo add-apt-repository ppa:deadsnakes/ppa -y
+sudo apt update
+
+# Install Python 3.10
+sudo apt install python3.10 python3.10-venv python3.10-distutils -y
+
+# Verify Python installation
+python3.10 --version
+```
+3. Set Up Virtual Environment
+```sh
+# Create a virtual environment:
 cd $HOME
-python3 -m venv face_gaze_detection
+python3.10 -m venv face_gaze_detection
+
+# Activate the virtual environment:
 source face_gaze_detection/bin/activate
+
+# Upgrade pip in the virtual environment:
+pip install --upgrade pip
+```
+
+4. Install Required Packages
+```sh
+# Install PyTorch with CUDA support:
 pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+
+# Install additional requirements:
 pip install -r face_detection_requirements.txt
 ```
 
@@ -35,9 +73,6 @@ First, the configuration file must be setup with the right key-value pair before
 | `mp_headpose_angle`         | Head pose angle threshold (MediaPipe)                      | Degrees                    |
 | `sixdrepnet_confidence`     | Face detection confidence threshold (SixDrepNet)           | 0.0 - 1.0                  |
 | `sixdrepnet_headpose_angle` | Head pose angle threshold (SixDrepNet)                     | Degrees                    |
-| `deepsort_max_age`          | Maximum age for DeepSort tracker                           | Positive integer           |
-| `deepsort_max_iou_distance` | Maximum IoU distance for DeepSort tracker                  | 0.0 - 1.0                  |
-| `deepsort_n_init`           | Consecutive detections to confirm a track (DeepSort)       | Positive integer           |
 | `verboseMode`               | Enable verbose logging                                     | `True` or `False`          |
 
 After setting up the right configuration, run the following command. 
