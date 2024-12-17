@@ -2,7 +2,7 @@
 face_detection_implementation.py Implementation code for running the face and Head Pose detection algorithm
 
 Author: Yohannes Tadesse Haile
-Date: November 1, 2024
+Date: December 15, 2024
 Version: v1.0
 
 Copyright (C) 2023 CSSR4Africa Consortium

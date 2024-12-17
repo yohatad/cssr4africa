@@ -1,3 +1,20 @@
+""""
+face_detection_tracking.py Functionality for tracking faces using SORT(simple online and realtime tracking) and Centroid Tracking.
+
+Author: Yohannes Tadesse Haile
+Date: December 15, 2024
+Version: v1.0
+
+Copyright (C) 2023 CSSR4Africa Consortium
+
+This project is funded by the African Engineering and Technology Network (Afretec)
+Inclusive Digital Transformation Research Grant Programme.
+
+Website: www.cssr4africa.org
+
+This program comes with ABSOLUTELY NO WARRANTY.
+"""
+
 import numpy as np
 import lap
 from filterpy.kalman import KalmanFilter
@@ -278,34 +295,60 @@ class Sort:
                 ret.append(np.concatenate((trk.get_state()[0], [trk.id + 1])).reshape(1, -1))
 
         return np.concatenate(ret) if ret else np.empty((0, 5))
-    
-# Centroid tracker class for tracking objects. 
 class CentroidTracker:
+    """
+    CentroidTracker: A simple object tracker based on centroids.
+    Tracks objects using their centroids and handles objects that disappear over time.
+    """
+
     def __init__(self, max_disappeared=50, distance_threshold=50):
-        # Adjustable parameters
+        """
+        Initializes the CentroidTracker.
+
+        Args:
+            max_disappeared (int): Maximum frames an object can disappear before being deregistered.
+            distance_threshold (float): Maximum distance allowed for centroid matching.
+        """
         self.max_disappeared = max_disappeared
         self.distance_threshold = distance_threshold
 
-        # Internal variables
-        self.next_object_id = 0
-        self.objects = OrderedDict()
-        self.disappeared = OrderedDict()
+        self.next_object_id = 0  # ID to assign new objects
+        self.objects = OrderedDict()  # Dictionary to store object IDs and their centroids
+        self.disappeared = OrderedDict()  # Dictionary to track disappearance counts
 
     def register(self, centroid):
-        """Registers a new object with the next available ID and resets its disappearance count."""
+        """
+        Registers a new object with its centroid.
+
+        Args:
+            centroid (array-like): The centroid coordinates (x, y) of the object.
+        """
         self.objects[self.next_object_id] = centroid
         self.disappeared[self.next_object_id] = 0
         self.next_object_id += 1
 
     def deregister(self, object_id):
-        """Removes an object from tracking."""
+        """
+        Deregisters an object and removes it from tracking.
+
+        Args:
+            object_id (int): The ID of the object to be removed.
+        """
         if object_id in self.objects:
             del self.objects[object_id]
             del self.disappeared[object_id]
 
     def update(self, centroids):
-        """Updates the tracker with new centroids from the current frame."""
-        # If no centroids are detected, increase disappearance count for existing objects
+        """
+        Updates the tracker with new centroids for the current frame.
+
+        Args:
+            centroids (list or ndarray): List of centroid coordinates [(x1, y1), (x2, y2), ...].
+
+        Returns:
+            OrderedDict: Updated dictionary of tracked objects with their IDs and centroids.
+        """
+        # If no centroids are detected, increment disappearance counts
         if len(centroids) == 0:
             for object_id in list(self.disappeared.keys()):
                 self.disappeared[object_id] += 1
@@ -313,38 +356,36 @@ class CentroidTracker:
                     self.deregister(object_id)
             return self.objects
 
-        # Convert input centroids to numpy array for easy computation
+        # Convert input centroids to numpy array
         input_centroids = np.array(centroids)
 
-        # Register each centroid if there are no tracked objects
+        # If no objects are currently tracked, register all centroids
         if len(self.objects) == 0:
             for i in range(0, len(input_centroids)):
                 self.register(input_centroids[i])
         else:
-            # List of tracked object IDs and their current centroids
+            # Retrieve current object IDs and centroids
             object_ids = list(self.objects.keys())
             object_centroids = list(self.objects.values())
 
-            # Compute distances between existing objects and new centroids
+            # Compute pairwise distances between existing objects and new centroids
             D = dist.cdist(np.array(object_centroids), input_centroids)
 
-            # Sort rows and columns by closest distances
+            # Sort distances to find the closest matches
             rows = D.min(axis=1).argsort()
             cols = D.argmin(axis=1)[rows]
 
             used_rows = set()
             used_cols = set()
 
-            # Match each tracked object with the closest new centroid if within the distance threshold
+            # Match existing objects with centroids if within distance threshold
             for (row, col) in zip(rows, cols):
                 if row in used_rows or col in used_cols:
                     continue
 
-                # Check if distance is within the threshold for matching
                 if D[row, col] > self.distance_threshold:
                     continue
 
-                # Update the centroid of the matched object
                 object_id = object_ids[row]
                 self.objects[object_id] = input_centroids[col]
                 self.disappeared[object_id] = 0
@@ -352,11 +393,8 @@ class CentroidTracker:
                 used_rows.add(row)
                 used_cols.add(col)
 
-            # Process unmatched rows and columns
-            unused_rows = set(range(0, D.shape[0])).difference(used_rows)
-            unused_cols = set(range(0, D.shape[1])).difference(used_cols)
-
             # Mark unmatched existing objects as disappeared
+            unused_rows = set(range(0, D.shape[0])).difference(used_rows)
             for row in unused_rows:
                 object_id = object_ids[row]
                 self.disappeared[object_id] += 1
@@ -364,6 +402,7 @@ class CentroidTracker:
                     self.deregister(object_id)
 
             # Register unmatched new centroids as new objects
+            unused_cols = set(range(0, D.shape[1])).difference(used_cols)
             for col in unused_cols:
                 self.register(input_centroids[col])
 

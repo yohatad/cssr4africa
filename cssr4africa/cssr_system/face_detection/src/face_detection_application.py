@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 
 """
-face_detection_application.py   Application code to run the face and mutual gaze detection algorithm.
+face_detection_application.py Application code to run the face and mutual gaze detection algorithm.
 
 Author: Yohannes Tadesse Haile
-Date: November 1, 2024
+Date: December 15, 2024
 Version: v1.0
 
 Copyright (C) 2023 CSSR4Africa Consortium
@@ -60,9 +60,6 @@ Configuration file parameters
     mp_headpose_angle               5
     sixdrepnet_confidence           0.65
     sixdrepnet_headpose_angle       10
-    deepsort_max_age                7
-    deepsort_max_iou_distance       0.7
-    deepsort_n_init                 2
     verboseMode                     True
 
 Subscribed Topics
@@ -91,7 +88,7 @@ Example of instantiation of the module
 
 Author: Yohannes Tadesse Haile
 Email: yohanneh@andrew.cmu.edu
-Date: November 1, 2024
+Date: December 15, 2024
 Version: v1.0
 """
 
