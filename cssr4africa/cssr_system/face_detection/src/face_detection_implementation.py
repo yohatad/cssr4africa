@@ -25,14 +25,14 @@ import onnxruntime
 import multiprocessing
 from collections import OrderedDict
 from scipy.spatial import distance as dist
-from deep_sort_realtime.deepsort_tracker import DeepSort
 from math import cos, sin, pi
 from sensor_msgs.msg import Image
+from sensor_msgs.msg import CompressedImage
 from cv_bridge import CvBridge, CvBridgeError
 from geometry_msgs.msg import Point
-from face_detection.msg import face_detection
 from typing import Tuple, List
-from sensor_msgs.msg import CompressedImage
+from face_detection.msg import face_detection
+from face_detection_sort_tracking import Sort  # Import the SORT class
 
 class FaceDetectionNode:
     def __init__(self, config=None):
@@ -479,7 +479,6 @@ class MediaPipeFaceNode(FaceDetectionNode):
             
         # Publish centroids and mutual gaze status
         self.publish_face_detection(tracking_data)
-        
 class YOLOONNX:
     def __init__(self, model_path: str, class_score_th: float = 0.65,
         providers: List[str] = ['CUDAExecutionProvider', 'CPUExecutionProvider']):
@@ -578,17 +577,7 @@ class SixDrepNet(FaceDetectionNode):
         self.mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)
         self.std = np.array([0.229, 0.224, 0.225], dtype=np.float32)
 
-        self.tracker = DeepSort(
-                max_age=self.config.get("deepsort_max_age", 15),
-                n_init=self.config.get("deepsort_n_init", 5),
-                max_iou_distance=self.config.get("deepsort_max_iou_distance", 0.7),
-                embedder='mobilenet',
-                half=False,
-                bgr=True,
-                embedder_gpu=True
-            )
-                    
-        self.frame_counter = 0
+        self.sort_tracker = Sort(max_age=5, min_hits=3, iou_threshold=0.3)
         self.tracks = [] 
         
         # Mark initialization as complete
@@ -635,10 +624,10 @@ class SixDrepNet(FaceDetectionNode):
             rospy.logerr("Error processing compressed image: {}".format(e))
 
     def process_frame(self, cv_image):
-        
         """
-        Process the input frame for face detection and head pose estimation.
-        Args: cv_image: Input frame as a NumPy array (BGR format)     
+        Process the input frame for face detection and head pose estimation using SORT.
+        Args: 
+            cv_image: Input frame as a NumPy array (BGR format)
         """
         debug_image = cv_image.copy()
         img_h, img_w = debug_image.shape[:2]
@@ -647,37 +636,31 @@ class SixDrepNet(FaceDetectionNode):
         # Object detection (YOLO)
         boxes, scores = self.yolo_model(debug_image)
 
-        # Prepare detections for tracker ([x, y, w, h], score)
+        # Prepare detections for SORT ([x1, y1, x2, y2, score])
         detections = []
         for box, score in zip(boxes, scores):
             x1, y1, x2, y2 = box
-            w, h = x2 - x1, y2 - y1
-            detections.append(([x1, y1, w, h], score))
+            detections.append([x1, y1, x2, y2, score])
 
-        # Update tracker with detections
-        self.tracks = self.tracker.update_tracks(detections, frame=debug_image)
+        # Convert detections to NumPy array
+        detections = np.array(detections)
 
+        # Update SORT tracker with detections
+        if detections.shape[0] > 0:
+            self.tracks = self.sort_tracker.update(detections)
+        else:
+            self.tracks = []  # Reset tracks if no detections
+
+        # Process tracks
         for track in self.tracks:
-            if not track.is_confirmed():
-                continue
-
-            track_id = track.track_id
-            ltrb = track.to_ltrb()
-            x1, y1, x2, y2 = map(int, ltrb)
+            x1, y1, x2, y2, track_id = map(int, track)  # SORT returns track_id as the last value
             cx, cy = (x1 + x2) // 2, (y1 + y2) // 2
+            
 
             # Crop the face region for head pose estimation
-            w, h = x2 - x1, y2 - y1
-            ew, eh = w * 1.2, h * 1.2
-            cx_center, cy_center = (x1 + x2) / 2, (y1 + y2) / 2
-            ex1 = max(int(cx_center - ew / 2), 0)
-            ex2 = min(int(cx_center + ew / 2), img_w)
-            ey1 = max(int(cy_center - eh / 2), 0)
-            ey2 = min(int(cy_center + eh / 2), img_h)
-
-            head_image = debug_image[ey1:ey2, ex1:ex2]
+            head_image = debug_image[max(y1, 0):min(y2, img_h), max(x1, 0):min(x2, img_w)]
             if head_image.size == 0:
-                continue  # Skip if the cropped image is empty
+                continue  # Skip if cropped region is invalid
 
             # Preprocess for SixDrepNet
             resized_image = cv2.resize(head_image, (224, 224))
@@ -691,13 +674,11 @@ class SixDrepNet(FaceDetectionNode):
             # Draw head pose axes
             self.draw_axis(debug_image, yaw_deg, pitch_deg, roll_deg, cx, cy, size=100)
 
-            # Get depth at centroid
             cz = self.get_depth_at_centroid(cx, cy)
 
+            # Track additional metadata
             sixdrep_angle = self.config.get('sixdrepnet_headpose_angle', 10)
             mutual_gaze = abs(yaw_deg) < sixdrep_angle and abs(pitch_deg) < sixdrep_angle
-
-            # Store tracking data
             tracking_data.append({
                 'track_id': str(track_id),
                 'centroid': Point(x=float(cx), y=float(cy), z=float(cz) if cz else 0.0),
@@ -710,10 +691,11 @@ class SixDrepNet(FaceDetectionNode):
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
             cv2.putText(debug_image, f"{'Forward' if mutual_gaze else 'Not Forward'}", (x1 + 10, y2 + 20),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
+        
         # Publish tracking data
         self.publish_face_detection(tracking_data)
         return debug_image
-   
+    
     def spin(self):
         """Main loop to display processed frames and depth images."""
         rate = rospy.Rate(30)  # Adjust the rate as needed
