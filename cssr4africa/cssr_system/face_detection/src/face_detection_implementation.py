@@ -30,6 +30,7 @@ from geometry_msgs.msg import Point
 from typing import Tuple, List
 from face_detection.msg import face_detection
 from face_detection_tracking import Sort, CentroidTracker
+
 class FaceDetectionNode:
     def __init__(self, config=None):
         if config is not None:
@@ -234,6 +235,9 @@ class MediaPipeFaceNode(FaceDetectionNode):
         self.latest_frame = None
         self.verbose_mode = bool(self.config.get("verbosemode", False))
 
+        # Timer for printing message every 5 seconds
+        self.timer = rospy.get_time()
+        
         # Subscribe to the image topic
         self.subscribe_topics()
 
@@ -250,6 +254,11 @@ class MediaPipeFaceNode(FaceDetectionNode):
 
         # Process with face mesh
         self.process_face_mesh(frame, rgb_frame, img_h, img_w)
+
+        # Print message every 5 seconds
+        if rospy.get_time() - self.timer > 5:
+            rospy.loginfo("face_detection: running.")
+            self.timer = rospy.get_time()
 
         # Store the processed frame for dispay
         self.latest_frame = frame.copy()
@@ -427,7 +436,10 @@ class SixDrepNet(FaceDetectionNode):
     def __init__(self, config):
         super().__init__(config)
         self.initialized = False
-        rospy.loginfo("Initializing SixDrepNet...")
+        self.verbose_mode = self.config.get("verbosemode", False)
+
+        if self.verbose_mode:
+            rospy.loginfo("Initializing SixDrepNet...")
 
         # Set up model paths
         model_path_param = 'package://face_detection/models/face_detection_goldYOLO.onnx'
@@ -437,11 +449,15 @@ class SixDrepNet(FaceDetectionNode):
         sixdrepnet_model_path = self.resolve_model_path(sixdrepnet_model_path_param)
 
         self.latest_frame = None
+        
+        # Timer for printing message every 5 seconds
+        self.timer = rospy.get_time()
 
         # Initialize YOLOONNX model early and check success
         try:
             self.yolo_model = YOLOONNX(model_path=yolo_model_path, class_score_th = self.config.get("sixdrepnet_confidence", 0.65))
-            rospy.loginfo("YOLOONNX model initialized successfully.")
+            if self.verbose_mode:
+                rospy.loginfo("YOLOONNX model initialized successfully.")
         except Exception as e:
             self.yolo_model = None
             rospy.logerr(f"Failed to initialize YOLOONNX model: {e}")
@@ -460,11 +476,14 @@ class SixDrepNet(FaceDetectionNode):
             )
 
             active_providers = self.sixdrepnet_session.get_providers()
-            rospy.loginfo(f"Active providers: {active_providers}")
+            if self.verbose_mode:
+                rospy.loginfo(f"Active providers: {active_providers}")
             if "CUDAExecutionProvider" not in active_providers:
-                rospy.logwarn("CUDAExecutionProvider is not available. Running on CPU may slow down inference.")
+                if self.verbose_mode:
+                    rospy.logwarn("CUDAExecutionProvider is not available. Running on CPU may slow down inference.")
             else:
-                rospy.loginfo("CUDAExecutionProvider is active. Running on GPU for faster inference.")
+                if self.verbose_mode:
+                    rospy.loginfo("CUDAExecutionProvider is active. Running on GPU for faster inference.")
         except Exception as e:
             rospy.logerr(f"Failed to initialize SixDrepNet ONNX session: {e}")
             return  # Exit early if initialization fails
@@ -478,9 +497,8 @@ class SixDrepNet(FaceDetectionNode):
         
         # Mark initialization as complete
         self.initialized = True
-
-        self.verbose_mode = self.config.get("verbosemode", False)
-        rospy.loginfo("SixDrepNet initialization complete.")
+        if self.verbose_mode:
+            rospy.loginfo("SixDrepNet initialization complete.")
 
         self.subscribe_topics()
     
@@ -514,6 +532,11 @@ class SixDrepNet(FaceDetectionNode):
             
             # Process the frame
             self.latest_frame = self.process_frame(cv_image)
+
+             # Print message every 5 seconds
+            if rospy.get_time() - self.timer > 5:
+                rospy.loginfo("face_detection: running.")
+                self.timer = rospy.get_time()
 
         except CvBridgeError as e:
             rospy.logerr("CvBridge Error: {}".format(e))
