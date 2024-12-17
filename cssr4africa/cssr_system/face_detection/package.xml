@@ -1,9 +1,9 @@
 <package format="2">
   <name>face_detection</name>
   <version>0.0.0</version>
-  <description>The face_detection package</description>
+  <description>The face_detection and mutual gaze detection package</description>
 
-  <maintainer email="user@todo.todo">TODO: Maintainer Name</maintainer>
+  <maintainer email="yohanneh@andrew.cmu.edu">Yohannes Haile</maintainer>
 
   <license>TODO: License declaration</license>
 

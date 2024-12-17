@@ -47,17 +47,21 @@ class FaceDetectionNode:
         if camera_type == "realsense":
             self.rgb_topic = self.extract_topics("RealSenseCameraRGB")
             self.depth_topic = self.extract_topics("RealSenseCameraDepth")
+            rospy.loginfo(f"Subscribed to {self.rgb_topic}")
+            rospy.loginfo(f"Subscribed to {self.depth_topic}")
         elif camera_type == "pepper":
             self.rgb_topic = self.extract_topics("PepperFrontCamera")
             self.depth_topic = self.extract_topics("PepperDepthCamera")
+            rospy.loginfo(f"Subscribed to {self.rgb_topic}")
+            rospy.loginfo(f"Subscribed to {self.depth_topic}")
         else:
-            rospy.logerr("Invalid camera type specified")
-            rospy.signal_shutdown("Invalid camera type")
+            rospy.logerr("subscribe_topics: Invalid camera type specified")
+            rospy.signal_shutdown("subscribe_topics: Invalid camera type")
             return
 
         if not self.rgb_topic or not self.depth_topic:
-            rospy.logerr("Camera topic not found.")
-            rospy.signal_shutdown("Camera topic not found")
+            rospy.logerr("subscribe_topics: Camera topic not found.")
+            rospy.signal_shutdown("subscribe_topics: Camera topic not found")
             return
 
         self.image_sub = rospy.Subscriber(self.rgb_topic, Image, self.image_callback)
@@ -154,7 +158,7 @@ class FaceDetectionNode:
             # Convert the ROS Image message to a NumPy array
             self.depth_image = self.bridge.imgmsg_to_cv2(data, desired_encoding="passthrough")
         except CvBridgeError as e:
-            rospy.logerr("CvBridge Error: {}".format(e))
+            rospy.logerr("depth_callback: CvBridge Error: {}".format(e))
 
     def display_depth_image(self):
         if self.depth_image is not None:
@@ -178,7 +182,7 @@ class FaceDetectionNode:
                 cv2.imshow("Depth Image", depth_colormap)
 
             except Exception as e:
-                rospy.logerr("Error displaying depth image: {}".format(e))
+                rospy.logerr("display_depth_image: Error displaying depth image: {}".format(e))
 
     def get_depth_at_centroid(self, centroid_x, centroid_y):
         """Get the depth value at the centroid of a face."""
