@@ -3,3 +3,5 @@
 **/sensorTestOutput.dat
 **/models/**
 **/*.bag
+*.pyc
+__pycache__/
