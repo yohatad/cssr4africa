@@ -1,0 +1,11 @@
+{
+    "camera": "realsense",
+    "algorithm": "sixdrep",
+    "centroid_max_distance": 15,
+    "centroid_max_disappeared": 100,
+    "mp_facedet_confidence": 0.5,
+    "mp_headpose_angle": 8,
+    "sixdrepnet_confidence": 0.65,
+    "sixdrepnet_headpose_angle": 10,
+    "verbose_mode": true
+}

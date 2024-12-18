@@ -23,6 +23,7 @@ import rospkg
 import os
 import onnxruntime
 import multiprocessing
+import json
 from math import cos, sin, pi
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
@@ -36,7 +37,8 @@ class FaceDetectionNode:
         if config is not None:
             self.config = config
         else:
-            self.config = self.parse_config()
+            self.config = self.read_json_file()
+        
         self.algorithm = self.config.get("algorithm", "mediapipe")
         self.pub_gaze = rospy.Publisher("/faceDetection/data", face_detection, queue_size=10)
         self.bridge = CvBridge()
@@ -83,53 +85,20 @@ class FaceDetectionNode:
         return path
     
     @staticmethod
-    def parse_config():
-        config = {}
+    def read_json_file():
         rospack = rospkg.RosPack()
         try:
             package_path = rospack.get_path('face_detection')
-            config_path = os.path.join(package_path, 'config', 'face_detection_configuration.ini')
-            
+            config_path = os.path.join(package_path, 'config', 'face_detection_configuration.json')
             if os.path.exists(config_path):
                 with open(config_path, 'r') as file:
-                    for line in file:
-                        line = line.strip()
-                        if not line or line.startswith('#'):
-                            continue
-                        
-                        parts = line.split(maxsplit=1)
-                        if len(parts) != 2:
-                            print(f"Invalid configuration line: '{line}'")
-                            continue
-                        key, value = parts
-                        key = key.lower()  # Ensure the key is lowercase
-                        
-                        # Convert the value appropriately
-                        try:
-                            if '.' in value:
-                                value = float(value)
-                            else:
-                                value = int(value)
-                        except ValueError:
-                            # Convert boolean strings and leave other strings in lowercase
-                            if value.lower() == "true":
-                                value = True
-                            elif value.lower() == "false":
-                                value = False
-                            else:
-                                value = value.lower()  # Convert to lowercase for string values
-                        
-                        config[key] = value
-
-                # Colorize output: green for keys, cyan for values
-                # for key, value in config.items():
-                #     print(f"\033[36m{key}\033[0m: \033[93m{value}\033[0m")
+                    data = json.load(file)
+                    return data
             else:
-                print(f"\033[91mConfiguration file not found at {config_path}\033[0m")
-        except rospkg.ResourceNotFound as e:
-            print(f"\033[91mROS package 'face_detection' not found: {e}\033[0m")
+                rospy.logerr(f"read_json_file: Configuration file not found at {config_path}")
         
-        return config
+        except rospkg.ResourceNotFound as e:
+            rospy.logerr(f"ROS package 'face_detection' not found: {e}")
     
     @staticmethod
     def extract_topics(image_topic):
@@ -148,9 +117,9 @@ class FaceDetectionNode:
                         if key.lower() == image_topic.lower():
                             return value
             else:
-                print(f"\033[91mData file not found at {config_path}\033[0m")
+                rospy.logerr(f"extract_topics: Data file not found at {config_path}")
         except rospkg.ResourceNotFound as e:
-            print(f"\033[91mROS package 'face_detection' not found: {e}\033[0m")
+            rospy.logerr(f"ROS package 'face_detection' not found: {e}")
       
     def depth_callback(self, data):
         """Callback to receive the depth image."""
@@ -235,9 +204,10 @@ class MediaPipeFaceNode(FaceDetectionNode):
 
         # Initialize the CentroidTracker
         self.centroid_tracker = CentroidTracker(self.config.get("max_disappeared", 15), self.config.get("distance_threshold", 100))
-
+        
         self.latest_frame = None
-        self.verbose_mode = bool(self.config.get("verbosemode", False))
+
+        self.verbose_mode = bool(self.config.get("verbose_mode", False))
 
         # Timer for printing message every 5 seconds
         self.timer = rospy.get_time()
@@ -440,7 +410,7 @@ class SixDrepNet(FaceDetectionNode):
     def __init__(self, config):
         super().__init__(config)
         self.initialized = False
-        self.verbose_mode = self.config.get("verbosemode", False)
+        self.verbose_mode = self.config.get("verbose_mode", False)
 
         if self.verbose_mode:
             rospy.loginfo("Initializing SixDrepNet...")
