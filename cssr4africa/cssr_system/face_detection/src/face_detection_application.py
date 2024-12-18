@@ -50,7 +50,6 @@ Parameters
     Command line arguments: None
 
     Configuration File Parameters
-
         Key                             Value
         camera                          realsense
         algorithm                       mediapipe
@@ -116,7 +115,7 @@ def main():
     rospy.loginfo(copyright_message)
     rospy.loginfo(f"{node_name}: startup.")
     
-    config = FaceDetectionNode.parse_config()
+    config = FaceDetectionNode.read_json_file()
     algorthim = config.get('algorithm', 'mediapipe')
 
     if algorthim == 'mediapipe':
