@@ -1,4 +1,10 @@
 **/microphone.wav
 *.mp4
 **/sensorTestOutput.dat
-cssr4africa/cssr_system/sound/audio_2024-03-24-17-42-01.bag
+**/microphone.wav
+*.mp4
+**/sensorTestOutput.dat
+**/models/**
+**/*.bag
+*.pyc
+__pycache__/
