@@ -1,0 +1,6 @@
+{
+    "camera": "pepper",
+    "algorithm": "mediapipe",
+    "confidence": 0.8,
+    "verboseMode": true
+}

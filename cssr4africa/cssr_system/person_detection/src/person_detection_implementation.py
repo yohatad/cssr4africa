@@ -1,13 +1,11 @@
-#!/usr/bin/env python
-
 import cv2
-import numpy as np
 import rospy
 import os
 import rospkg
+import numpy as np
 import onnxruntime
 import multiprocessing
-from deep_sort_realtime.deepsort_tracker import DeepSort
+import json
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 from person_detection.msg import person_detection
@@ -31,14 +29,14 @@ class PersonDetectionNode:
         if config is not None:
             self.config = config
         else:
-            self.config = self.parse_config()
+            self.config = self.read_json_file()
 
         self.pub_people = rospy.Publisher("/personDetection/data", person_detection, queue_size=10)
         self.bridge = CvBridge()
         self.depth_image = None
     
     def subscribe_topics(self):
-        camera_type = self.config.get("camera")
+        camera_type = self.config.get("camera", "realsense")
 
         if camera_type == "realsense":
             self.rgb_topic = self.extract_topics("RealSenseCameraRGB")
@@ -60,6 +58,7 @@ class PersonDetectionNode:
             rgb_h, rgb_w = rgb_image.shape[:2]
             depth_h, depth_w = depth_image.shape[:2]
             return rgb_h == depth_h and rgb_w == depth_w
+    
     def resolve_model_path(self, path):
         if path.startswith('package://'):
             path = path[len('package://'):]
@@ -68,6 +67,22 @@ class PersonDetectionNode:
             package_path = rospack.get_path(package_name)
             path = os.path.join(package_path, relative_path)
         return path
+    
+    @staticmethod
+    def read_json_file():
+        rospack = rospkg.RosPack()
+        try:
+            package_path = rospack.get_path('person_detection')
+            config_path = os.path.join(package_path, 'config', 'person_detection_configuration.json')
+            if os.path.exists(config_path):
+                with open(config_path, 'r') as file:
+                    data = json.load(file)
+                    return data
+            else:
+                rospy.logerr(f"read_json_file: Configuration file not found at {config_path}")
+        
+        except rospkg.ResourceNotFound as e:
+            rospy.logerr(f"ROS package 'person_detection not found: {e}") 
 
     @staticmethod
     def parse_config():
@@ -203,7 +218,6 @@ class PersonDetectionNode:
         # Initialize lists for each attribute in the message
         person_msg.person_label_id = [data['track_id'] for data in tracking_data]
         person_msg.centroid = [data['centroid'] for data in tracking_data]
-        person_msg.bounding_box = [data['bbox'] for data in tracking_data]
 
 class YOLOv8ROS(PersonDetectionNode):
     def __init__(self, config):
@@ -488,20 +502,6 @@ class YOLOv8ROS(PersonDetectionNode):
                     (x1 + tw, y1 - th), color, -1)
 
         return cv2.putText(image, text, (x1, y1), cv2.FONT_HERSHEY_SIMPLEX, font_size, (255, 255, 255), text_thickness, cv2.LINE_AA)
-
-    def draw_masks(self, image: np.ndarray, boxes: np.ndarray, classes: np.ndarray, mask_alpha: float = 0.3) -> np.ndarray:
-        mask_img = image.copy()
-
-        # Draw bounding boxes and labels of detections
-        for box, class_id in zip(boxes, classes):
-            color = colors[class_id]
-
-            x1, y1, x2, y2 = box.astype(int)
-
-            # Draw fill rectangle in mask image
-            cv2.rectangle(mask_img, (x1, y1), (x2, y2), color, -1)
-
-        return cv2.addWeighted(mask_img, mask_alpha, image, 1 - mask_alpha, 0)
         
     def image_callback(self, msg):
         # Convert ROS image message to OpenCV image
