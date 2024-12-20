@@ -356,15 +356,13 @@ class CentroidTracker:
                     self.deregister(object_id)
             return self.objects
 
-        # Convert input centroids to numpy array
         input_centroids = np.array(centroids)
 
         # If no objects are currently tracked, register all centroids
         if len(self.objects) == 0:
-            for i in range(0, len(input_centroids)):
-                self.register(input_centroids[i])
+            for centroid in input_centroids:
+                self.register(centroid)
         else:
-            # Retrieve current object IDs and centroids
             object_ids = list(self.objects.keys())
             object_centroids = list(self.objects.values())
 
@@ -378,7 +376,6 @@ class CentroidTracker:
             used_rows = set()
             used_cols = set()
 
-            # Match existing objects with centroids if within distance threshold
             for (row, col) in zip(rows, cols):
                 if row in used_rows or col in used_cols:
                     continue
@@ -393,7 +390,6 @@ class CentroidTracker:
                 used_rows.add(row)
                 used_cols.add(col)
 
-            # Mark unmatched existing objects as disappeared
             unused_rows = set(range(0, D.shape[0])).difference(used_rows)
             for row in unused_rows:
                 object_id = object_ids[row]
@@ -401,9 +397,24 @@ class CentroidTracker:
                 if self.disappeared[object_id] > self.max_disappeared:
                     self.deregister(object_id)
 
-            # Register unmatched new centroids as new objects
             unused_cols = set(range(0, D.shape[1])).difference(used_cols)
             for col in unused_cols:
                 self.register(input_centroids[col])
 
         return self.objects
+
+    def match_centroids(self, centroids):
+        """
+        Matches input centroids to tracked object IDs.
+
+        Args:
+            centroids (list): List of current centroids.
+
+        Returns:
+            dict: Mapping of input centroids to tracked object IDs.
+        """
+        tracked_faces = self.update(centroids)
+        centroid_to_object_id = {}
+        for object_id, tracked_centroid in tracked_faces.items():
+            centroid_to_object_id[tuple(tracked_centroid)] = object_id
+        return centroid_to_object_id

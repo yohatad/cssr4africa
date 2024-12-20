@@ -183,7 +183,7 @@ class FaceDetectionNode:
         face_msg = face_detection()
 
         # Initialize lists for each attribute in the message
-        face_msg.face_label_id = [data['track_id'] for data in tracking_data]
+        face_msg.face_label_id = [data['face_id'] for data in tracking_data]
         face_msg.centroids = [data['centroid'] for data in tracking_data]
         face_msg.mutualGaze = [data['mutual_gaze'] for data in tracking_data]
 
@@ -266,8 +266,7 @@ class MediaPipeFaceNode(FaceDetectionNode):
 
         if results.multi_face_landmarks:
             for face_id, face_landmarks in enumerate(results.multi_face_landmarks):
-                face_2d = []
-                face_3d = []
+                face_2d, face_3d = [], []
 
                 for idx, lm in enumerate(face_landmarks.landmark):
                     if idx in [33, 263, 1, 61, 291, 199]:
@@ -286,10 +285,10 @@ class MediaPipeFaceNode(FaceDetectionNode):
 
                 focal_length = 1 * img_w
                 cam_matrix = np.array([[focal_length, 0, img_w / 2],
-                                    [0, focal_length, img_h / 2],
-                                    [0, 0, 1]])
-
+                                        [0, focal_length, img_h / 2],
+                                        [0, 0, 1]])
                 distortion_matrix = np.zeros((4, 1), dtype=np.float64)
+
                 success, rotation_vec, translation_vec = cv2.solvePnP(
                     face_3d, face_2d, cam_matrix, distortion_matrix)
 
@@ -308,55 +307,31 @@ class MediaPipeFaceNode(FaceDetectionNode):
                     int(nose_2d[1] - x_angle * 10))
                 cv2.line(frame, p1, p2, (255, 0, 0), 3)
 
-                label = f"Face {face_id + 1}: {'Forward' if mutualGaze else 'Not Forward'}"
+                label = f"{'Forward' if mutualGaze else 'Not Forward'}"
                 cv2.putText(frame, label, (int(centroid_x), int(
-                    centroid_y) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+                    centroid_y) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
 
-        # Update the centroid tracker and get the object IDs
-        tracked_faces = self.centroid_tracker.update(centroids)
+        # Use the centroid tracker to match centroids with object IDs
+        centroid_to_face_id = self.centroid_tracker.match_centroids(centroids)
 
-        # Build tracking data list
         tracking_data = []
-
-        # Create a mapping from tracked centroids to object IDs
-        centroid_to_object_id = {}
-        for object_id, tracked_centroid in tracked_faces.items():
-            centroid_to_object_id[tuple(tracked_centroid)] = object_id
-
-        # Match input centroids to tracked object IDs
         for idx, centroid in enumerate(centroids):
             centroid_tuple = tuple(centroid)
-            # Find the closest tracked centroid to the input centroid
-            min_distance = float('inf')
-            matched_object_id = None
-            for tracked_centroid_tuple, object_id in centroid_to_object_id.items():
-                distance = np.linalg.norm(
-                    np.array(centroid_tuple) - np.array(tracked_centroid_tuple))
-                if distance < min_distance:
-                    min_distance = distance
-                    matched_object_id = object_id
+            face_id = centroid_to_face_id.get(centroid_tuple, None)
 
-            # Convert centroid to geometry_msgs/Point
             cz = self.get_depth_at_centroid(centroid[0], centroid[1])
-            point = Point()
-            point.x = float(centroid[0])
-            point.y = float(centroid[1])
-            point.z = float(cz) if cz else 0.0
+            point = Point(x=float(centroid[0]), y=float(centroid[1]), z=float(cz) if cz else 0.0)
 
-            # Collect the tracking data with the correct data types
             tracking_data.append({
-                'track_id': str(matched_object_id),             # Convert to string
-                'centroid': point,                              # geometry_msgs/Point object
-                'mutual_gaze': bool(mutualGaze_list[idx])       # Ensure it's a bool
+                'face_id': str(face_id),
+                'centroid': point,
+                'mutual_gaze': bool(mutualGaze_list[idx])
             })
 
-            # Annotate the frame with tracked face IDs
-            cv2.putText(frame, f"ID {matched_object_id}", (int(centroid[0]), int(
-                centroid[1]) - 30), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
-            cv2.circle(frame, (int(centroid[0]), int(centroid[1])),
-                    4, (0, 255, 0), -1)
-            
-        # Publish centroids and mutual gaze status
+            cv2.putText(frame, f"Face: {face_id}", (int(centroid[0]), int(
+                centroid[1]) - 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+            cv2.circle(frame, (int(centroid[0]), int(centroid[1])), 4, (0, 255, 0), -1)
+
         self.publish_face_detection(tracking_data)
 class YOLOONNX:
     def __init__(self, model_path: str, class_score_th: float = 0.65,
@@ -546,7 +521,7 @@ class SixDrepNet(FaceDetectionNode):
 
         # Process tracks
         for track in self.tracks:
-            x1, y1, x2, y2, track_id = map(int, track)  # SORT returns track_id as the last value
+            x1, y1, x2, y2, face_id = map(int, track)  # SORT returns face_id as the last value
             cx, cy = (x1 + x2) // 2, (y1 + y2) // 2
             
 
@@ -573,17 +548,17 @@ class SixDrepNet(FaceDetectionNode):
             sixdrep_angle = self.config.get('sixdrepnet_headpose_angle', 10)
             mutual_gaze = abs(yaw_deg) < sixdrep_angle and abs(pitch_deg) < sixdrep_angle
             tracking_data.append({
-                'track_id': str(track_id),
+                'face_id': str(face_id),
                 'centroid': Point(x=float(cx), y=float(cy), z=float(cz) if cz else 0.0),
                 'mutual_gaze': mutual_gaze
             })
 
             # Draw bounding box and additional information
-            cv2.rectangle(debug_image, (x1, y1), (x2, y2), (0, 255, 0), 1)
-            cv2.putText(debug_image, f"ID: {track_id}", (x1 + 10, y1 - 10),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+            cv2.rectangle(debug_image, (x1, y1), (x2, y2), (0, 255, 0), 2)
+            cv2.putText(debug_image, f"Face: {face_id}", (x1 + 10, y1 - 10),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
             cv2.putText(debug_image, f"{'Forward' if mutual_gaze else 'Not Forward'}", (x1 + 10, y2 + 20),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
         
         # Publish tracking data
         self.publish_face_detection(tracking_data)
