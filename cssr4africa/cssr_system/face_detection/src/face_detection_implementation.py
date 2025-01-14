@@ -177,6 +177,63 @@ class FaceDetectionNode:
         else:
             # rospy.logwarn(f"Invalid depth value at coordinates ({x}, {y}): {depth_value}")
             return None
+        
+    def get_depth_in_region(self, centroid_x, centroid_y, box_width, box_height, region_scale=0.1):
+        """
+        Get the depth value within a scaled region around the centroid of a bounding box.
+
+        Args:
+            centroid_x (float): The x-coordinate of the centroid.
+            centroid_y (float): The y-coordinate of the centroid.
+            box_width (float): The width of the bounding box.
+            box_height (float): The height of the bounding box.
+            region_scale (float): The fraction of the bounding box to consider (default is 0.3).
+
+        Returns:
+            float: The average depth value in meters within the scaled region, or None if invalid.
+        """
+        if self.depth_image is None:
+            return None
+
+        # Calculate scaled region dimensions
+        region_width = int(box_width * region_scale)
+        region_height = int(box_height * region_scale)
+
+        # Calculate the top-left corner of the scaled region
+        x_start = int(round(centroid_x - region_width / 2))
+        y_start = int(round(centroid_y - region_height / 2))
+
+        # Calculate the bottom-right corner of the scaled region
+        x_end = x_start + region_width
+        y_end = y_start + region_height
+
+        # Get image dimensions
+        image_height, image_width = self.depth_image.shape[:2]
+
+        # Ensure the region is within bounds
+        x_start = max(0, x_start)
+        y_start = max(0, y_start)
+        x_end = min(image_width, x_end)
+        y_end = min(image_height, y_end)
+
+        # If the region is invalid (e.g., zero area), return None
+        if x_start >= x_end or y_start >= y_end:
+            rospy.logwarn(f"Invalid region coordinates ({x_start}, {y_start}, {x_end}, {y_end}).")
+            return None
+
+        # Extract the region of interest
+        depth_roi = self.depth_image[y_start:y_end, x_start:x_end]
+
+        # Filter out invalid depth values (e.g., zeros or NaNs)
+        valid_depth_values = depth_roi[np.isfinite(depth_roi) & (depth_roi > 0)]
+
+        if valid_depth_values.size > 0:
+            # Calculate the average depth and convert to meters if needed
+            average_depth_in_meters = np.mean(valid_depth_values) / 1000.0
+            return average_depth_in_meters
+        else:
+            rospy.logwarn(f"No valid depth values in the region ({x_start}, {y_start}, {x_end}, {y_end}).")
+            return None
 
     def publish_face_detection(self, tracking_data):
         """Publish the face detection results."""
@@ -542,7 +599,7 @@ class SixDrepNet(FaceDetectionNode):
             # Draw head pose axes
             self.draw_axis(debug_image, yaw_deg, pitch_deg, roll_deg, cx, cy, size=100)
 
-            cz = self.get_depth_at_centroid(cx, cy)
+            cz = self.get_depth_in_region(cx, cy, x2 - x1, y2 - y1)
 
             # Track additional metadata
             sixdrep_angle = self.config.get('sixdrepnet_headpose_angle', 10)
