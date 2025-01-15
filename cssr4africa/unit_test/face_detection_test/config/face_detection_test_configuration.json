@@ -1,0 +1,6 @@
+{
+    "camera": "realsense",
+    "algorithm": "sixdrep",
+    "bag_number": 1,
+    "verbose_mode": true
+}

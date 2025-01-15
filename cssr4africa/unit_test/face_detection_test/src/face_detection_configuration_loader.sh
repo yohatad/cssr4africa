@@ -1,10 +1,16 @@
 #!/bin/bash
 
+# Check if jq is installed
+if ! command -v jq &> /dev/null; then
+    echo "Error: jq is not installed. Please install jq to continue."
+    exit 1
+fi
+
 # Set the ROS package path dynamically
 PACKAGE_PATH=$(rospack find face_detection_test)
 
 # Define the path to the configuration file
-CONFIG_FILE="$PACKAGE_PATH/config/face_detection_configuration.ini"
+CONFIG_FILE="$PACKAGE_PATH/config/face_detection_test_configuration.json"
 
 # Check if the configuration file exists
 if [ ! -f "$CONFIG_FILE" ]; then
@@ -12,9 +18,9 @@ if [ ! -f "$CONFIG_FILE" ]; then
     exit 1
 fi
 
-# Read and sanitize values from the configuration file
-CAMERA_TYPE=$(awk -F "=" '/camera/ {print $2}' "$CONFIG_FILE" | sed 's/#.*//' | xargs)
-BAG_NUMBER=$(awk -F "=" '/bag_number/ {print $2}' "$CONFIG_FILE" | sed 's/#.*//' | xargs)
+# Read and sanitize values from the configuration file using jq
+CAMERA_TYPE=$(jq -r '.camera' "$CONFIG_FILE")
+BAG_NUMBER=$(jq -r '.bag_number' "$CONFIG_FILE")
 
 # Validate the camera type
 if [ "$CAMERA_TYPE" != "realsense" ] && [ "$CAMERA_TYPE" != "pepper" ]; then

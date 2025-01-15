@@ -244,7 +244,7 @@ class Sort:
     SORT: Simple Online and Realtime Tracker.
     """
 
-    def __init__(self, max_age=1, min_hits=3, iou_threshold=0.3):
+    def __init__(self, max_age=5, min_hits=3, iou_threshold=0.3):
         """
         Initializes the SORT tracker.
 
