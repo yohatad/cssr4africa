@@ -42,7 +42,16 @@ class FaceDetectionNode:
         self.algorithm = self.config.get("algorithm", "mediapipe")
         self.pub_gaze = rospy.Publisher("/faceDetection/data", face_detection, queue_size=10)
         self.bridge = CvBridge()
+        self.color_image = None
         self.depth_image = None  # Initialize depth_image
+        self.save_directory = self.config.get("save_directory", "/tmp")
+        # Ensure the save directory exists
+        if not os.path.exists(self.save_directory):
+            os.makedirs(self.save_directory)
+
+        # Add a timer to save images after 5 seconds
+        rospy.Timer(rospy.Duration(5), self.timer_callback)
+        rospy.loginfo("Node initialized. Waiting for 5 seconds to capture and save images.")
 
     def subscribe_topics(self):
         camera_type = self.config.get("camera")
@@ -69,9 +78,43 @@ class FaceDetectionNode:
         self.image_sub = rospy.Subscriber(self.rgb_topic, Image, self.image_callback)
         self.depth_sub = rospy.Subscriber(self.depth_topic, Image, self.depth_callback)
 
+    # Saving the color image and depth image as .png files after specified time
+    def save_images(self):
+        """Save the color image and depth image."""
+        if self.color_image is None or self.depth_image is None:
+            rospy.logwarn("No images received yet! Cannot save.")
+            return
+
+        # Ensure both images have the same resolution
+        if not self.check_camera_resolution(self.color_image, self.depth_image):
+            rospy.logwarn("Color and depth images have different resolutions.")
+            return
+
+        # Create unique filenames
+        timestamp = rospy.get_time()
+        color_filename = os.path.join(self.save_directory, f"color_{timestamp}.png")
+        depth_filename = os.path.join(self.save_directory, f"depth_{timestamp}.png")
+
+        try:
+            # Save the color image
+            cv2.imwrite(color_filename, self.color_image)
+
+            # Normalize depth image to save as an 8-bit image
+            depth_image_to_save = np.uint8(self.depth_image * 255.0 / np.max(self.depth_image))  # Normalize to 0-255
+            cv2.imwrite(depth_filename, depth_image_to_save)
+
+            rospy.loginfo(f"Images saved: {color_filename}, {depth_filename}")
+        except Exception as e:
+            rospy.logerr(f"Error saving images: {e}")
+
+    def timer_callback(self, event):
+        """Callback triggered by the timer after 5 seconds."""
+        self.save_images()
+        pass
+
     # check if the depth camera and color camera have the same resolution.
-    def check_camera_resolution(self, rgb_image, depth_image):
-        rgb_h, rgb_w = rgb_image.shape[:2]
+    def check_camera_resolution(self, color_image, depth_image):
+        rgb_h, rgb_w = color_image.shape[:2]
         depth_h, depth_w = depth_image.shape[:2]
         return rgb_h == depth_h and rgb_w == depth_w
 
@@ -274,13 +317,14 @@ class MediaPipeFaceNode(FaceDetectionNode):
 
         # check if the depth camera and color camera have the same resolution.
         if self.depth_image is not None:
-            if not self.check_camera_resolution(self.latest_frame, self.depth_image):
+            if not self.check_camera_resolution(self.color_image, self.depth_image):
                 rospy.logerr("Color camera and depth camera have different resolutions.")
                 rospy.signal_shutdown("Resolution mismatch")
         
     def image_callback(self, data):
         frame = self.bridge.imgmsg_to_cv2(data, desired_encoding='bgr8')
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        self.color_image = frame.copy()
         img_h, img_w, _ = frame.shape
 
         # Process with face mesh
@@ -535,6 +579,7 @@ class SixDrepNet(FaceDetectionNode):
         try:
             # Convert the ROS image message to an OpenCV image
             cv_image = self.bridge.imgmsg_to_cv2(msg, 'bgr8')
+            self.color_image = cv_image.copy()
             
             # Process the frame
             self.latest_frame = self.process_frame(cv_image)

@@ -10,5 +10,6 @@
     "sort_max_disappeared": 5,
     "sort_min_hits": 3,
     "sort_iou_threshold": 0.3,
-    "verbose_mode": true
+    "verbose_mode": true,
+    "save_directory": "/home/yoha/workspace/pepper_rob_ws/src/cssr4africa/cssr_system/face_detection/data"
 }
