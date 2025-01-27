@@ -14,7 +14,7 @@ from face_detection_test_implementation import FaceDetectionTest
 def main():
     # Define the node name and software version
     node_name = "face_detection_test"
-    software_version = " v1.0"  # Replace with the actual software version
+    software_version = "v1.0"  # Replace with the actual software version
 
     # Construct the copyright message
     copyright_message = (
@@ -36,6 +36,8 @@ def main():
     test = FaceDetectionTest()
     test.run_tests()
 
+    # IMPORTANT: Keep the node alive so callbacks can be triggered
+    rospy.spin()
 
 if __name__ == '__main__':
     main()

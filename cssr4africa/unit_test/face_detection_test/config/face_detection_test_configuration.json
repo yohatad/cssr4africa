@@ -1,6 +1,11 @@
 {
     "camera": "realsense",
     "algorithm": "sixdrep",
-    "bag_number": 1,
+    "use_robot_camera": false,
+    "video_file": 1,
+    "save_video": false,
+    "save_image": false,
+    "video_duration": 10,
+    "image_interval": 5,
     "verbose_mode": true
 }
