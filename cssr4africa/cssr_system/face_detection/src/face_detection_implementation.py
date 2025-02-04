@@ -322,6 +322,7 @@ class MediaPipeFaceNode(FaceDetectionNode):
                 rospy.signal_shutdown("Resolution mismatch")
         
     def image_callback(self, data):
+        """Callback to receive the color image."""
         frame = self.bridge.imgmsg_to_cv2(data, desired_encoding='bgr8')
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         self.color_image = frame.copy()
