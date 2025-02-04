@@ -80,7 +80,7 @@ After setting up the right configuration, run the following command.
 
 2. Then run the Face and gaze detection and Localization.
     ```sh
-    rosrun face_detection faceDetectionApplication.py
+    rosrun face_detection face_detection_application.py
     ```
 
 ## Output
