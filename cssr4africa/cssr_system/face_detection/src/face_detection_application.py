@@ -4,7 +4,7 @@
 face_detection_application.py Application code to run the face and mutual gaze detection algorithm.
 
 Author: Yohannes Tadesse Haile
-Date: December 15, 2024
+Date: February 15, 2024
 Version: v1.0
 
 Copyright (C) 2023 CSSR4Africa Consortium
@@ -89,12 +89,12 @@ Example of instantiation of the module
 
 Author: Yohannes Tadesse Haile
 Email: yohanneh@andrew.cmu.edu
-Date: December 15, 2024
+Date: February 15, 2024
 Version: v1.0
 """
 
 import rospy
-from face_detection_implementation import MediaPipeFaceNode, SixDrepNet, FaceDetectionNode
+from face_detection_implementation import MediaPipeFace, SixDrepNet, FaceDetectionNode
 
 def main():
     # Define the node name and software version
@@ -116,13 +116,16 @@ def main():
     rospy.loginfo(f"{node_name}: startup.")
     
     config = FaceDetectionNode.read_json_file()
-    algorthim = config.get('algorithm', 'mediapipe')
+    
+    # Set the config as a ros parameter
+    rospy.set_param('face_detection_config', config)
+    algorthim = rospy.get_param('face_detection_config/algorithm')
 
     if algorthim == 'mediapipe':
-        face_detection = MediaPipeFaceNode(config)
+        face_detection = MediaPipeFace()
         face_detection.spin()
     elif algorthim == 'sixdrep':
-        face_detection = SixDrepNet(config)
+        face_detection = SixDrepNet()
         face_detection.spin()
     else:
         rospy.logerr("Invalid algorithm selected. Exiting...")

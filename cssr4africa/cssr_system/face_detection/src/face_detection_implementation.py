@@ -2,7 +2,7 @@
 face_detection_implementation.py Implementation code for running the face and Head Pose detection algorithm
 
 Author: Yohannes Tadesse Haile
-Date: December 15, 2024
+Date: February 15, 2024
 Version: v1.0
 
 Copyright (C) 2023 CSSR4Africa Consortium
@@ -33,28 +33,17 @@ from face_detection.msg import face_detection
 from face_detection_tracking import Sort, CentroidTracker
 
 class FaceDetectionNode:
-    def __init__(self, config=None):
-        if config is not None:
-            self.config = config
-        else:
-            self.config = self.read_json_file()
-        
-        self.algorithm = self.config.get("algorithm", "mediapipe")
+    def __init__(self):     
         self.pub_gaze = rospy.Publisher("/faceDetection/data", face_detection, queue_size=10)
         self.bridge = CvBridge()
-        self.color_image = None
         self.depth_image = None  # Initialize depth_image
-        self.save_directory = self.config.get("save_directory", "/tmp")
+        self.save_directory = rospy.get_param('face_detection_config/save_directory', "/tmp")
         # Ensure the save directory exists
         if not os.path.exists(self.save_directory):
             os.makedirs(self.save_directory)
 
-        # Add a timer to save images after 5 seconds
-        rospy.Timer(rospy.Duration(5), self.timer_callback)
-        rospy.loginfo("Node initialized. Waiting for 5 seconds to capture and save images.")
-
     def subscribe_topics(self):
-        camera_type = self.config.get("camera")
+        camera_type = rospy.get_param('face_detection_config/camera')
         if camera_type == "realsense":
             self.rgb_topic = self.extract_topics("RealSenseCameraRGB")
             self.depth_topic = self.extract_topics("RealSenseCameraDepth")
@@ -77,40 +66,6 @@ class FaceDetectionNode:
 
         self.image_sub = rospy.Subscriber(self.rgb_topic, Image, self.image_callback)
         self.depth_sub = rospy.Subscriber(self.depth_topic, Image, self.depth_callback)
-
-    # Saving the color image and depth image as .png files after specified time
-    def save_images(self):
-        """Save the color image and depth image."""
-        if self.color_image is None or self.depth_image is None:
-            rospy.logwarn("No images received yet! Cannot save.")
-            return
-
-        # Ensure both images have the same resolution
-        if not self.check_camera_resolution(self.color_image, self.depth_image):
-            rospy.logwarn("Color and depth images have different resolutions.")
-            return
-
-        # Create unique filenames
-        timestamp = rospy.get_time()
-        color_filename = os.path.join(self.save_directory, f"color_{timestamp}.png")
-        depth_filename = os.path.join(self.save_directory, f"depth_{timestamp}.png")
-
-        try:
-            # Save the color image
-            cv2.imwrite(color_filename, self.color_image)
-
-            # Normalize depth image to save as an 8-bit image
-            depth_image_to_save = np.uint8(self.depth_image * 255.0 / np.max(self.depth_image))  # Normalize to 0-255
-            cv2.imwrite(depth_filename, depth_image_to_save)
-
-            rospy.loginfo(f"Images saved: {color_filename}, {depth_filename}")
-        except Exception as e:
-            rospy.logerr(f"Error saving images: {e}")
-
-    def timer_callback(self, event):
-        """Callback triggered by the timer after 5 seconds."""
-        self.save_images()
-        pass
 
     # check if the depth camera and color camera have the same resolution.
     def check_camera_resolution(self, color_image, depth_image):
@@ -289,13 +244,14 @@ class FaceDetectionNode:
 
         # Publish the message
         self.pub_gaze.publish(face_msg)
-class MediaPipeFaceNode(FaceDetectionNode):
-    def __init__(self, config):
-        super().__init__(config)
+class MediaPipeFace(FaceDetectionNode):
+    def __init__(self):
+        
+        super().__init__()
         # Initialize MediaPipe components
         self.mp_face_mesh = mp.solutions.face_mesh
-        self.face_mesh = self.mp_face_mesh.FaceMesh(self.config.get("mediapipe_confidence", 0.5), max_num_faces=10)
-        
+        self.face_mesh = self.mp_face_mesh.FaceMesh(rospy.get_param("/face_detection_config/mediapipe_confidence", 0.5), max_num_faces=10)
+
         self.mp_face_detection = mp.solutions.face_detection
         self.face_detection = self.mp_face_detection.FaceDetection(model_selection=1, min_detection_confidence=0.5)
         
@@ -303,11 +259,11 @@ class MediaPipeFaceNode(FaceDetectionNode):
         self.drawing_spec = self.mp_drawing.DrawingSpec(color=(128, 128, 128), thickness=1, circle_radius=1)
 
         # Initialize the CentroidTracker
-        self.centroid_tracker = CentroidTracker(self.config.get("max_disappeared", 15), self.config.get("distance_threshold", 100))
+        self.centroid_tracker = CentroidTracker(rospy.get_param("/face_detection_config/max_disappeared", 15), rospy.get_param("/face_detection_config/distance_threshold", 100))
         
         self.latest_frame = None
 
-        self.verbose_mode = bool(self.config.get("verbose_mode", False))
+        self.verbose_mode = bool(rospy.get_param("/face_detection_config/verbose_mode", False))
 
         # Timer for printing message every 5 seconds
         self.timer = rospy.get_time()
@@ -325,7 +281,6 @@ class MediaPipeFaceNode(FaceDetectionNode):
         """Callback to receive the color image."""
         frame = self.bridge.imgmsg_to_cv2(data, desired_encoding='bgr8')
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        self.color_image = frame.copy()
         img_h, img_w, _ = frame.shape
 
         # Process with face mesh
@@ -399,7 +354,7 @@ class MediaPipeFaceNode(FaceDetectionNode):
                 x_angle = angles[0] * 360
                 y_angle = angles[1] * 360
 
-                mp_angle = self.config.get('mp_headpose_angle', 5)
+                mp_angle = rospy.get_param("/face_detection_config/mp_headpose_angle", 5)
 
                 mutualGaze = abs(x_angle) <= mp_angle and abs(y_angle) <= mp_angle
                 mutualGaze_list.append(mutualGaze)
@@ -484,10 +439,9 @@ class YOLOONNX:
         return np.array(result_boxes), np.array(result_scores)
 
 class SixDrepNet(FaceDetectionNode):
-    def __init__(self, config):
-        super().__init__(config)
-        self.initialized = False
-        self.verbose_mode = self.config.get("verbose_mode", False)
+    def __init__(self):
+        super().__init__()
+        self.verbose_mode = rospy.get_param("/face_detection_config/verbose_mode", False)
 
         if self.verbose_mode:
             rospy.loginfo("Initializing SixDrepNet...")
@@ -506,7 +460,7 @@ class SixDrepNet(FaceDetectionNode):
 
         # Initialize YOLOONNX model early and check success
         try:
-            self.yolo_model = YOLOONNX(model_path=yolo_model_path, class_score_th = self.config.get("sixdrepnet_confidence", 0.65))
+            self.yolo_model = YOLOONNX(model_path=yolo_model_path, class_score_th = rospy.get_param("/face_detection_config/sixdrepnet_confidence", 0.65))
             if self.verbose_mode:
                 rospy.loginfo("YOLOONNX model initialized successfully.")
         except Exception as e:
@@ -546,8 +500,6 @@ class SixDrepNet(FaceDetectionNode):
         self.sort_tracker = Sort(max_age=5, min_hits=3, iou_threshold=0.3)
         self.tracks = [] 
         
-        # Mark initialization as complete
-        self.initialized = True
         if self.verbose_mode:
             rospy.loginfo("SixDrepNet initialization complete.")
 
@@ -572,15 +524,10 @@ class SixDrepNet(FaceDetectionNode):
         cv2.line(img, (int(tdx), int(tdy)), (int(x2), int(y2)), (0, 255, 0), 2)
         cv2.line(img, (int(tdx), int(tdy)), (int(x3), int(y3)), (255, 0, 0), 2)
 
-    def image_callback(self, msg):
-        if not self.initialized:
-            rospy.logwarn("SixDrepNet is not fully initialized; skipping image callback.")
-            return  # Skip processing if initialization is incomplete
-             
+    def image_callback(self, msg):            
         try:
             # Convert the ROS image message to an OpenCV image
             cv_image = self.bridge.imgmsg_to_cv2(msg, 'bgr8')
-            self.color_image = cv_image.copy()
             
             # Process the frame
             self.latest_frame = self.process_frame(cv_image)
@@ -648,7 +595,7 @@ class SixDrepNet(FaceDetectionNode):
             cz = self.get_depth_in_region(cx, cy, x2 - x1, y2 - y1)
 
             # Track additional metadata
-            sixdrep_angle = self.config.get('sixdrepnet_headpose_angle', 10)
+            sixdrep_angle = rospy.get_param("/face_detection_config/sixdrepnet_headpose_angle", 10)
             mutual_gaze = abs(yaw_deg) < sixdrep_angle and abs(pitch_deg) < sixdrep_angle
             tracking_data.append({
                 'face_id': str(face_id),
