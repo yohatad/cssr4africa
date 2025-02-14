@@ -29,12 +29,12 @@ from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 from geometry_msgs.msg import Point
 from typing import Tuple, List
-from face_detection.msg import face_detection
+from face_detection.msg import msg_file
 from face_detection_tracking import Sort, CentroidTracker
 
 class FaceDetectionNode:
     def __init__(self):     
-        self.pub_gaze = rospy.Publisher("/faceDetection/data", face_detection, queue_size=10)
+        self.pub_gaze = rospy.Publisher("/faceDetection/data", msg_file, queue_size=10)
         self.bridge = CvBridge()
         self.depth_image = None  # Initialize depth_image
         self.save_directory = rospy.get_param('face_detection_config/save_directory', "/tmp")
@@ -194,7 +194,7 @@ class FaceDetectionNode:
             return None
 
         # Calculate scaled region dimensions
-        region_width = int(box_width * region_scale)
+        region_width  = int(box_width * region_scale)
         region_height = int(box_height * region_scale)
 
         # Calculate the top-left corner of the scaled region
@@ -235,7 +235,7 @@ class FaceDetectionNode:
 
     def publish_face_detection(self, tracking_data):
         """Publish the face detection results."""
-        face_msg = face_detection()
+        face_msg = msg_file()
 
         # Initialize lists for each attribute in the message
         face_msg.face_label_id = [data['face_id'] for data in tracking_data]
