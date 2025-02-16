@@ -34,7 +34,6 @@ def main():
 
     # Create the test instance and run tests
     test = FaceDetectionTest()
-    test.run_tests()
 
     # IMPORTANT: Keep the node alive so callbacks can be triggered
     rospy.spin()

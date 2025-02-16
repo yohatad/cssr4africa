@@ -1,0 +1,4 @@
+<launch>
+    <!-- Start the video publisher node -->
+    <node pkg="face_detection_test" type="face_detection_test_driver.py" name="video_publisher" output="screen"/>
+</launch>

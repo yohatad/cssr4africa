@@ -3,7 +3,7 @@
   <version>0.0.0</version>
   <description>The face_detection test package</description>
 
-  <maintainer email="user@todo.todo">TODO: Maintainer Name</maintainer>
+  <maintainer email="yohanneh@andrew.cmu.edu">TODO: Maintainer Name</maintainer>
 
   <license>TODO: License declaration</license>
 
@@ -20,6 +20,5 @@
   <exec_depend>sensor_msgs</exec_depend>
   <exec_depend>cv_bridge</exec_depend>
   <exec_depend>geometry_msgs</exec_depend>
-
-
+  
 </package>

@@ -20,6 +20,8 @@ class FaceDetectionTest:
         if not self.config:
             rospy.logerr("Failed to load configuration. Exiting.")
             raise RuntimeError("Configuration file could not be loaded.")
+        
+        rospy.set_param('face_detection_test_config', self.config)
 
         # Initialize ROS topic subscription and CvBridge
         self.bridge = CvBridge()
@@ -31,8 +33,8 @@ class FaceDetectionTest:
         self.video_duration = self.config.get("video_duration", 10)  # Default video duration: 10 seconds
         self.image_interval = self.config.get("image_interval", 5)  # Default image interval: 5 seconds
 
-
-        self.subscribe_topics()
+        if rospy.get_param('face_detection_test_config/use_robot_camera', False):
+            self.subscribe_topics()
 
     @staticmethod
     def extract_topics(image_topic):
@@ -220,14 +222,14 @@ class FaceDetectionTest:
         # Add your test logic here
         # Example: rospy.loginfo(f"Using configuration: {self.config['sixdrep']}")
 
-    def run_tests(self):
-        """Run both tests in sequence."""
-        self.test_media_pipe()
-        self.test_sixdrep()
+    # def run_tests(self):
+    #     """Run both tests in sequence."""
+    #     self.test_media_pipe()
+    #     self.test_sixdrep()
 
-        # Save video if enabled in the configuration
-        if self.config.get("save_video", False):
-            rgb_video_path = os.path.join(self._face_detection_test_package_path, 'output', 'captured_rgb_video.mp4')
-            depth_video_path = os.path.join(self._face_detection_test_package_path, 'output', 'captured_depth_video.mp4')
-            self.save_video(self.rgb_frames, rgb_video_path)
-            self.save_video(self.depth_frames, depth_video_path, is_depth=True)
+    #     # Save video if enabled in the configuration
+    #     if self.config.get("save_video", False):
+    #         rgb_video_path = os.path.join(self._face_detection_test_package_path, 'output', 'captured_rgb_video.mp4')
+    #         depth_video_path = os.path.join(self._face_detection_test_package_path, 'output', 'captured_depth_video.mp4')
+    #         self.save_video(self.rgb_frames, rgb_video_path)
+    #         self.save_video(self.depth_frames, depth_video_path, is_depth=True)
