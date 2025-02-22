@@ -50,7 +50,6 @@ class PersonDetectionNode:
             rospy.logerr("Invalid camera type specified")
             rospy.signal_shutdown("Invalid camera type specified")
 
-
         self.image_sub = rospy.Subscriber(self.rgb_topic, Image, self.image_callback)
         self.depth_sub = rospy.Subscriber(self.depth_topic, Image, self.depth_callback)
 
@@ -415,7 +414,6 @@ class YOLOv8ROS(PersonDetectionNode):
         y[..., 3] = x[..., 1] + x[..., 3] / 2
         return y
 
-
     def draw_detections(self, image, boxes, scores, class_ids, mask_alpha=0.3):
         det_img = image.copy()
 
@@ -436,8 +434,7 @@ class YOLOv8ROS(PersonDetectionNode):
             self.draw_text(det_img, caption, box, color, font_size, text_thickness)
 
         return det_img
-
-
+    
     def draw_box(self, image: np.ndarray, box: np.ndarray, color: tuple[int, int, int] = (0, 0, 255),
                 thickness: int = 2) -> np.ndarray:
         x1, y1, x2, y2 = box.astype(int)
@@ -456,7 +453,7 @@ class YOLOv8ROS(PersonDetectionNode):
 
         return cv2.putText(image, text, (x1, y1), cv2.FONT_HERSHEY_SIMPLEX, font_size, (255, 255, 255), text_thickness, cv2.LINE_AA)
 
-    def draw_masks(image: np.ndarray, boxes: np.ndarray, classes: np.ndarray, mask_alpha: float = 0.3) -> np.ndarray:
+    def draw_masks(self, image: np.ndarray, boxes: np.ndarray, classes: np.ndarray, mask_alpha: float = 0.3) -> np.ndarray:
         mask_img = image.copy()
 
         # Draw bounding boxes and labels of detections
