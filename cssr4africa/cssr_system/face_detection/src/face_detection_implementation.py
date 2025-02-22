@@ -24,6 +24,7 @@ import os
 import onnxruntime
 import multiprocessing
 import json
+import random
 from math import cos, sin, pi
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
@@ -37,13 +38,9 @@ class FaceDetectionNode:
         self.pub_gaze = rospy.Publisher("/faceDetection/data", msg_file, queue_size=10)
         self.bridge = CvBridge()
         self.depth_image = None  # Initialize depth_image
-        self.save_directory = rospy.get_param('face_detection_config/save_directory', "/tmp")
-        # Ensure the save directory exists
-        if not os.path.exists(self.save_directory):
-            os.makedirs(self.save_directory)
 
     def subscribe_topics(self):
-        camera_type = rospy.get_param('face_detection_config/camera')
+        camera_type = rospy.get_param('/faceDetection/camera')
         if camera_type == "realsense":
             self.rgb_topic = self.extract_topics("RealSenseCameraRGB")
             self.depth_topic = self.extract_topics("RealSenseCameraDepth")
@@ -222,16 +219,13 @@ class FaceDetectionNode:
         # Extract the region of interest
         depth_roi = self.depth_image[y_start:y_end, x_start:x_end]
 
-        # Filter out invalid depth values (e.g., zeros or NaNs)
+        # Filter out invalid depth values (e.g., zeros or NaNs
         valid_depth_values = depth_roi[np.isfinite(depth_roi) & (depth_roi > 0)]
 
         if valid_depth_values.size > 0:
             # Calculate the average depth and convert to meters if needed
             average_depth_in_meters = np.mean(valid_depth_values) / 1000.0
             return average_depth_in_meters
-        else:
-            rospy.logwarn(f"No valid depth values in the region ({x_start}, {y_start}, {x_end}, {y_end}).")
-            return None
 
     def publish_face_detection(self, tracking_data):
         """Publish the face detection results."""
@@ -244,13 +238,13 @@ class FaceDetectionNode:
 
         # Publish the message
         self.pub_gaze.publish(face_msg)
-class MediaPipeFace(FaceDetectionNode):
+class MediaPipe(FaceDetectionNode):
     def __init__(self):
         
         super().__init__()
         # Initialize MediaPipe components
         self.mp_face_mesh = mp.solutions.face_mesh
-        self.face_mesh = self.mp_face_mesh.FaceMesh(rospy.get_param("/face_detection_config/mediapipe_confidence", 0.5), max_num_faces=10)
+        self.face_mesh = self.mp_face_mesh.FaceMesh(rospy.get_param("/faceDetection_config/mediapipe_confidence", 0.5), max_num_faces=10)
 
         self.mp_face_detection = mp.solutions.face_detection
         self.face_detection = self.mp_face_detection.FaceDetection(model_selection=1, min_detection_confidence=0.5)
@@ -259,11 +253,10 @@ class MediaPipeFace(FaceDetectionNode):
         self.drawing_spec = self.mp_drawing.DrawingSpec(color=(128, 128, 128), thickness=1, circle_radius=1)
 
         # Initialize the CentroidTracker
-        self.centroid_tracker = CentroidTracker(rospy.get_param("/face_detection_config/max_disappeared", 15), rospy.get_param("/face_detection_config/distance_threshold", 100))
-        
+        self.centroid_tracker = CentroidTracker(rospy.get_param("/faceDetection_config/max_disappeared", 15), rospy.get_param("/faceDetection_config/distance_threshold", 100))
         self.latest_frame = None
 
-        self.verbose_mode = bool(rospy.get_param("/face_detection_config/verbose_mode", False))
+        self.verbose_mode = bool(rospy.get_param("/faceDetection_config/verbose_mode", False))
 
         # Timer for printing message every 5 seconds
         self.timer = rospy.get_time()
@@ -320,18 +313,26 @@ class MediaPipeFace(FaceDetectionNode):
         results = self.face_mesh.process(rgb_frame)
         centroids = []
         mutualGaze_list = []
+        
+        # Dictionary to store face ID colors
+        if not hasattr(self, "face_colors"):
+            self.face_colors = {}
 
         if results.multi_face_landmarks:
             for face_id, face_landmarks in enumerate(results.multi_face_landmarks):
                 face_2d, face_3d = [], []
+                x_min, y_min, x_max, y_max = img_w, img_h, 0, 0  # Bounding box coordinates
 
                 for idx, lm in enumerate(face_landmarks.landmark):
-                    if idx in [33, 263, 1, 61, 291, 199]:
-                        if idx == 1:
-                            nose_2d = (lm.x * img_w, lm.y * img_h)
-                        x, y = int(lm.x * img_w), int(lm.y * img_h)
-                        face_2d.append([x, y])
-                        face_3d.append([x, y, lm.z])
+                    x, y = int(lm.x * img_w), int(lm.y * img_h)
+                    face_2d.append([x, y])
+                    face_3d.append([x, y, lm.z])
+
+                    # Expand bounding box
+                    x_min = min(x_min, x)
+                    y_min = min(y_min, y)
+                    x_max = max(x_max, x)
+                    y_max = max(y_max, y)
 
                 centroid_x = np.mean([pt[0] for pt in face_2d])
                 centroid_y = np.mean([pt[1] for pt in face_2d])
@@ -342,8 +343,8 @@ class MediaPipeFace(FaceDetectionNode):
 
                 focal_length = 1 * img_w
                 cam_matrix = np.array([[focal_length, 0, img_w / 2],
-                                        [0, focal_length, img_h / 2],
-                                        [0, 0, 1]])
+                                    [0, focal_length, img_h / 2],
+                                    [0, 0, 1]])
                 distortion_matrix = np.zeros((4, 1), dtype=np.float64)
 
                 success, rotation_vec, translation_vec = cv2.solvePnP(
@@ -354,42 +355,46 @@ class MediaPipeFace(FaceDetectionNode):
                 x_angle = angles[0] * 360
                 y_angle = angles[1] * 360
 
-                mp_angle = rospy.get_param("/face_detection_config/mp_headpose_angle", 5)
+                mp_angle = rospy.get_param("/faceDetection_config/mp_headpose_angle", 5)
 
                 mutualGaze = abs(x_angle) <= mp_angle and abs(y_angle) <= mp_angle
                 mutualGaze_list.append(mutualGaze)
 
-                p1 = (int(nose_2d[0]), int(nose_2d[1]))
-                p2 = (int(nose_2d[0] + y_angle * 10),
-                    int(nose_2d[1] - x_angle * 10))
-                cv2.line(frame, p1, p2, (255, 0, 0), 3)
+            # Use the centroid tracker to match centroids with object IDs
+            centroid_to_face_id = self.centroid_tracker.match_centroids(centroids)
 
-                label = f"{'Forward' if mutualGaze else 'Not Forward'}"
-                cv2.putText(frame, label, (int(centroid_x), int(
-                    centroid_y) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+            tracking_data = []
+            for idx, centroid in enumerate(centroids):
+                centroid_tuple = tuple(centroid)
+                face_id = centroid_to_face_id.get(centroid_tuple, None)
 
-        # Use the centroid tracker to match centroids with object IDs
-        centroid_to_face_id = self.centroid_tracker.match_centroids(centroids)
+                # Assign a random color for a new face or lost tracking
+                if face_id is None or face_id not in self.face_colors:
+                    self.face_colors[face_id] = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
 
-        tracking_data = []
-        for idx, centroid in enumerate(centroids):
-            centroid_tuple = tuple(centroid)
-            face_id = centroid_to_face_id.get(centroid_tuple, None)
+                face_color = self.face_colors[face_id]
 
-            cz = self.get_depth_at_centroid(centroid[0], centroid[1])
-            point = Point(x=float(centroid[0]), y=float(centroid[1]), z=float(cz) if cz else 0.0)
+                cz = self.get_depth_at_centroid(centroid[0], centroid[1])
+                point = Point(x=float(centroid[0]), y=float(centroid[1]), z=float(cz) if cz else 0.0)
 
-            tracking_data.append({
-                'face_id': str(face_id),
-                'centroid': point,
-                'mutual_gaze': bool(mutualGaze_list[idx])
-            })
+                tracking_data.append({
+                    'face_id': str(face_id),
+                    'centroid': point,
+                    'mutual_gaze': bool(mutualGaze_list[idx])
+                })
 
-            cv2.putText(frame, f"Face: {face_id}", (int(centroid[0]), int(
-                centroid[1]) - 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
-            cv2.circle(frame, (int(centroid[0]), int(centroid[1])), 4, (0, 255, 0), -1)
+                # Draw bounding box with assigned color
+                cv2.rectangle(frame, (x_min, y_min), (x_max, y_max), face_color, 2)
 
-        self.publish_face_detection(tracking_data)
+                # Add label above bounding box
+                label = "Engaged" if mutualGaze_list[idx] else "Not Engaged"
+                cv2.putText(frame, label, (x_min, y_min - 10),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.7, face_color, 2)
+
+                cv2.putText(frame, f"Face: {face_id}", (x_min, y_min - 30),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.7, face_color, 2)
+
+            self.publish_face_detection(tracking_data)
 class YOLOONNX:
     def __init__(self, model_path: str, class_score_th: float = 0.65,
         providers: List[str] = ['CUDAExecutionProvider', 'CPUExecutionProvider']):
@@ -441,7 +446,7 @@ class YOLOONNX:
 class SixDrepNet(FaceDetectionNode):
     def __init__(self):
         super().__init__()
-        self.verbose_mode = rospy.get_param("/face_detection_config/verbose_mode", False)
+        self.verbose_mode = rospy.get_param("/faceDetection_config/verbose_mode", False)
 
         if self.verbose_mode:
             rospy.loginfo("Initializing SixDrepNet...")
@@ -460,7 +465,7 @@ class SixDrepNet(FaceDetectionNode):
 
         # Initialize YOLOONNX model early and check success
         try:
-            self.yolo_model = YOLOONNX(model_path=yolo_model_path, class_score_th = rospy.get_param("/face_detection_config/sixdrepnet_confidence", 0.65))
+            self.yolo_model = YOLOONNX(model_path=yolo_model_path, class_score_th = rospy.get_param("/faceDetection_config/sixdrepnet_confidence", 0.65))
             if self.verbose_mode:
                 rospy.loginfo("YOLOONNX model initialized successfully.")
         except Exception as e:
@@ -541,7 +546,6 @@ class SixDrepNet(FaceDetectionNode):
             rospy.logerr("CvBridge Error: {}".format(e))
 
     def process_frame(self, cv_image):
-        
         """
         Process the input frame for face detection and head pose estimation using SORT.
         Args: 
@@ -550,6 +554,10 @@ class SixDrepNet(FaceDetectionNode):
         debug_image = cv_image.copy()
         img_h, img_w = debug_image.shape[:2]
         tracking_data = []
+
+        # Dictionary to store face ID colors
+        if not hasattr(self, "face_colors"):
+            self.face_colors = {}
 
         # Object detection (YOLO)
         boxes, scores = self.yolo_model(debug_image)
@@ -573,7 +581,12 @@ class SixDrepNet(FaceDetectionNode):
         for track in self.tracks:
             x1, y1, x2, y2, face_id = map(int, track)  # SORT returns face_id as the last value
             cx, cy = (x1 + x2) // 2, (y1 + y2) // 2
-            
+
+            # Assign a unique color for each face ID
+            if face_id not in self.face_colors:
+                self.face_colors[face_id] = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+
+            face_color = self.face_colors[face_id]
 
             # Crop the face region for head pose estimation
             head_image = debug_image[max(y1, 0):min(y2, img_h), max(x1, 0):min(x2, img_w)]
@@ -594,26 +607,31 @@ class SixDrepNet(FaceDetectionNode):
 
             cz = self.get_depth_in_region(cx, cy, x2 - x1, y2 - y1)
 
-            # Track additional metadata
-            sixdrep_angle = rospy.get_param("/face_detection_config/sixdrepnet_headpose_angle", 10)
+            # Determine if the person is engaged
+            sixdrep_angle = rospy.get_param("/faceDetection_config/sixdrepnet_headpose_angle", 10)
             mutual_gaze = abs(yaw_deg) < sixdrep_angle and abs(pitch_deg) < sixdrep_angle
+
             tracking_data.append({
                 'face_id': str(face_id),
                 'centroid': Point(x=float(cx), y=float(cy), z=float(cz) if cz else 0.0),
                 'mutual_gaze': mutual_gaze
             })
 
-            # Draw bounding box and additional information
-            cv2.rectangle(debug_image, (x1, y1), (x2, y2), (0, 255, 0), 2)
-            cv2.putText(debug_image, f"Face: {face_id}", (x1 + 10, y1 - 10),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
-            cv2.putText(debug_image, f"{'Forward' if mutual_gaze else 'Not Forward'}", (x1 + 10, y2 + 20),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
-        
+            # Draw bounding box with assigned color
+            cv2.rectangle(debug_image, (x1, y1), (x2, y2), face_color, 2)
+
+            # Add labels above bounding box
+            label = "Engaged" if mutual_gaze else "Not Engaged"
+            cv2.putText(debug_image, label, (x1 + 10, y1 - 10),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, face_color, 2)
+
+            cv2.putText(debug_image, f"Face: {face_id}", (x1 + 10, y1 - 30),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, face_color, 2)
+
         # Publish tracking data
         self.publish_face_detection(tracking_data)
         return debug_image
-    
+ 
     def spin(self):
         """Main loop to display processed frames and depth images."""
         rate = rospy.Rate(30)  # Adjust the rate as needed
