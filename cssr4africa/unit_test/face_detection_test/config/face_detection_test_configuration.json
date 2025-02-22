@@ -1,9 +1,9 @@
-{
-    "video_file": 1,
+{   "algorthim": "sixdrep",
+    "bag_file": "singleFace", 
     "save_video": false,
-    "save_image": false,
-    "video_name": "output.mp4",
+    "save_image": false, 
     "video_duration": 10,
     "image_interval": 5,
+    "speaker": true,
     "verbose_mode": false
 }

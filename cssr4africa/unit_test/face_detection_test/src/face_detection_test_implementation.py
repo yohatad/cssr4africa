@@ -11,36 +11,41 @@ class FaceDetectionTest:
         """
         Initialize the FaceDetectionTest class.
         """
-        self._rospack = rospkg.RosPack()
-        self._face_detection_test_package_path = self._rospack.get_path('face_detection_test')
-        self._face_detection_package_path = self._rospack.get_path('face_detection')
+        self.rospack = rospkg.RosPack()
+        self.face_detection_test_package_path = self.rospack.get_path('face_detection_test')
+        self.face_detection_package_path = self.rospack.get_path('face_detection') 
 
         # Read the configuration file
-        self.config = self.read_json_file()
+        self.config = self.read_json_file(self.face_detection_test_package_path)
         if not self.config:
             rospy.logerr("Failed to load configuration. Exiting.")
             raise RuntimeError("Configuration file could not be loaded.")
         
+        # Get the algorthim to test from the configuration file
+        self.algorithm = self.config.get("algorithm")
+
+        # Update the configuration file with the algorithm to test
+        self.update_json_file({"algorithm": self.algorithm, "verbose_mode": True})
         rospy.set_param('face_detection_test_config', self.config)
 
         # Initialize ROS topic subscription and CvBridge
         self.bridge = CvBridge()
-        self.rgb_frames = []  # For saving RGB video
-        self.depth_frames = []  # For saving Depth video
+        self.rgb_frames = []        # For saving RGB video
+        self.depth_frames = []      # For saving Depth video
         self.image_topic = None
         self.start_time = None
         self.image_save_time = None
         self.video_duration = self.config.get("video_duration", 10)  # Default video duration: 10 seconds
         self.image_interval = self.config.get("image_interval", 5)  # Default image interval: 5 seconds
 
-        if rospy.get_param('face_detection_test_config/use_robot_camera', False):
+        if rospy.get_param('/faceDetection/camera') == "realsense" or rospy.get_param('/faceDetection/camera') == "pepper":
             self.subscribe_topics()
 
     @staticmethod
     def extract_topics(image_topic):
         rospack = rospkg.RosPack()
         try:
-            package_path = rospack.get_path('face_detection')
+            package_path = rospack.get_path('face_detection_test')
             config_path = os.path.join(package_path, 'data', 'pepper_topics.dat')
 
             if os.path.exists(config_path):
@@ -57,10 +62,10 @@ class FaceDetectionTest:
         except rospkg.ResourceNotFound as e:
             rospy.logerr(f"ROS package 'face_detection' not found: {e}")
 
-    def read_json_file(self):
+    def read_json_file(self, package_path):
         """Read the configuration file and return the parsed JSON object."""
         try:
-            config_path = os.path.join(self._face_detection_test_package_path, 'config', 'face_detection_test_configuration.json')
+            config_path = os.path.join(package_path, 'config', 'face_detection_test_configuration.json')
             if os.path.exists(config_path):
                 with open(config_path, 'r') as file:
                     config = json.load(file)
@@ -72,8 +77,53 @@ class FaceDetectionTest:
             rospy.logerr(f"read_json_file: Error decoding JSON file: {e}")
             return None
 
+    def update_json_file(self, updates):
+        """
+        Update multiple key-value pairs in the JSON configuration file.
+
+        Args:
+            package_path (str): Path to the package directory.
+            updates (dict): Dictionary of key-value pairs to update.
+
+        Returns:
+            bool: True if update was successful, False otherwise.
+        """
+        try:
+            config_path = os.path.join(self.face_detection_package_path, 'config', 'face_detection_configuration.json')
+
+            # Check if file exists
+            if not os.path.exists(config_path):
+                rospy.logerr(f"update_json_file: Configuration file not found at {config_path}")
+                return False
+
+            # Read existing JSON file
+            with open(config_path, 'r') as file:
+                try:
+                    config = json.load(file)
+                except json.JSONDecodeError as e:
+                    rospy.logerr(f"update_json_file: Error decoding JSON file: {e}")
+                    return False
+
+            # Update only existing keys to avoid accidental additions
+            for key, value in updates.items():
+                if key in config:
+                    config[key] = value
+                else:
+                    rospy.logwarn(f"update_json_file: Key '{key}' not found in the JSON file. Skipping update.")
+
+            # Write the updated data back to the JSON file
+            with open(config_path, 'w') as file:
+                json.dump(config, file, indent=4)  # Pretty formatting for readability
+
+            rospy.loginfo(f"update_json_file: Successfully updated keys: {list(updates.keys())}")
+            return True
+
+        except Exception as e:
+            rospy.logerr(f"update_json_file: Unexpected error: {e}")
+            return False
+
     def subscribe_topics(self):
-        camera_type = self.config.get("camera")
+        camera_type = rospy.get_param('/faceDetectionTest/camera')
         if camera_type == "realsense":
             self.rgb_topic = self.extract_topics("RealSenseCameraRGB")
             self.depth_topic = self.extract_topics("RealSenseCameraDepth")
@@ -116,7 +166,7 @@ class FaceDetectionTest:
                 # Check if the video duration has been reached
                 elapsed_time = time.time() - self.start_time
                 if elapsed_time >= self.video_duration:
-                    video_path = os.path.join(self._face_detection_test_package_path, 'data', f'captured_rgb_video_{int(self.start_time)}.mp4')
+                    video_path = os.path.join(self.face_detection_test_package_path, 'data', f'captured_rgb_video_{int(self.start_time)}.mp4')
                     self.save_video(self.rgb_frames, video_path)
 
                     # Reset for the next video capture
@@ -126,7 +176,7 @@ class FaceDetectionTest:
             # Save individual RGB images at specified intervals
             current_time = time.time()
             if self.config.get("save_image", False) and (current_time - self.image_save_time >= self.image_interval):
-                image_path = os.path.join(self._face_detection_test_package_path, 'data', f'captured_rgb_image_{int(current_time)}.png')
+                image_path = os.path.join(self.face_detection_test_package_path, 'data', f'captured_rgb_image_{int(current_time)}.png')
                 self.save_image(cv_image, image_path)
                 self.image_save_time = current_time
 
@@ -146,7 +196,7 @@ class FaceDetectionTest:
                 # Check if the video duration has been reached
                 elapsed_time = time.time() - self.start_time
                 if elapsed_time >= self.video_duration:
-                    video_path = os.path.join(self._face_detection_test_package_path, 'data', f'captured_depth_video_{int(self.start_time)}.mp4')
+                    video_path = os.path.join(self.face_detection_test_package_path, 'data', f'captured_depth_video_{int(self.start_time)}.mp4')
                     self.save_video(self.depth_frames, video_path, is_depth=True)
 
                     # Reset for the next video capture
@@ -155,7 +205,7 @@ class FaceDetectionTest:
             # Save individual Depth images at specified intervals
             current_time = time.time()
             if self.config.get("save_image", False) and (current_time - self.image_save_time >= self.image_interval):
-                image_path = os.path.join(self._face_detection_test_package_path, 'data', f'captured_depth_image_{int(current_time)}.png')
+                image_path = os.path.join(self.face_detection_test_package_path, 'data', f'captured_depth_image_{int(current_time)}.png')
                 self.save_image(cv_depth, image_path, is_depth=True)
 
         except Exception as e:
@@ -208,28 +258,4 @@ class FaceDetectionTest:
             cv2.imwrite(output_path, image)
             rospy.loginfo(f"Image saved successfully at: {output_path}")
         except Exception as e:
-            rospy.logerr(f"Failed to save image: {e}")
-
-    def test_media_pipe(self):
-        """Perform MediaPipe face detection test."""
-        rospy.loginfo("Starting MediaPipe face detection test...")
-        # Add your test logic here
-        # Example: rospy.loginfo(f"Using configuration: {self.config['mediapipe']}")
-
-    def test_sixdrep(self):
-        """Perform Sixdrep face detection test."""
-        rospy.loginfo("Starting Sixdrep face detection test...")
-        # Add your test logic here
-        # Example: rospy.loginfo(f"Using configuration: {self.config['sixdrep']}")
-
-    # def run_tests(self):
-    #     """Run both tests in sequence."""
-    #     self.test_media_pipe()
-    #     self.test_sixdrep()
-
-    #     # Save video if enabled in the configuration
-    #     if self.config.get("save_video", False):
-    #         rgb_video_path = os.path.join(self._face_detection_test_package_path, 'output', 'captured_rgb_video.mp4')
-    #         depth_video_path = os.path.join(self._face_detection_test_package_path, 'output', 'captured_depth_video.mp4')
-    #         self.save_video(self.rgb_frames, rgb_video_path)
-    #         self.save_video(self.depth_frames, depth_video_path, is_depth=True)
+            rospy.logerr(f"Failed to save image: {e}")        
