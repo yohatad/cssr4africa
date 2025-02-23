@@ -1,6 +1,7 @@
 {
-    "camera": "pepper",
+    "camera": "realsense",
     "algorithm": "mediapipe",
-    "confidence": 0.8,
+    "confidence_threshold": 0.8,
+    "iou_threshold": 0.5,
     "verboseMode": true
 }

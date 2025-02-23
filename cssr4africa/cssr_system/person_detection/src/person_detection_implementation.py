@@ -25,48 +25,26 @@ rng = np.random.default_rng(3)
 colors = rng.uniform(0, 255, size=(len(class_names), 3))
 
 class PersonDetectionNode:
-    def __init__(self, config):
-        if config is not None:
-            self.config = config
-        else:
-            self.config = self.read_json_file()
-
+    def __init__(self):
         self.pub_people = rospy.Publisher("/personDetection/data", person_detection, queue_size=10)
         self.bridge = CvBridge()
         self.depth_image = None
     
     def subscribe_topics(self):
-        camera_type = self.config.get("camera", "realsense")
-
+        camera_type = rospy.get_param("/personDetection_config/camera", "realsense")
         if camera_type == "realsense":
             self.rgb_topic = self.extract_topics("RealSenseCameraRGB")
             self.depth_topic = self.extract_topics("RealSenseCameraDepth")
-        
         elif camera_type == "pepper":
             self.rgb_topic = self.extract_topics("PepperFrontCamera")
             self.depth_topic = self.extract_topics("PepperDepthCamera")
-
         else:
             rospy.logerr("Invalid camera type specified")
             rospy.signal_shutdown("Invalid camera type specified")
 
         self.image_sub = rospy.Subscriber(self.rgb_topic, Image, self.image_callback)
         self.depth_sub = rospy.Subscriber(self.depth_topic, Image, self.depth_callback)
-
-    def check_camera_resolution(self, rgb_image, depth_image):
-            rgb_h, rgb_w = rgb_image.shape[:2]
-            depth_h, depth_w = depth_image.shape[:2]
-            return rgb_h == depth_h and rgb_w == depth_w
-    
-    def resolve_model_path(self, path):
-        if path.startswith('package://'):
-            path = path[len('package://'):]
-            package_name, relative_path = path.split('/', 1)
-            rospack = rospkg.RosPack()
-            package_path = rospack.get_path(package_name)
-            path = os.path.join(package_path, relative_path)
-        return path
-    
+        
     @staticmethod
     def read_json_file():
         rospack = rospkg.RosPack()
@@ -84,55 +62,6 @@ class PersonDetectionNode:
             rospy.logerr(f"ROS package 'person_detection not found: {e}") 
 
     @staticmethod
-    def parse_config():
-        config = {}
-        rospack = rospkg.RosPack()
-        try:
-            package_path = rospack.get_path('person_detection')
-            config_path = os.path.join(package_path, 'config', 'person_detection_configuration.ini')
-            
-            if os.path.exists(config_path):
-                with open(config_path, 'r') as file:
-                    for line in file:
-                        line = line.strip()
-                        if not line or line.startswith('#'):
-                            continue
-                        
-                        parts = line.split(maxsplit=1)
-                        if len(parts) != 2:
-                            print(f"Invalid configuration line: '{line}'")
-                            continue
-                        key, value = parts
-                        key = key.lower()  # Ensure the key is lowercase
-                        
-                        # Convert the value appropriately
-                        try:
-                            if '.' in value:
-                                value = float(value)
-                            else:
-                                value = int(value)
-                        except ValueError:
-                            # Convert boolean strings and leave other strings in lowercase
-                            if value.lower() == "true":
-                                value = True
-                            elif value.lower() == "false":
-                                value = False
-                            else:
-                                value = value.lower()  # Convert to lowercase for string values
-                        
-                        config[key] = value
-
-                # Colorize output: green for keys, cyan for values
-                for key, value in config.items():
-                    print(f"\033[36m{key}\033[0m: \033[93m{value}\033[0m")
-            else:
-                print(f"\033[91mConfiguration file not found at {config_path}\033[0m")
-        except rospkg.ResourceNotFound as e:
-            print(f"\033[91mROS package 'person_detection' not found: {e}\033[0m")
-        
-        return config
-    
-    @staticmethod
     def extract_topics(image_topic):
         rospack = rospkg.RosPack()
         try:
@@ -149,17 +78,17 @@ class PersonDetectionNode:
                         if key.lower() == image_topic.lower():
                             return value
             else:
-                print(f"\033[91mData file not found at {config_path}\033[0m")
+                rospy.logerr(f"extract_topics: Data file not found at {config_path}")
         except rospkg.ResourceNotFound as e:
-            print(f"\033[91mROS package 'person_detection' not found: {e}\033[0m")
+            rospy.logerr(f"ROS package 'person_detection' not found: {e}")
 
     def depth_callback(self, data):
         """Callback to receive the depth image."""
         try:
-            # Convert the ROS Image message to a NumPy array
             self.depth_image = self.bridge.imgmsg_to_cv2(data, desired_encoding="passthrough")
         except CvBridgeError as e:
-            rospy.logerr("CvBridge Error: {}".format(e))
+            rospy.logerr("CvBridge Error in depth_callback: {}".format(e))
+            return
 
     def display_depth_image(self):
         if self.depth_image is not None:
@@ -218,315 +147,331 @@ class PersonDetectionNode:
         person_msg.person_label_id = [data['track_id'] for data in tracking_data]
         person_msg.centroid = [data['centroid'] for data in tracking_data]
 
+        self.pub_people.publish(person_msg)
+
 class YOLOv8ROS(PersonDetectionNode):
-    def __init__(self, config):
-        super(YOLOv8ROS, self).__init__(config)
+    def __init__(self):
+        """
+        Initializes the ROS node, loads configuration, and subscribes to necessary topics.
+        """
+        super().__init__()
+        if not self._init_model():
+            return
+        
+        # Load config parameters once
+        config_params = rospy.get_param("/personDetection_config", {
+            "verboseMode": False,
+            "confidence_threshold": 0.5,
+            "iou_threshold": 0.5
+        })
+        self.verbose_mode = config_params["verboseMode"]
+        self.conf_threshold = config_params["confidence_threshold"]
+        self.iou_threshold = config_params["iou_threshold"]
+        
+        self.latest_frame = None
+        self.bridge = CvBridge()
+        
+        rospy.loginfo("Person detection node initialized")
+        self.subscribe_topics()  # Ensure you have this method implemented or override if needed.
 
-        model_path = 'package://person_detection/models/yolov8s.onnx'
-        yolov8_ros = self.resolve_model_path(model_path)
-
-        # Initialize SixDrepNet ONNX session
+    def _init_model(self):
+        """
+        Loads the ONNX model and prepares the runtime session.
+        
+        Returns:
+            bool: True if model is loaded successfully, otherwise False.
+        """
         try:
-            session_option = onnxruntime.SessionOptions()
-            session_option.log_severity_level = 3
-            session_option.intra_op_num_threads = multiprocessing.cpu_count()
-            session_option.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_ALL
+            session_options = onnxruntime.SessionOptions()
+            session_options.intra_op_num_threads = multiprocessing.cpu_count()
+            session_options.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_ALL
+
+            model_path = rospkg.RosPack().get_path('person_detection') + '/models/yolov8s.onnx'
             self.session = onnxruntime.InferenceSession(
-                yolov8_ros,
-                sess_options=session_option,
+                model_path,
+                sess_options=session_options,
                 providers=['CUDAExecutionProvider', 'CPUExecutionProvider']
             )
 
-            active_providers = self.session.get_providers()
-            rospy.loginfo(f"Active providers: {active_providers}")
-            if "CUDAExecutionProvider" not in active_providers:
-                rospy.logwarn("CUDAExecutionProvider is not available. Running on CPU may slow down inference.")
-            else:
-                rospy.loginfo("CUDAExecutionProvider is active. Running on GPU for faster inference.")
+            input_shape = self.session.get_inputs()[0].shape  # [N, C, H, W]
+            self.input_height, self.input_width = input_shape[2], input_shape[3]
+
+            rospy.loginfo(f"ONNX model loaded. Providers: {self.session.get_providers()}")
+            return True
         except Exception as e:
-            rospy.logerr(f"Failed to initialize SixDrepNet ONNX session: {e}")
-            return  # Exit early if initialization fails
+            rospy.logerr(f"Failed to initialize ONNX: {e}")
+            return False
+
+    def image_callback(self, msg):
+        """
+        Receives image messages from a ROS topic, runs detection,
+        and stores the annotated frame for display in spin().
         
-        self.get_input_details()
-        self.get_output_details()
-
-        self.frame_counter = 0
-        self.tracks = []
-
-        self.verbose_mode = self.config.get("verbosemode", False)
-        self.latest_frame = None
-        
-        rospy.loginfo("Person detection node initialized")
-
-        self.subscribe_topics()
-
-    def get_input_details(self):
-        model_inputs = self.session.get_inputs()
-        self.input_names = [model_inputs[i].name for i in range(len(model_inputs))]
-
-        self.input_shape = model_inputs[0].shape
-        self.input_height = self.input_shape[2]
-        self.input_width = self.input_shape[3]
-
-    def get_output_details(self):
-        model_outputs = self.session.get_outputs()
-        self.output_names = [model_outputs[i].name for i in range(len(model_outputs))]
+        Args:
+            msg (sensor_msgs.msg.Image): The incoming image from a ROS topic.
+        """
+        frame = self.bridge.imgmsg_to_cv2(msg, "bgr8")
+        boxes, scores, class_ids = self.detect_object(frame)
+        if len(boxes):
+            self.latest_frame = self.draw_detections(frame, boxes, scores, class_ids)
+        else:
+            self.latest_frame = frame
 
     def detect_object(self, image):
-        # Preprocess the input image
-        processed_frame = self.prepare_input(image)
+        """
+        Prepares the image and runs inference on the ONNX model.
+        
+        Args:
+            image (np.ndarray): BGR image from OpenCV.
+        
+        Returns:
+            tuple: (boxes, scores, class_ids)
+        """
+        model_input = self.prepare_input(image)
+        model_output = self.session.run(
+            [o.name for o in self.session.get_outputs()],
+            {self.session.get_inputs()[0].name: model_input}
+        )
+        return self.process_output(model_output)
 
-        # Run inference on the preprocessed frame
-        outputs = self.session.run(self.output_names, {self.input_names[0]: processed_frame})
-
-        # Postprocess the results
-        self.boxes, self.scores, self.class_ids = self.process_output(outputs)
-
-        return self.boxes, self.scores, self.class_ids
-    
     def prepare_input(self, image):
         """
-        Preprocess the input image for inference.
+        Converts the image to RGB, resizes, normalizes, and transposes it for inference.
+
         Args:
-            image: Input image in OpenCV format.
+            image (np.ndarray): Original BGR image.
+
+        Returns:
+            np.ndarray: 4D array of shape [1, 3, H, W].
         """
+        self.orig_height, self.orig_width = image.shape[:2]
+        rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        resized = cv2.resize(rgb_image, (self.input_width, self.input_height)).astype(np.float32)
+        resized /= 255.0
+        return resized.transpose(2, 0, 1)[None]
+
+    def process_output(self, model_output):
+        """
+        Interprets the raw model output to filter boxes, scores, and classes 
+        according to confidence threshold and NMS.
         
-        self.img_height, self.img_width = image.shape[:2]
-        input_img = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
-        # Resize input image
-        input_img = cv2.resize(input_img, (self.input_width, self.input_height))
-
-        # Normalize the input image
-        input_img = input_img.astype(np.float32) / 255.0
-        input_img = input_img.transpose(2,0,1)
-        input_tensor = input_img[np.newaxis, ...].astype(np.float32)
-
-        return input_tensor
-    
-    def process_output(self, output):
-        """
-        Process the output of the model.
         Args:
-            output: Output tensor from the model.
+            model_output (list[np.ndarray]): The raw output from the ONNX model.
+        
+        Returns:
+            tuple: (boxes, scores, class_ids) after confidence filtering and NMS.
         """
-        predictions = np.squeeze(output[0]).T
+        preds = np.squeeze(model_output[0]).T  # shape: [num_boxes, :]
+        scores = np.max(preds[:, 4:], axis=1)
+        mask = scores > self.conf_threshold
+        preds, scores = preds[mask], scores[mask]
+        if not len(scores):
+            return np.array([]), np.array([]), np.array([])
 
-        # Extract the bounding box coordinates
-        scores = np.max(predictions[:, 4:], axis=1)
-        predictions = predictions[scores > self.config.get("confidence_threshold", 0.5), :]
-        scores = scores[scores > self.config.get("confidence_threshold", 0.5)]
-
-        if len(scores) == 0:
-            return [], [], []
-    
-        # Get the class with the highest confidence
-        class_ids = np.argmax(predictions[:, 4:], axis=1)
-
-        # Get bounding boxes for each object
-        boxes = self.extract_boxes(predictions)
-
-        indices = self.multiclass_nms(boxes, scores, class_ids, self.config.get("iou_threshold", 0.5))
-
-        return boxes[indices], scores[indices], class_ids[indices]
-    
-    def extract_boxes(self, predictions):
-        # Extract boxes from predictions
-        boxes = predictions[:, :4]
-
-        # Scale boxes to original image dimensions
+        class_ids = np.argmax(preds[:, 4:], axis=1)
+        boxes = preds[:, :4]
         boxes = self.rescale_boxes(boxes)
-
-        # Convert boxes to xyxy format
         boxes = self.xywh2xyxy(boxes)
 
-        return boxes
-    
+        keep_indices = self.multiclass_nms(boxes, scores, class_ids, self.iou_threshold)
+        return boxes[keep_indices], scores[keep_indices], class_ids[keep_indices]
+
     def rescale_boxes(self, boxes):
-        # Rescale boxes to original image dimensions
-        input_shape = np.array([self.input_width, self.input_height, self.input_width, self.input_height])
-        boxes = np.divide(boxes, input_shape, dtype=np.float32)
-        boxes *= np.array([self.img_width, self.img_height, self.img_width, self.img_height])
+        """
+        Converts boxes from model input scale to original image scale.
+        
+        Args:
+            boxes (np.ndarray): Boxes in [x_center, y_center, w, h] format.
+        
+        Returns:
+            np.ndarray: Rescaled boxes in same format [x_center, y_center, w, h].
+        """
+        scale = np.array([
+            self.orig_width / self.input_width,
+            self.orig_height / self.input_height,
+            self.orig_width / self.input_width,
+            self.orig_height / self.input_height
+        ], dtype=np.float32)
+        boxes *= scale
         return boxes
-            
-    def nms(self, boxes, scores, iou_threshold):
-        # Sort by score
-        sorted_indices = np.argsort(scores)[::-1]
 
-        keep_boxes = []
-        while sorted_indices.size > 0:
-            # Pick the last box
-            box_id = sorted_indices[0]
-            keep_boxes.append(box_id)
-
-            # Compute IoU of the picked box with the rest
-            ious = self.compute_iou(boxes[box_id, :], boxes[sorted_indices[1:], :])
-
-            # Remove boxes with IoU over the threshold
-            keep_indices = np.where(ious < iou_threshold)[0]
-
-            # print(keep_indices.shape, sorted_indices.shape)
-            sorted_indices = sorted_indices[keep_indices + 1]
-
-        return keep_boxes
+    def xywh2xyxy(self, boxes):
+        """
+        Converts [x_center, y_center, w, h] to [x1, y1, x2, y2] in-place.
+        
+        Args:
+            boxes (np.ndarray): Nx4 array of boxes in xywh format.
+        
+        Returns:
+            np.ndarray: Nx4 array of boxes in xyxy format.
+        """
+        x, y, w, h = [boxes[:, i].copy() for i in range(4)]
+        boxes[:, 0] = x - w / 2
+        boxes[:, 1] = y - h / 2
+        boxes[:, 2] = x + w / 2
+        boxes[:, 3] = y + h / 2
+        return boxes
 
     def multiclass_nms(self, boxes, scores, class_ids, iou_threshold):
+        """
+        Performs NMS separately for each class and collects kept indices.
+        
+        Args:
+            boxes (np.ndarray): Nx4 array in [x1, y1, x2, y2].
+            scores (np.ndarray): Confidence scores for each box.
+            class_ids (np.ndarray): Class indices for each box.
+            iou_threshold (float): IoU threshold for suppressing overlapping boxes.
+        
+        Returns:
+            list: Indices of boxes that survive NMS.
+        """
+        final_keep = []
+        for class_id in np.unique(class_ids):
+            idx = np.where(class_ids == class_id)[0]
+            keep = self.nms(boxes[idx], scores[idx], iou_threshold)
+            final_keep.extend(idx[k] for k in keep)
+        return final_keep
 
-        unique_class_ids = np.unique(class_ids)
+    def nms(self, boxes, scores, iou_threshold):
+        """
+        Performs standard single-class NMS.
+        
+        Args:
+            boxes (np.ndarray): Nx4 in [x1, y1, x2, y2].
+            scores (np.ndarray): 1D array of box confidence scores.
+            iou_threshold (float): IoU threshold for NMS.
+        
+        Returns:
+            list: Indices of boxes kept after suppression.
+        """
+        sorted_idx = np.argsort(scores)[::-1]
+        kept_indices = []
+        while len(sorted_idx):
+            current_idx = sorted_idx[0]
+            kept_indices.append(current_idx)
+            ious = self.compute_iou(boxes[current_idx], boxes[sorted_idx[1:]])
+            sorted_idx = sorted_idx[1:][ious < iou_threshold]
+        return kept_indices
 
-        keep_boxes = []
-        for class_id in unique_class_ids:
-            class_indices = np.where(class_ids == class_id)[0]
-            class_boxes = boxes[class_indices,:]
-            class_scores = scores[class_indices]
+    def compute_iou(self, main_box, all_boxes):
+        """
+        Computes IoU between one box and an array of boxes.
+        
+        Args:
+            main_box (np.ndarray): [x1, y1, x2, y2].
+            all_boxes (np.ndarray): Nx4 array.
+        
+        Returns:
+            np.ndarray: IoU for each of the boxes in all_boxes.
+        """
+        x1 = np.maximum(main_box[0], all_boxes[:, 0])
+        y1 = np.maximum(main_box[1], all_boxes[:, 1])
+        x2 = np.minimum(main_box[2], all_boxes[:, 2])
+        y2 = np.minimum(main_box[3], all_boxes[:, 3])
 
-            class_keep_boxes = self.nms(class_boxes, class_scores, iou_threshold)
-            keep_boxes.extend(class_indices[class_keep_boxes])
+        inter_w = np.maximum(0, x2 - x1)
+        inter_h = np.maximum(0, y2 - y1)
+        inter = inter_w * inter_h
 
-        return keep_boxes
-
-    def compute_iou(self, box, boxes):
-        # Compute xmin, ymin, xmax, ymax for both boxes
-        xmin = np.maximum(box[0], boxes[:, 0])
-        ymin = np.maximum(box[1], boxes[:, 1])
-        xmax = np.minimum(box[2], boxes[:, 2])
-        ymax = np.minimum(box[3], boxes[:, 3])
-
-        # Compute intersection area
-        intersection_area = np.maximum(0, xmax - xmin) * np.maximum(0, ymax - ymin)
-
-        # Compute union area
-        box_area = (box[2] - box[0]) * (box[3] - box[1])
-        boxes_area = (boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1])
-        union_area = box_area + boxes_area - intersection_area
-
-        # Compute IoU
-        iou = intersection_area / union_area
-
-        return iou
-
-    def xywh2xyxy(self, x):
-        # Convert bounding box (x, y, w, h) to bounding box (x1, y1, x2, y2)
-        y = np.copy(x)
-        y[..., 0] = x[..., 0] - x[..., 2] / 2
-        y[..., 1] = x[..., 1] - x[..., 3] / 2
-        y[..., 2] = x[..., 0] + x[..., 2] / 2
-        y[..., 3] = x[..., 1] + x[..., 3] / 2
-        return y
+        box_area = (main_box[2] - main_box[0]) * (main_box[3] - main_box[1])
+        boxes_area = (all_boxes[:, 2] - all_boxes[:, 0]) * (all_boxes[:, 3] - all_boxes[:, 1])
+        return inter / (box_area + boxes_area - inter)
 
     def draw_detections(self, image, boxes, scores, class_ids, mask_alpha=0.3):
-        det_img = image.copy()
+        """
+        Renders bounding boxes and labels on the image.
+        
+        Args:
+            image (np.ndarray): Original BGR image.
+            boxes (np.ndarray): Nx4 bounding boxes in xyxy format.
+            scores (np.ndarray): Confidence scores.
+            class_ids (np.ndarray): Class indices for each detection.
+            mask_alpha (float): Transparency factor for the mask overlay.
+        
+        Returns:
+            np.ndarray: Image with drawn boxes, masks, and labels.
+        """
+        output_image = image.copy()
+        height, width = image.shape[:2]
+        font_scale = 0.0006 * min(height, width)
+        text_thickness = int(0.001 * min(height, width))
 
-        img_height, img_width = image.shape[:2]
-        font_size = min([img_height, img_width]) * 0.0006
-        text_thickness = int(min([img_height, img_width]) * 0.001)
+        output_image = self.draw_masks(output_image, boxes, class_ids, mask_alpha)
+        for cid, box, score in zip(class_ids, boxes, scores):
+            color = colors[cid]
+            self.draw_box(output_image, box, color)
+            label_text = f"{class_names[cid]} {int(score*100)}%"
+            self.draw_text(output_image, label_text, box, color, font_scale, text_thickness)
+        return output_image
 
-        det_img = self.draw_masks(det_img, boxes, class_ids, mask_alpha)
+    def draw_masks(self, image, boxes, class_ids, alpha=0.3):
+        """
+        Draws semi-transparent colored rectangles over detections.
+        
+        Args:
+            image (np.ndarray): Original image to draw onto.
+            boxes (np.ndarray): Nx4 bounding boxes in xyxy.
+            class_ids (np.ndarray): Class indices.
+            alpha (float): Transparency factor for overlay.
+        
+        Returns:
+            np.ndarray: Image with a semi-transparent mask over bounding boxes.
+        """
+        mask_image = image.copy()
+        for box, cid in zip(boxes, class_ids):
+            x1, y1, x2, y2 = box.astype(int)
+            cv2.rectangle(mask_image, (x1, y1), (x2, y2), colors[cid], -1)
+        return cv2.addWeighted(mask_image, alpha, image, 1 - alpha, 0)
 
-        # Draw bounding boxes and labels of detections
-        for class_id, box, score in zip(class_ids, boxes, scores):
-            color = colors[class_id]
-
-            self.draw_box(det_img, box, color)
-
-            label = class_names[class_id]
-            caption = f'{label} {int(score * 100)}%'
-            self.draw_text(det_img, caption, box, color, font_size, text_thickness)
-
-        return det_img
-    
-    def draw_box(self, image: np.ndarray, box: np.ndarray, color: tuple[int, int, int] = (0, 0, 255),
-                thickness: int = 2) -> np.ndarray:
+    def draw_box(self, image, box, color=(0, 0, 255), thickness=2):
+        """
+        Draws a rectangle on the image representing a bounding box.
+        
+        Args:
+            image (np.ndarray): Original image.
+            box (np.ndarray): [x1, y1, x2, y2].
+            color (tuple): BGR color for the rectangle.
+            thickness (int): Rectangle border thickness.
+        
+        Returns:
+            np.ndarray: Image with a drawn rectangle.
+        """
         x1, y1, x2, y2 = box.astype(int)
         return cv2.rectangle(image, (x1, y1), (x2, y2), color, thickness)
 
-
-    def draw_text(image: np.ndarray, text: str, box: np.ndarray, color: tuple[int, int, int] = (0, 0, 255),
-                font_size: float = 0.001, text_thickness: int = 2) -> np.ndarray:
-        x1, y1, x2, y2 = box.astype(int)
-        (tw, th), _ = cv2.getTextSize(text=text, fontFace=cv2.FONT_HERSHEY_SIMPLEX,
-                                    fontScale=font_size, thickness=text_thickness)
-        th = int(th * 1.2)
-
-        cv2.rectangle(image, (x1, y1),
-                    (x1 + tw, y1 - th), color, -1)
-
-        return cv2.putText(image, text, (x1, y1), cv2.FONT_HERSHEY_SIMPLEX, font_size, (255, 255, 255), text_thickness, cv2.LINE_AA)
-
-    def draw_masks(self, image: np.ndarray, boxes: np.ndarray, classes: np.ndarray, mask_alpha: float = 0.3) -> np.ndarray:
-        mask_img = image.copy()
-
-        # Draw bounding boxes and labels of detections
-        for box, class_id in zip(boxes, classes):
-            color = colors[class_id]
-
-            x1, y1, x2, y2 = box.astype(int)
-
-            # Draw fill rectangle in mask image
-            cv2.rectangle(mask_img, (x1, y1), (x2, y2), color, -1)
-
-        return cv2.addWeighted(mask_img, mask_alpha, image, 1 - mask_alpha, 0)
-    
-    def draw_detections(self, image, boxes, scores, class_ids, mask_alpha=0.3):
-        det_img = image.copy()
-
-        img_height, img_width = image.shape[:2]
-        font_size = min([img_height, img_width]) * 0.0006
-        text_thickness = int(min([img_height, img_width]) * 0.001)
-
-        det_img = self.draw_masks(det_img, boxes, class_ids, mask_alpha)
-
-        # Draw bounding boxes and labels of detections
-        for class_id, box, score in zip(class_ids, boxes, scores):
-            color = colors[class_id]
-
-            self.draw_box(det_img, box, color)
-
-            label = class_names[class_id]
-            caption = f'{label} {int(score * 100)}%'
-            self.draw_text(det_img, caption, box, color, font_size, text_thickness)
-
-        return det_img
-    
-    def draw_text(self, image: np.ndarray, text: str, box: np.ndarray, color: tuple[int, int, int] = (0, 0, 255),
-              font_size: float = 0.001, text_thickness: int = 2) -> np.ndarray:
-        x1, y1, x2, y2 = box.astype(int)
-        (tw, th), _ = cv2.getTextSize(text=text, fontFace=cv2.FONT_HERSHEY_SIMPLEX,
-                                    fontScale=font_size, thickness=text_thickness)
-        th = int(th * 1.2)
-
-        cv2.rectangle(image, (x1, y1),
-                    (x1 + tw, y1 - th), color, -1)
-
-        return cv2.putText(image, text, (x1, y1), cv2.FONT_HERSHEY_SIMPLEX, font_size, (255, 255, 255), text_thickness, cv2.LINE_AA)
+    def draw_text(self, image, text_str, box, color=(0, 0, 255), font_scale=0.5, thickness=1):
+        """
+        Draws text on top of the bounding box.
         
-    def image_callback(self, msg):
-        # Convert ROS image message to OpenCV image
-        frame = self.bridge.imgmsg_to_cv2(msg, "bgr8")
-
-        # Run detection on the frame
-        boxes, scores, class_ids = self.detect_object(frame)
-
-        # Draw detections on the frame
-        if len(boxes) > 0:
-            frame_with_detections = self.draw_detections(frame, boxes, scores, class_ids)
-        else:
-            frame_with_detections = frame
-
-        # Update the latest frame for display in spin()
-        self.latest_frame = frame_with_detections
+        Args:
+            image (np.ndarray): Image to draw the text on.
+            text_str (str): Text label.
+            box (np.ndarray): [x1, y1, x2, y2].
+            color (tuple): Color for the text background.
+            font_scale (float): Font scale.
+            thickness (int): Font thickness.
+        
+        Returns:
+            np.ndarray: Image with the text label drawn.
+        """
+        x1, y1, _, _ = box.astype(int)
+        (text_w, text_h), _ = cv2.getTextSize(text_str, cv2.FONT_HERSHEY_SIMPLEX, font_scale, thickness)
+        text_h = int(text_h * 1.2)
+        cv2.rectangle(image, (x1, y1), (x1 + text_w, y1 - text_h), color, -1)
+        return cv2.putText(image, text_str, (x1, y1), cv2.FONT_HERSHEY_SIMPLEX, font_scale,
+                           (255, 255, 255), thickness, cv2.LINE_AA)
 
     def spin(self):
-        """Main loop to display the processed frames and depth images."""
+        """
+        Main loop to display the processed frames and optionally a depth image.
+        """
         rate = rospy.Rate(30)
         while not rospy.is_shutdown():
             if self.latest_frame is not None:
-                # Display the latest processed frame with detections
                 cv2.imshow("YOLOv8 ROS", self.latest_frame)
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     rospy.signal_shutdown("User requested shutdown")
 
-            # Display the depth image if verbose mode is on
             if self.verbose_mode:
                 self.display_depth_image()
 
