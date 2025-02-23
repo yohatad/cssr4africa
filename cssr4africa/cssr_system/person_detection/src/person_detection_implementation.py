@@ -10,20 +10,6 @@ from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 from person_detection.msg import person_detection
 
-class_names = ['person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat', 'traffic light',
-               'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog', 'horse', 'sheep', 'cow',
-               'elephant', 'bear', 'zebra', 'giraffe', 'backpack', 'umbrella', 'handbag', 'tie', 'suitcase', 'frisbee',
-               'skis', 'snowboard', 'sports ball', 'kite', 'baseball bat', 'baseball glove', 'skateboard', 'surfboard',
-               'tennis racket', 'bottle', 'wine glass', 'cup', 'fork', 'knife', 'spoon', 'bowl', 'banana', 'apple',
-               'sandwich', 'orange', 'broccoli', 'carrot', 'hot dog', 'pizza', 'donut', 'cake', 'chair', 'couch',
-               'potted plant', 'bed', 'dining table', 'toilet', 'tv', 'laptop', 'mouse', 'remote', 'keyboard',
-               'cell phone', 'microwave', 'oven', 'toaster', 'sink', 'refrigerator', 'book', 'clock', 'vase',
-               'scissors', 'teddy bear', 'hair drier', 'toothbrush']
-
-# Create a list of colors for each class where each color is a tuple of 3 integer values
-rng = np.random.default_rng(3)
-colors = rng.uniform(0, 255, size=(len(class_names), 3))
-
 class PersonDetectionNode:
     def __init__(self):
         self.pub_people = rospy.Publisher("/personDetection/data", person_detection, queue_size=10)
@@ -93,24 +79,12 @@ class PersonDetectionNode:
     def display_depth_image(self):
         if self.depth_image is not None:
             try:
-                # Convert depth image to float32 for processing
                 depth_array = np.array(self.depth_image, dtype=np.float32)
-
-                # Handle invalid depth values (e.g., NaNs, infs)
                 depth_array = np.nan_to_num(depth_array, nan=0.0, posinf=0.0, neginf=0.0)
-
-                # Normalize the depth image to the 0-255 range
                 normalized_depth = cv2.normalize(depth_array, None, 0, 255, cv2.NORM_MINMAX)
-
-                # Convert to 8-bit image
                 normalized_depth = np.uint8(normalized_depth)
-
-                # Apply a colormap for better visualization (optional)
                 depth_colormap = cv2.applyColorMap(normalized_depth, cv2.COLORMAP_JET)
-
-                # Display the depth image
                 cv2.imshow("Depth Image", depth_colormap)
-
             except Exception as e:
                 rospy.logerr("Error displaying depth image: {}".format(e))
 
@@ -118,38 +92,28 @@ class PersonDetectionNode:
         """Get the depth value at the centroid of a face."""
         if self.depth_image is None:
             return None
-
         height, width = self.depth_image.shape[:2]
         x = int(round(centroid_x))
         y = int(round(centroid_y))
 
-        # Check bounds
         if x < 0 or x >= width or y < 0 or y >= height:
             rospy.logwarn(f"Centroid coordinates ({x}, {y}) are out of bounds.")
             return None
 
         depth_value = self.depth_image[y, x]
-
-        # Handle invalid depth values
         if np.isfinite(depth_value) and depth_value > 0:
-            # Convert to meters if necessary
-            depth_in_meters = depth_value / 1000.0
-            return depth_in_meters
+            return depth_value / 1000.0  # Convert if needed
         else:
-            # rospy.logwarn(f"Invalid depth value at coordinates ({x}, {y}): {depth_value}")
             return None
 
     def publish_person_detection(self, tracking_data):
         """Publish the detected people to the topic."""
-        person_msg = person_detection()
+        # person_msg = person_detection()
+        # person_msg.person_label_id = [data['track_id'] for data in tracking_data]
+        # person_msg.centroid = [data['centroid'] for data in tracking_data]
+        # self.pub_people.publish(person_msg)
 
-        # Initialize lists for each attribute in the message
-        person_msg.person_label_id = [data['track_id'] for data in tracking_data]
-        person_msg.centroid = [data['centroid'] for data in tracking_data]
-
-        self.pub_people.publish(person_msg)
-
-class YOLOv8ROS(PersonDetectionNode):
+class YOLOv8(PersonDetectionNode):
     def __init__(self):
         """
         Initializes the ROS node, loads configuration, and subscribes to necessary topics.
@@ -167,20 +131,19 @@ class YOLOv8ROS(PersonDetectionNode):
         self.verbose_mode = config_params["verboseMode"]
         self.conf_threshold = config_params["confidence_threshold"]
         self.iou_threshold = config_params["iou_threshold"]
+
+        # Generate a random color palette for drawing multiple people distinctly
+        rng = np.random.default_rng(3)
+        self.colors = rng.uniform(0, 255, size=(50, 3))  # 50 random colors
         
         self.latest_frame = None
         self.bridge = CvBridge()
         
         rospy.loginfo("Person detection node initialized")
-        self.subscribe_topics()  # Ensure you have this method implemented or override if needed.
+        self.subscribe_topics()
 
     def _init_model(self):
-        """
-        Loads the ONNX model and prepares the runtime session.
-        
-        Returns:
-            bool: True if model is loaded successfully, otherwise False.
-        """
+        """Loads the ONNX model and prepares the runtime session."""
         try:
             session_options = onnxruntime.SessionOptions()
             session_options.intra_op_num_threads = multiprocessing.cpu_count()
@@ -206,12 +169,11 @@ class YOLOv8ROS(PersonDetectionNode):
         """
         Receives image messages from a ROS topic, runs detection,
         and stores the annotated frame for display in spin().
-        
-        Args:
-            msg (sensor_msgs.msg.Image): The incoming image from a ROS topic.
         """
         frame = self.bridge.imgmsg_to_cv2(msg, "bgr8")
         boxes, scores, class_ids = self.detect_object(frame)
+
+        # Update the latest frame only with bounding boxes if any remain
         if len(boxes):
             self.latest_frame = self.draw_detections(frame, boxes, scores, class_ids)
         else:
@@ -228,22 +190,14 @@ class YOLOv8ROS(PersonDetectionNode):
             tuple: (boxes, scores, class_ids)
         """
         model_input = self.prepare_input(image)
-        model_output = self.session.run(
+        outputs = self.session.run(
             [o.name for o in self.session.get_outputs()],
             {self.session.get_inputs()[0].name: model_input}
         )
-        return self.process_output(model_output)
+        return self.process_output(outputs)
 
     def prepare_input(self, image):
-        """
-        Converts the image to RGB, resizes, normalizes, and transposes it for inference.
-
-        Args:
-            image (np.ndarray): Original BGR image.
-
-        Returns:
-            np.ndarray: 4D array of shape [1, 3, H, W].
-        """
+        """Converts the image to RGB, resizes, normalizes, and transposes it for inference."""
         self.orig_height, self.orig_width = image.shape[:2]
         rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         resized = cv2.resize(rgb_image, (self.input_width, self.input_height)).astype(np.float32)
@@ -253,19 +207,14 @@ class YOLOv8ROS(PersonDetectionNode):
     def process_output(self, model_output):
         """
         Interprets the raw model output to filter boxes, scores, and classes 
-        according to confidence threshold and NMS.
-        
-        Args:
-            model_output (list[np.ndarray]): The raw output from the ONNX model.
-        
-        Returns:
-            tuple: (boxes, scores, class_ids) after confidence filtering and NMS.
+        according to confidence threshold and NMS, then keeps only 'person' class.
         """
         preds = np.squeeze(model_output[0]).T  # shape: [num_boxes, :]
-        scores = np.max(preds[:, 4:], axis=1)
-        mask = scores > self.conf_threshold
-        preds, scores = preds[mask], scores[mask]
-        if not len(scores):
+        conf_scores = np.max(preds[:, 4:], axis=1)
+        mask = conf_scores > self.conf_threshold
+        preds, conf_scores = preds[mask], conf_scores[mask]
+
+        if not len(conf_scores):
             return np.array([]), np.array([]), np.array([])
 
         class_ids = np.argmax(preds[:, 4:], axis=1)
@@ -273,18 +222,23 @@ class YOLOv8ROS(PersonDetectionNode):
         boxes = self.rescale_boxes(boxes)
         boxes = self.xywh2xyxy(boxes)
 
-        keep_indices = self.multiclass_nms(boxes, scores, class_ids, self.iou_threshold)
-        return boxes[keep_indices], scores[keep_indices], class_ids[keep_indices]
+        keep_idx = self.multiclass_nms(boxes, conf_scores, class_ids, self.iou_threshold)
+
+        # Final results after NMS
+        boxes, conf_scores, class_ids = boxes[keep_idx], conf_scores[keep_idx], class_ids[keep_idx]
+
+        # ---- FILTER ONLY 'PERSON' (COCO class index 0) ----
+        person_mask = (class_ids == 0)
+        boxes = boxes[person_mask]
+        conf_scores = conf_scores[person_mask]
+        class_ids = class_ids[person_mask]
+
+        return boxes, conf_scores, class_ids
 
     def rescale_boxes(self, boxes):
         """
-        Converts boxes from model input scale to original image scale.
-        
-        Args:
-            boxes (np.ndarray): Boxes in [x_center, y_center, w, h] format.
-        
-        Returns:
-            np.ndarray: Rescaled boxes in same format [x_center, y_center, w, h].
+        Converts boxes from model input scale (self.input_width/height)
+        to the original image scale (self.orig_width/height).
         """
         scale = np.array([
             self.orig_width / self.input_width,
@@ -296,15 +250,7 @@ class YOLOv8ROS(PersonDetectionNode):
         return boxes
 
     def xywh2xyxy(self, boxes):
-        """
-        Converts [x_center, y_center, w, h] to [x1, y1, x2, y2] in-place.
-        
-        Args:
-            boxes (np.ndarray): Nx4 array of boxes in xywh format.
-        
-        Returns:
-            np.ndarray: Nx4 array of boxes in xyxy format.
-        """
+        """Converts [x_center, y_center, w, h] to [x1, y1, x2, y2] in-place."""
         x, y, w, h = [boxes[:, i].copy() for i in range(4)]
         boxes[:, 0] = x - w / 2
         boxes[:, 1] = y - h / 2
@@ -313,57 +259,27 @@ class YOLOv8ROS(PersonDetectionNode):
         return boxes
 
     def multiclass_nms(self, boxes, scores, class_ids, iou_threshold):
-        """
-        Performs NMS separately for each class and collects kept indices.
-        
-        Args:
-            boxes (np.ndarray): Nx4 array in [x1, y1, x2, y2].
-            scores (np.ndarray): Confidence scores for each box.
-            class_ids (np.ndarray): Class indices for each box.
-            iou_threshold (float): IoU threshold for suppressing overlapping boxes.
-        
-        Returns:
-            list: Indices of boxes that survive NMS.
-        """
+        """Performs standard NMS on a per-class basis, collects kept indices."""
         final_keep = []
-        for class_id in np.unique(class_ids):
-            idx = np.where(class_ids == class_id)[0]
+        for cid in np.unique(class_ids):
+            idx = np.where(class_ids == cid)[0]
             keep = self.nms(boxes[idx], scores[idx], iou_threshold)
             final_keep.extend(idx[k] for k in keep)
         return final_keep
 
     def nms(self, boxes, scores, iou_threshold):
-        """
-        Performs standard single-class NMS.
-        
-        Args:
-            boxes (np.ndarray): Nx4 in [x1, y1, x2, y2].
-            scores (np.ndarray): 1D array of box confidence scores.
-            iou_threshold (float): IoU threshold for NMS.
-        
-        Returns:
-            list: Indices of boxes kept after suppression.
-        """
+        """Single-class NMS."""
         sorted_idx = np.argsort(scores)[::-1]
         kept_indices = []
         while len(sorted_idx):
-            current_idx = sorted_idx[0]
-            kept_indices.append(current_idx)
-            ious = self.compute_iou(boxes[current_idx], boxes[sorted_idx[1:]])
+            curr = sorted_idx[0]
+            kept_indices.append(curr)
+            ious = self.compute_iou(boxes[curr], boxes[sorted_idx[1:]])
             sorted_idx = sorted_idx[1:][ious < iou_threshold]
         return kept_indices
 
     def compute_iou(self, main_box, all_boxes):
-        """
-        Computes IoU between one box and an array of boxes.
-        
-        Args:
-            main_box (np.ndarray): [x1, y1, x2, y2].
-            all_boxes (np.ndarray): Nx4 array.
-        
-        Returns:
-            np.ndarray: IoU for each of the boxes in all_boxes.
-        """
+        """Computes IoU between one box and an array of boxes."""
         x1 = np.maximum(main_box[0], all_boxes[:, 0])
         y1 = np.maximum(main_box[1], all_boxes[:, 1])
         x2 = np.minimum(main_box[2], all_boxes[:, 2])
@@ -371,109 +287,73 @@ class YOLOv8ROS(PersonDetectionNode):
 
         inter_w = np.maximum(0, x2 - x1)
         inter_h = np.maximum(0, y2 - y1)
-        inter = inter_w * inter_h
+        inter_area = inter_w * inter_h
 
         box_area = (main_box[2] - main_box[0]) * (main_box[3] - main_box[1])
         boxes_area = (all_boxes[:, 2] - all_boxes[:, 0]) * (all_boxes[:, 3] - all_boxes[:, 1])
-        return inter / (box_area + boxes_area - inter)
+        return inter_area / (box_area + boxes_area - inter_area)
 
     def draw_detections(self, image, boxes, scores, class_ids, mask_alpha=0.3):
         """
-        Renders bounding boxes and labels on the image.
-        
-        Args:
-            image (np.ndarray): Original BGR image.
-            boxes (np.ndarray): Nx4 bounding boxes in xyxy format.
-            scores (np.ndarray): Confidence scores.
-            class_ids (np.ndarray): Class indices for each detection.
-            mask_alpha (float): Transparency factor for the mask overlay.
-        
-        Returns:
-            np.ndarray: Image with drawn boxes, masks, and labels.
+        Draw bounding boxes and labels on the image. Each detected person
+        is assigned a distinct color from the 'colors' array.
         """
-        output_image = image.copy()
-        height, width = image.shape[:2]
-        font_scale = 0.0006 * min(height, width)
-        text_thickness = int(0.001 * min(height, width))
+        output_img = image.copy()
+        h, w = image.shape[:2]
+        font_scale = 0.0006 * min(h, w)
+        text_thickness = int(0.001 * min(h, w))
 
-        output_image = self.draw_masks(output_image, boxes, class_ids, mask_alpha)
-        for cid, box, score in zip(class_ids, boxes, scores):
-            color = colors[cid]
-            self.draw_box(output_image, box, color)
-            label_text = f"{class_names[cid]} {int(score*100)}%"
-            self.draw_text(output_image, label_text, box, color, font_scale, text_thickness)
-        return output_image
+        # Optionally draw a mask overlay if you want semi-transparent bounding boxes
+        # or just skip it if you want standard rectangles
+        output_img = self.draw_masks(output_img, boxes, class_ids, mask_alpha)
+
+        for i, (box, score) in enumerate(zip(boxes, scores)):
+            # Use a different color for each detection
+            color = self.colors[i % len(self.colors)]
+            self.draw_box(output_img, box, color)
+            label_text = f"person {int(score * 100)}%"
+            self.draw_text(output_img, label_text, box, color, font_scale, text_thickness)
+
+        return output_img
 
     def draw_masks(self, image, boxes, class_ids, alpha=0.3):
         """
-        Draws semi-transparent colored rectangles over detections.
-        
-        Args:
-            image (np.ndarray): Original image to draw onto.
-            boxes (np.ndarray): Nx4 bounding boxes in xyxy.
-            class_ids (np.ndarray): Class indices.
-            alpha (float): Transparency factor for overlay.
-        
-        Returns:
-            np.ndarray: Image with a semi-transparent mask over bounding boxes.
+        Draws semi-transparent colored rectangles for each detection.
+        Since we're only detecting 'person', class_ids are all 0,
+        but we use a unique color per detection for variety.
         """
-        mask_image = image.copy()
-        for box, cid in zip(boxes, class_ids):
+        mask_img = image.copy()
+        for i, box in enumerate(boxes):
+            color = self.colors[i % len(self.colors)]
             x1, y1, x2, y2 = box.astype(int)
-            cv2.rectangle(mask_image, (x1, y1), (x2, y2), colors[cid], -1)
-        return cv2.addWeighted(mask_image, alpha, image, 1 - alpha, 0)
+            cv2.rectangle(mask_img, (x1, y1), (x2, y2), color, -1)
+        return cv2.addWeighted(mask_img, alpha, image, 1 - alpha, 0)
 
     def draw_box(self, image, box, color=(0, 0, 255), thickness=2):
-        """
-        Draws a rectangle on the image representing a bounding box.
-        
-        Args:
-            image (np.ndarray): Original image.
-            box (np.ndarray): [x1, y1, x2, y2].
-            color (tuple): BGR color for the rectangle.
-            thickness (int): Rectangle border thickness.
-        
-        Returns:
-            np.ndarray: Image with a drawn rectangle.
-        """
+        """Draw a rectangle for one bounding box."""
         x1, y1, x2, y2 = box.astype(int)
-        return cv2.rectangle(image, (x1, y1), (x2, y2), color, thickness)
+        cv2.rectangle(image, (x1, y1), (x2, y2), color, thickness)
+        return image
 
     def draw_text(self, image, text_str, box, color=(0, 0, 255), font_scale=0.5, thickness=1):
-        """
-        Draws text on top of the bounding box.
-        
-        Args:
-            image (np.ndarray): Image to draw the text on.
-            text_str (str): Text label.
-            box (np.ndarray): [x1, y1, x2, y2].
-            color (tuple): Color for the text background.
-            font_scale (float): Font scale.
-            thickness (int): Font thickness.
-        
-        Returns:
-            np.ndarray: Image with the text label drawn.
-        """
-        x1, y1, _, _ = box.astype(int)
-        (text_w, text_h), _ = cv2.getTextSize(text_str, cv2.FONT_HERSHEY_SIMPLEX, font_scale, thickness)
-        text_h = int(text_h * 1.2)
-        cv2.rectangle(image, (x1, y1), (x1 + text_w, y1 - text_h), color, -1)
-        return cv2.putText(image, text_str, (x1, y1), cv2.FONT_HERSHEY_SIMPLEX, font_scale,
-                           (255, 255, 255), thickness, cv2.LINE_AA)
+        """Draw a text label above the bounding box."""
+        x1, y1, x2, y2 = box.astype(int)
+        (tw, th), _ = cv2.getTextSize(text_str, cv2.FONT_HERSHEY_SIMPLEX, font_scale, thickness)
+        th = int(th * 1.2)
+        cv2.rectangle(image, (x1, y1), (x1 + tw, y1 - th), color, -1)
+        cv2.putText(image, text_str, (x1, y1),
+                    cv2.FONT_HERSHEY_SIMPLEX, font_scale, (255, 255, 255), thickness, cv2.LINE_AA)
+        return image
 
     def spin(self):
-        """
-        Main loop to display the processed frames and optionally a depth image.
-        """
+        """Main loop for ROS callbacks and display."""
         rate = rospy.Rate(30)
         while not rospy.is_shutdown():
             if self.latest_frame is not None:
                 cv2.imshow("YOLOv8 ROS", self.latest_frame)
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     rospy.signal_shutdown("User requested shutdown")
-
             if self.verbose_mode:
                 self.display_depth_image()
-
             rate.sleep()
         cv2.destroyAllWindows()
