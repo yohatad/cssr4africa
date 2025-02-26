@@ -509,6 +509,12 @@ class SixDrepNet(FaceDetectionNode):
             rospy.loginfo("SixDrepNet initialization complete.")
 
         self.subscribe_topics()
+
+        # check if the depth camera and color camera have the same resolution.
+        if self.depth_image is not None:
+            if not self.check_camera_resolution(self.color_image, self.depth_image):
+                rospy.logerr("Color camera and depth camera have different resolutions.")
+                rospy.signal_shutdown("Resolution mismatch")
     
     def draw_axis(self, img, yaw, pitch, roll, tdx=None, tdy=None, size=100):
         pitch = pitch * pi / 180
