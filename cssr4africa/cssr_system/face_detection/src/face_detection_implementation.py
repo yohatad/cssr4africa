@@ -69,15 +69,6 @@ class FaceDetectionNode:
         rgb_h, rgb_w = color_image.shape[:2]
         depth_h, depth_w = depth_image.shape[:2]
         return rgb_h == depth_h and rgb_w == depth_w
-
-    def resolve_model_path(self, path):
-        if path.startswith('package://'):
-            path = path[len('package://'):]
-            package_name, relative_path = path.split('/', 1)
-            rospack = rospkg.RosPack()
-            package_path = rospack.get_path(package_name)
-            path = os.path.join(package_path, relative_path)
-        return path
     
     @staticmethod
     def read_json_file():
@@ -226,6 +217,14 @@ class FaceDetectionNode:
             # Calculate the average depth and convert to meters if needed
             average_depth_in_meters = np.mean(valid_depth_values) / 1000.0
             return average_depth_in_meters
+        
+    def generate_dark_color(self):
+        """Generate a dark color that is visible on a white background."""
+        while True:
+            color = (random.randint(0, 150), random.randint(0, 150), random.randint(0, 150))  # Dark colors (0-150)
+            brightness = (0.299 * color[0] + 0.587 * color[1] + 0.114 * color[2])  # Perceived brightness
+            if brightness < 130:  # Ensure the color is dark enough
+                return color
 
     def publish_face_detection(self, tracking_data):
         """Publish the face detection results."""
@@ -368,9 +367,9 @@ class MediaPipe(FaceDetectionNode):
                 centroid_tuple = tuple(centroid)
                 face_id = centroid_to_face_id.get(centroid_tuple, None)
 
-                # Assign a random color for a new face or lost tracking
+                # Assign a new dark color for a new face or lost tracking
                 if face_id is None or face_id not in self.face_colors:
-                    self.face_colors[face_id] = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+                    self.face_colors[face_id] = self.generate_dark_color()
 
                 face_color = self.face_colors[face_id]
 
@@ -452,12 +451,9 @@ class SixDrepNet(FaceDetectionNode):
             rospy.loginfo("Initializing SixDrepNet...")
 
         # Set up model paths
-        model_path_param = 'package://face_detection/models/face_detection_goldYOLO.onnx'
-        sixdrepnet_model_path_param = 'package://face_detection/models/face_detection_sixdrepnet360.onnx'
+        yolo_model_path = rospkg.RosPack().get_path('face_detection') + '/models/face_detection_goldYOLO.onnx'
+        sixdrepnet_model_path = rospkg.RosPack().get_path('face_detection') + '/models/face_detection_sixdrepnet360.onnx'
         
-        yolo_model_path = self.resolve_model_path(model_path_param)
-        sixdrepnet_model_path = self.resolve_model_path(sixdrepnet_model_path_param)
-
         self.latest_frame = None
         
         # Timer for printing message every 5 seconds
@@ -589,8 +585,9 @@ class SixDrepNet(FaceDetectionNode):
             cx, cy = (x1 + x2) // 2, (y1 + y2) // 2
 
             # Assign a unique color for each face ID
-            if face_id not in self.face_colors:
-                self.face_colors[face_id] = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+            # Assign a new dark color for a new face or lost tracking
+            if face_id is None or face_id not in self.face_colors:
+                self.face_colors[face_id] = self.generate_dark_color()
 
             face_color = self.face_colors[face_id]
 
