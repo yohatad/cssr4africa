@@ -4,7 +4,7 @@
 face_detection_application.py Application code to run the face and mutual gaze detection algorithm.
 
 Author: Yohannes Tadesse Haile
-Date: February 15, 2024
+Date: March 15, 2025
 Version: v1.0
 
 Copyright (C) 2023 CSSR4Africa Consortium
@@ -73,7 +73,7 @@ Published Topics
     /faceDetection/data                     face_detection/face_detection.msg
 
 Input Data Files
-    - faceDetectionConfiguration.ini: Configuration file for face detection parameters
+    - faceDetectionConfiguration.json: Configuration file for face detection parameters
     - pepperTopics.dat: Data file for Pepper robot camera topics
     - face_detection_YOLO.onnx: YOLOONNX model for face detection
     - face_detection_sixdrepnet360.onnx: SixDrepNet model for gaze direction
@@ -82,14 +82,14 @@ Output Data Files
     None
 
 Configuration File
-    face_detection_configuration.ini
+    face_detection_configuration.json
 
 Example of instantiation of the module
     rosrun face_detection face_detection_application.py
 
 Author: Yohannes Tadesse Haile
 Email: yohanneh@andrew.cmu.edu
-Date: February 15, 2024
+Date: March 15, 2025
 Version: v1.0
 """
 

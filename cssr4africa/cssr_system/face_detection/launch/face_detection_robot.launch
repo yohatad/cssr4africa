@@ -29,5 +29,4 @@
             <arg name="align_depth"     value="true" />
         </include>
     </group>
-
 </launch>
