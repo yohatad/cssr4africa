@@ -336,7 +336,7 @@ class YOLOv8(PersonDetectionNode):
         rate = rospy.Rate(30)
         while not rospy.is_shutdown():
             if self.latest_frame is not None:
-                cv2.imshow("YOLOv8 + SORT", self.latest_frame)
+                cv2.imshow("Person Detection YOLOv8", self.latest_frame)
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     rospy.signal_shutdown("User requested shutdown")
 
