@@ -10,7 +10,7 @@
 The **Face and Mutual Gaze Detection and Localization** package is a ROS package designed to detect multiple faces and evaluate their **mutual gaze** in real-time by subscribing to an image topic. It publishes an array of detected faces and their mutual gaze status to the **/faceDetection/data** topic. Each entry in the published data includes the **label ID** of the detected face, the **centroid** coordinates representing the center point of each face, and a boolean value indicating **mutual gaze** status as either **True** or **False**. 
 
 ## 📄 Documentation
-The main documentation for this deliverable is found in [D4.2.1 Face and Mutual Gaze Detection and Localization](https://cssr4africa.github.io/deliverables/CSSR4Africa_Deliverable_D4.2.1.pdf) that provides more details.
+The main documentation for this deliverable is found in [D4.2.2 Face and Mutual Gaze Detection and Localization](https://cssr4africa.github.io/deliverables/CSSR4Africa_Deliverable_D4.2.2.pdf) that provides more details.
 
 ## 📦 Installation 
 To set up the Face and Mutual Gaze Detection package on a Linux system, follow these steps:
@@ -87,16 +87,16 @@ Source the workspace in first terminal:
 Follow below steps, run in different terminals.\
 
   1️. Launch the robot and specifiy which camera to use. 
-      ```bash
-      roslaunch cssr_system cssrSystemLaunchRobot.launch robot_ip:=<robot_ip> roscore_ip:=<roscore_ip> network_interface:=<network_interface> camera:=<camera>
-      ```
+  ```bash
+  roslaunch cssr_system cssrSystemLaunchRobot.launch robot_ip:=<robot_ip> roscore_ip:=<roscore_ip> network_interface:=<network_interface> camera:=<camera>
+  ```
 
-      The default camera is set to the realsense.
+The default camera is set to the realsense.
 
   2️. Then run the Face and gaze detection and Localization.
-      ```bash
-      rosrun cssr_system face_detection_application.py
-      ```
+  ```bash
+  rosrun cssr_system face_detection_application.py
+  ```
 
 ##  🖥️ Output
 The node publishes the detected faces and their corresponding centroid, and the a boolean array whether a mutual gaze is established or not. When running in the verbose it display the OpenCv annotated color image and depth image that could help to visualize the result obtained. 
