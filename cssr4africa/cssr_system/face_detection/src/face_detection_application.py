@@ -115,10 +115,21 @@ def main():
     rospy.loginfo(copyright_message)
     rospy.loginfo(f"{node_name}: startup.")
     
+    # Read the configuration file
     config = FaceDetectionNode.read_json_file()
     
-    # set the configuration parameters to the ROS parameter server
-    rospy.set_param('/faceDetection_config', config)
+    unit_test = rospy.get_param('/faceDetection/unit_test', default=False)
+    
+    if not unit_test:
+        rospy.set_param('/faceDetection_config', config)
+    else:
+        # Create a filtered config without the excluded keys
+        filtered_config = {k: v for k, v in config.items() 
+                        if k not in ["use_compressed", "algorithm", "verbose_mode"]}
+        
+        # Set the filtered parameters to the parameter server
+        for key, value in filtered_config.items():
+            rospy.set_param('/faceDetection_config/' + key, value)
 
     algorthim = rospy.get_param('faceDetection_config/algorithm', default="sixdrep")
 

@@ -39,8 +39,7 @@ class FaceDetectionNode:
         self.bridge = CvBridge()
         self.depth_image = None  # Initialize depth_image
         self.color_image = None  # Initialize color_image
-        self.use_compressed = rospy.get_param('/faceDetection_config/use_compressed', False)  # Parameter to choose compressed or raw
-        print("Use Compressed Image", self.use_compressed)
+        self.use_compressed = rospy.get_param('/faceDetection_config/use_compressed', False)  # Parameter to choose compressed or raw images
 
     def subscribe_topics(self):
         """Subscribe to the color and depth image topics based on the camera type. """
@@ -290,11 +289,17 @@ class FaceDetectionNode:
 
     def publish_face_detection(self, tracking_data):
         """Publish the face detection results."""
+        if not tracking_data:
+            # Don't publish empty messages
+            return
+            
         face_msg = msg_file()
 
         # Initialize lists for each attribute in the message
         face_msg.face_label_id = [data['face_id'] for data in tracking_data]
         face_msg.centroids = [data['centroid'] for data in tracking_data]
+        face_msg.width = [data['width'] for data in tracking_data]  # Add width data
+        face_msg.height = [data['height'] for data in tracking_data]  # Add height data
         face_msg.mutualGaze = [data['mutual_gaze'] for data in tracking_data]
 
         # Publish the message
@@ -374,87 +379,105 @@ class MediaPipe(FaceDetectionNode):
         results = self.face_mesh.process(rgb_frame)
         centroids = []
         mutualGaze_list = []
+        face_widths = []
+        face_heights = []
+        face_boxes = []  # Store bounding boxes for each face
         
         # Dictionary to store face ID colors
         if not hasattr(self, "face_colors"):
             self.face_colors = {}
-
+            
         if results.multi_face_landmarks:
             for face_id, face_landmarks in enumerate(results.multi_face_landmarks):
                 face_2d, face_3d = [], []
                 x_min, y_min, x_max, y_max = img_w, img_h, 0, 0  # Bounding box coordinates
-
+                
                 for idx, lm in enumerate(face_landmarks.landmark):
                     x, y = int(lm.x * img_w), int(lm.y * img_h)
                     face_2d.append([x, y])
                     face_3d.append([x, y, lm.z])
-
                     # Expand bounding box
                     x_min = min(x_min, x)
                     y_min = min(y_min, y)
                     x_max = max(x_max, x)
                     y_max = max(y_max, y)
-
+                
+                # Calculate width and height
+                width = x_max - x_min
+                height = y_max - y_min
+                
+                # Store bounding box
+                face_boxes.append((x_min, y_min, x_max, y_max))
+                face_widths.append(width)
+                face_heights.append(height)
+                
                 centroid_x = np.mean([pt[0] for pt in face_2d])
                 centroid_y = np.mean([pt[1] for pt in face_2d])
                 centroids.append((centroid_x, centroid_y))
-
+                
                 face_2d = np.array(face_2d, dtype=np.float64)
                 face_3d = np.array(face_3d, dtype=np.float64)
-
+                
                 focal_length = 1 * img_w
                 cam_matrix = np.array([[focal_length, 0, img_w / 2],
                                     [0, focal_length, img_h / 2],
                                     [0, 0, 1]])
                 distortion_matrix = np.zeros((4, 1), dtype=np.float64)
-
+                
                 success, rotation_vec, translation_vec = cv2.solvePnP(
                     face_3d, face_2d, cam_matrix, distortion_matrix)
-
-                rmat, _ = cv2.Rodrigues(rotation_vec)
-                angles, _, _, _, _, _ = cv2.RQDecomp3x3(rmat)
+                
+                rmat, jac = cv2.Rodrigues(rotation_vec)
+                angles, mtxR, mtxQ, Qx, Qy, Qz = cv2.RQDecomp3x3(rmat)
+                
                 x_angle = angles[0] * 360
                 y_angle = angles[1] * 360
-
+                
                 mp_angle = rospy.get_param("/faceDetection_config/mp_headpose_angle", 5)
-
                 mutualGaze = abs(x_angle) <= mp_angle and abs(y_angle) <= mp_angle
                 mutualGaze_list.append(mutualGaze)
-
+            
             # Use the centroid tracker to match centroids with object IDs
             centroid_to_face_id = self.centroid_tracker.match_centroids(centroids)
-
+            
             tracking_data = []
-            for idx, centroid in enumerate(centroids):
+            
+            for idx, (centroid, width, height, box) in enumerate(zip(centroids, face_widths, face_heights, face_boxes)):
                 centroid_tuple = tuple(centroid)
                 face_id = centroid_to_face_id.get(centroid_tuple, None)
-
+                
                 # Assign a new dark color for a new face or lost tracking
                 if face_id is None or face_id not in self.face_colors:
                     self.face_colors[face_id] = self.generate_dark_color()
-
+                
                 face_color = self.face_colors[face_id]
-
                 cz = self.get_depth_at_centroid(centroid[0], centroid[1])
+                
                 point = Point(x=float(centroid[0]), y=float(centroid[1]), z=float(cz) if cz else 0.0)
-
+                
+                # Add width and height to tracking data
                 tracking_data.append({
                     'face_id': str(face_id),
                     'centroid': point,
+                    'width': float(width),
+                    'height': float(height),
                     'mutual_gaze': bool(mutualGaze_list[idx])
                 })
-
+                
+                # Unpack bounding box coordinates
+                x_min, y_min, x_max, y_max = box
+                
                 # Draw bounding box with assigned color
                 cv2.rectangle(frame, (x_min, y_min), (x_max, y_max), face_color, 2)
-
+                
                 # Add label above bounding box
                 label = "Engaged" if mutualGaze_list[idx] else "Not Engaged"
                 cv2.putText(frame, label, (x_min, y_min - 10),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.7, face_color, 2)
-
                 cv2.putText(frame, f"Face: {face_id}", (x_min, y_min - 30),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.7, face_color, 2)
-
+            
+            # Publish the tracking data
             self.publish_face_detection(tracking_data)
 class YOLOONNX:
     def __init__(self, model_path: str, class_score_th: float = 0.65,
@@ -645,6 +668,10 @@ class SixDrepNet(FaceDetectionNode):
         for track in self.tracks:
             x1, y1, x2, y2, face_id = map(int, track)  # SORT returns face_id as the last value
             cx, cy = (x1 + x2) // 2, (y1 + y2) // 2
+            
+            # Calculate width and height
+            width = x2 - x1
+            height = y2 - y1
 
             # Assign a unique color for each face ID
             # Assign a new dark color for a new face or lost tracking
@@ -670,15 +697,18 @@ class SixDrepNet(FaceDetectionNode):
             # Draw head pose axes
             self.draw_axis(debug_image, yaw_deg, pitch_deg, roll_deg, cx, cy, size=100)
 
-            cz = self.get_depth_in_region(cx, cy, x2 - x1, y2 - y1)
+            cz = self.get_depth_in_region(cx, cy, width, height)
 
             # Determine if the person is engaged
             sixdrep_angle = rospy.get_param("/faceDetection_config/sixdrepnet_headpose_angle", 10)
             mutual_gaze = abs(yaw_deg) < sixdrep_angle and abs(pitch_deg) < sixdrep_angle
 
+            # Add width and height to tracking data
             tracking_data.append({
                 'face_id': str(face_id),
                 'centroid': Point(x=float(cx), y=float(cy), z=float(cz) if cz else 0.0),
+                'width': float(width),
+                'height': float(height),
                 'mutual_gaze': mutual_gaze
             })
 
