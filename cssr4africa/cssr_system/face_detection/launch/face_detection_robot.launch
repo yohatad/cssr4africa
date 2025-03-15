@@ -5,10 +5,10 @@
     <arg name="network_interface"       default="wlp0s20f3" />
     <arg name="namespace"               default="naoqi_driver" />
     <arg name="camera"                  default="realsense" doc="Set 'pepper' for Pepper, 'realsense' for RealSense" />
-    <arg name="unit_test"               default="False" doc="Set '1' to run unit test, '0' to run on robot" />  
 
     <!-- Set it on Parameter Server which camera I'm using -->
     <param name="/faceDetection/camera" value="$(arg camera)"/>
+    <param name="/faceDetection/unit_test" value="false"/>
 
     <!-- Launch Pepper Robot (naoqi_driver) if camera=pepper -->
     <group if="$(eval arg('camera') == 'pepper')">
