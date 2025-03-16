@@ -93,12 +93,17 @@ class FaceDetectionTest:
         self.rgb_writer = None
         self.depth_writer = None
                         
-        # Always subscribe to camera if it's a supported type
-        if self.camera in ["realsense", "pepper"]:
-            self.subscribe_camera_topics()
+        # Only subscribe to camera if recording or visualization is needed
+        if (self.config.get("save_video", False) or 
+            self.config.get("save_image", False)):
+            if self.camera in ["realsense", "pepper"]:
+                self.subscribe_camera_topics()
+            else:
+                rospy.logerr(f"Unsupported camera type: {self.camera}")
+                raise ValueError(f"Unsupported camera type: {self.camera}")
         else:
-            rospy.logerr(f"Unsupported camera type: {self.camera}")
-            raise ValueError(f"Unsupported camera type: {self.camera}")
+            # Only subscribe to face detection data, not camera feeds
+            rospy.loginfo("Camera subscription disabled - not recording or visualizing")
                 
         # Subscribe to face detection data
         self.face_data_sub = rospy.Subscriber(
@@ -251,10 +256,14 @@ class FaceDetectionTest:
         # slop: how close in time the messages need to be (in seconds)
         sync = ApproximateTimeSynchronizer([rgb_sub, depth_sub], queue_size=10, slop=0.1)
         sync.registerCallback(self.synchronized_callback)
+
+        # Print message every 5 seconds
+        if rospy.get_time() - self.timer > 5:
+            rospy.loginfo("face_detection: running.")
+            self.timer = rospy.get_time()
         
         rospy.loginfo("Set up synchronized RGB and depth image subscribers")
     
-
     def synchronized_callback(self, rgb_msg, depth_msg):
         """
         Callback for synchronized RGB and depth images.
@@ -364,10 +373,7 @@ class FaceDetectionTest:
         """
         timestamp = int(self.start_time)
         rgb_video_path = os.path.join(
-            self.face_detection_test_package_path, 
-            'data', 
-            f'face_detection_rgb_video_{timestamp}.mp4'
-        )
+            self.face_detection_test_package_path, 'data', f'face_detection_rgb_video_{timestamp}.mp4')
         
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         self.rgb_writer = cv2.VideoWriter(
@@ -387,23 +393,12 @@ class FaceDetectionTest:
             height (int): Height of the depth image
         """
         timestamp = int(self.start_time)
-        depth_video_path = os.path.join(
-            self.face_detection_test_package_path, 
-            'data', 
-            f'face_detection_depth_video_{timestamp}.mp4'
-        )
+        depth_video_path = os.path.join(self.face_detection_test_package_path, 'data', f'face_detection_depth_video_{timestamp}.mp4')
         
         # For visualization, convert to colorized 8-bit
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        self.depth_writer = cv2.VideoWriter(
-            depth_video_path, 
-            fourcc, 
-            30, 
-            (width, height), 
-            True  # isColor=True for RGB output
-        )
+        self.depth_writer = cv2.VideoWriter(depth_video_path, fourcc, 30, (width, height), True) # isColor=True for RGB output
         
-
     def draw_face_detection_overlay(self, image):
         """
         Draw face detection overlay on the image for multiple faces.
@@ -504,11 +499,6 @@ class FaceDetectionTest:
             )
             self.save_image(display_image, image_path)
             self.image_save_time = current_time
-        
-        # Display the image if debug visualization is enabled
-        if self.config.get("show_debug_visualization", False):
-            cv2.imshow("Face Detection", display_image)
-            cv2.waitKey(1)
             
     def process_depth_frame(self, cv_depth):
         """
@@ -723,10 +713,6 @@ class FaceDetectionTest:
             self.depth_writer.release()
             if self.verbose_mode:
                 rospy.loginfo("Depth video writer closed on shutdown")
-            
-        # Close any open OpenCV windows
-        if self.config.get("show_debug_visualization", False):
-            cv2.destroyAllWindows()
             
         # Unsubscribe from topics
         if hasattr(self, 'image_sub'):

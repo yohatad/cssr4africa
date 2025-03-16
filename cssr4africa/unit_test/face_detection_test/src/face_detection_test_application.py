@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 face_detection_application.py Application code to run the face and mutual gaze detection algorithm.
@@ -33,7 +33,7 @@ def main():
     rospy.loginfo(f"{node_name}: startup.")
 
     # Create the test instance and run tests
-    test = FaceDetectionTest()
+    FaceDetectionTest()
 
     # IMPORTANT: Keep the node alive so callbacks can be triggered
     rospy.spin()
