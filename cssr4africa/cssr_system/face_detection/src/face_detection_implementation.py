@@ -1,5 +1,5 @@
 """"
-face_detection_implementation.py Implementation code for running the face and Head Pose detection algorithm
+face_detection_implementation.py Implementation code for running the Face and Mutual Gaze Detection Algorithm.
 
 Author: Yohannes Tadesse Haile
 Date: March 15, 2025

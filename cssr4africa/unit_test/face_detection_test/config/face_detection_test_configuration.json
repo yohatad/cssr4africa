@@ -1,9 +1,9 @@
 {   "algorthim": "sixdrep",
-    "bag_file": "singleFace", 
     "save_video": false,
     "save_image": false, 
     "video_duration": 10,
     "image_interval": 5,
-    "speaker": true,
+    "recording_delay": 5,
+    "max_frames_buffer": 300,
     "verbose_mode": false
 }
