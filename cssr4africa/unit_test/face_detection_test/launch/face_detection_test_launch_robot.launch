@@ -2,8 +2,8 @@
     <!-- Declare arguments -->
     <arg name="camera"              default="video" doc="Set realsense for realsense camera, pepper for pepper camera, video for recorded video data" />
     <arg name="bag_file"            default="singleFace" doc="Choose which bag file to play (e.g., 'singleFace' for file ending in _singleFace.bag)" />
-    <arg name="pepper_robot_ip"     value="172.29.111.230" />
-    <arg name="pepper_robot_port"   value="9559" />
+    <arg name="robot_ip"            default="172.29.111.230" />
+    <arg name="robot_port"          default="9559" />
     <arg name="network_interface"   default="wlp0s20f3" />
     <arg name="namespace"           default="naoqi_driver" />
     
@@ -30,7 +30,7 @@
     <!-- If Pepper camera is selected, launch only naoqi_driver -->
     <group if="$(eval arg('camera') == 'pepper')">
         <node pkg="naoqi_driver" type="naoqi_driver_node" name="$(arg namespace)" required="true"
-            args="--qi-url=tcp://$(arg pepper_robot_ip):$(arg pepper_robot_port) --network_interface=$(arg network_interface) --namespace=$(arg namespace)"
+            args="--qi-url=tcp://$(arg robot_ip):$(arg robot_port) --network_interface=$(arg network_interface) --namespace=$(arg namespace)"
             output="screen" />
     </group>
 

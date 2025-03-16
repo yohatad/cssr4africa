@@ -1,5 +1,5 @@
 """"
-face_detection_implementation.py Implementation code for running the Face and Mutual Gaze Detection Algorithm.
+face_detection_implementation.py Implementation code for running the Face and Mutual Gaze Detection and Localization ROS node.
 
 Author: Yohannes Tadesse Haile
 Date: March 15, 2025
@@ -86,7 +86,7 @@ class FaceDetectionNode:
         rgb_h, rgb_w = color_image.shape[:2]
         depth_h, depth_w = depth_image.shape[:2]
         return rgb_h == depth_h and rgb_w == depth_w
-    
+
     @staticmethod
     def read_json_file():
         rospack = rospkg.RosPack()
@@ -345,8 +345,8 @@ class MediaPipe(FaceDetectionNode):
         # Process with face mesh
         self.process_face_mesh(frame, rgb_frame, img_h, img_w)
 
-        # Print message every 5 seconds
-        if rospy.get_time() - self.timer > 5:
+        # Print message every 10 seconds
+        if rospy.get_time() - self.timer > 10:
             rospy.loginfo("face_detection: running.")
             self.timer = rospy.get_time()
 
@@ -624,8 +624,8 @@ class SixDrepNet(FaceDetectionNode):
             # Process the frame
             self.latest_frame = self.process_frame(cv_image)
 
-             # Print message every 5 seconds
-            if rospy.get_time() - self.timer > 5:
+             # Print message every 10 seconds
+            if rospy.get_time() - self.timer > 10:
                 rospy.loginfo("face_detection: running.")
                 self.timer = rospy.get_time()
 

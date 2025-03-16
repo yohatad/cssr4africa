@@ -16,13 +16,13 @@ This program comes with ABSOLUTELY NO WARRANTY.
 """
 
 import rospkg
-import json
-import os
 import rospy
+import os
+import json
+import numpy as np
 import cv2
 import time
 import threading
-import numpy as np
 import colorsys
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge

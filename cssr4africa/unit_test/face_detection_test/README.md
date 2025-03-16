@@ -10,22 +10,15 @@ This module provides unit tests for the **Face and Mutual Gaze Detection and Loc
 
 ---
 
-#  Documentation
+#  📄 Documentation
 The main documentation for this deliverable is found in  **[D4.2.2 Face and Mutual Gaze Detection and Localization](https://cssr4africa.github.io/deliverables/CSSR4Africa_Deliverable_D4.2.2.pdf)**, which provides more details regarding how to run the test and gives detail about the face detection and localization module.  
-
----
-
-#  Running the Node
-Before running the node, the configuration file must be set up correctly with the appropriate key-value pairs. The configuration file is typically located in the package folder under the `config` directory.
-
-The test can be performed on a **physical robot using realsense or pepper camera** or using **pre-recorded video saved as a ROS bag file**. The specific test to run can be selected by modifying the configuration.
 
 ---
 
 #  Configuration File
 The following table provides the key-value pairs used in the configuration file:
 
-## Configuration Parameters
+## 🔧 Configuration Parameters
 
 | Parameter           | Description                                   | Possible Values            | Default Value |
 |---------------------|-----------------------------------------------|----------------------------|---------------|
@@ -44,7 +37,10 @@ The following table provides the key-value pairs used in the configuration file:
 > **Note:**  
 > Enabling **`verbose_mode`** (`True`) will activate detailed logging and **visualize outputs using OpenCV windows**.  
 
-# Run the Face Detection Unit Test
+#  🚀 Run the Face Detection Unit Test
+Before running the node, the configuration file must be set up correctly with the appropriate key-value pairs. The configuration file is typically located in the package folder under the `config` directory.
+
+The test can be performed on a **physical robot using realsense or pepper camera** or using **pre-recorded video saved as a ROS bag file**. The specific test to run can be selected by modifying the configuration.
 
 1. **Install the required software components:**
 
@@ -69,12 +65,12 @@ The following table provides the key-value pairs used in the configuration file:
 3. **Launch the Physical Robot**
 ```bash
 # The camera in the launch file could be set as 'pepper', 'realsense' or 'video'
-roslaunch unit_test face_detection_test_launch_robot.launch camera:=<camera> bag_file:=<bag_file>
+roslaunch unit_test face_detection_test_launch_robot.launch camera:=<camera> bag_file:=<bag_file> <robot_ip> <network_interface>
 ```
 
 ### Camera Input Options
 
-- **`pepper`**: Use Pepper robot's built-in camera.
+- **`pepper`**: Use Pepper robot's built-in camera. If you choose **pepper** set the right **robot_ip** and **network_interface**. 
 - **`realsense`**: Use Intel RealSense camera.
 - **`video`**: Use a rosbag video recorded using the intel RealSense camera. 
 
@@ -88,9 +84,10 @@ roslaunch unit_test face_detection_test_launch_robot.launch camera:=<camera> bag
 - **`lighting`**: Features variations in lighting conditions to assess detection stability.
 
 > **Note:**  
-> Before running the Test Harness, activate the face detection python environement. 
+> Before running the Test Harness, activate the face detection python environement. Refer the README.md file for the face detection node.
 ```bash
-
+  source ~/workspace/pepper_rob_ws/face_detection/bin/activate
+```
 
 4. **Run Face Detection Test Harness**
 ```bash
@@ -98,8 +95,8 @@ roslaunch unit_test face_detection_test_launch_robot.launch camera:=<camera> bag
 roslaunch unit_test face_detection_test_launch_testHarness.launch
 ```
 
-# Results
-When running the face detection system, you will see:
+# 🖥️ Output Result
+When running the face detection test node, you will see:
 
 - A window displaying the camera feed with face detection results  
 Each detected face will have:
@@ -109,16 +106,18 @@ Each detected face will have:
   - "Engaged" or "Not Engaged" status based on mutual gaze  
   - Depth information showing distance from camera  
 
-# Support
+The details of the result is documented in the Face and Mutual Gaze Detection and Localization Deliverible Report.
+
+# 💡Support
 
 For issues or questions:
 - Create an issue on GitHub
 - Contact: <a href="mailto:dvernon@andrew.cmu.edu">dvernon@andrew.cmu.edu</a>, <a href="mailto:yohanneh@andrew.cmu.edu">yohanneh@andrew.cmu.edu</a><br>
 - Visit: <a href="http://www.cssr4africa.org">www.cssr4africa.org</a>
 
-
-
-# License
+# 📜 License
   Copyright (C) 2023 CSSR4Africa Consortium  
   Funded by the African Engineering and Technology Network (Afretec)  
   Inclusive Digital Transformation Research Grant Programme 
+
+  2025-03-15
