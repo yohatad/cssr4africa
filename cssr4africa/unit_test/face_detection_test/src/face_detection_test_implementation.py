@@ -258,8 +258,8 @@ class FaceDetectionTest:
         sync.registerCallback(self.synchronized_callback)
 
         # Print message every 5 seconds
-        if rospy.get_time() - self.timer > 5:
-            rospy.loginfo("face_detection: running.")
+        if rospy.get_time() - self.timer > 10:
+            rospy.loginfo("face_detection_test: running.")
             self.timer = rospy.get_time()
         
         rospy.loginfo("Set up synchronized RGB and depth image subscribers")
