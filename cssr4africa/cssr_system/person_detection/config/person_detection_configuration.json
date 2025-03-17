@@ -1,7 +1,9 @@
 {
-    "camera": "realsense",
     "algorithm": "mediapipe",
-    "confidence_threshold": 0.8,
-    "iou_threshold": 0.5,
-    "verboseMode": true
+    "use_compressed": false,
+    "confidence_iou_threshold": 0.8,
+    "sort_max_disappeared": 30,
+    "sort_min_hits": 20,
+    "sort_iou_threshold": 0.3,
+    "verbose_mode": true
 }
