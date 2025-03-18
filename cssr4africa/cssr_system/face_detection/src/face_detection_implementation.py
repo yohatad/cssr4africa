@@ -28,6 +28,7 @@ import random
 from math import cos, sin, pi
 from sensor_msgs.msg import Image, CompressedImage
 from cv_bridge import CvBridge, CvBridgeError
+from message_filters import ApproximateTimeSynchronizer, Subscriber
 from geometry_msgs.msg import Point
 from typing import Tuple, List
 from face_detection.msg import msg_file
@@ -42,41 +43,68 @@ class FaceDetectionNode:
         self.use_compressed = rospy.get_param('/faceDetection_config/use_compressed', False)  # Parameter to choose compressed or raw images
 
     def subscribe_topics(self):
-        """Subscribe to the color and depth image topics based on the camera type. """
         camera_type = rospy.get_param('/faceDetection/camera', default="realsense")
+        
         if camera_type == "realsense":
             self.rgb_topic = self.extract_topics("RealSenseCameraRGB")
             self.depth_topic = self.extract_topics("RealSenseCameraDepth")
         elif camera_type == "pepper":
             self.rgb_topic = self.extract_topics("PepperFrontCamera")
             self.depth_topic = self.extract_topics("PepperDepthCamera")
-            rospy.loginfo(f"Subscribed to {self.rgb_topic}")
-            rospy.loginfo(f"Subscribed to {self.depth_topic}")
         else:
-            rospy.logerr("subscribe_topics: Invalid camera type specified")
-            rospy.signal_shutdown("subscribe_topics: Invalid camera type")
+            rospy.logerr("Invalid camera type specified")
+            rospy.signal_shutdown("Invalid camera type")
             return
 
         if not self.rgb_topic or not self.depth_topic:
-            rospy.logerr("subscribe_topics: Camera topic not found.")
-            rospy.signal_shutdown("subscribe_topics: Camera topic not found")
+            rospy.logerr("Camera topic not found.")
+            rospy.signal_shutdown("Camera topic not found")
             return
 
-        # For color images, subscribe to either raw or compressed
         if self.use_compressed and camera_type == "realsense":
-            self.image_sub = rospy.Subscriber(self.rgb_topic + "/compressed", CompressedImage, self.compressed_image_callback)
-            rospy.loginfo(f"Subscribed to {self.rgb_topic}/compressed")
+            color_sub = Subscriber(self.rgb_topic + "/compressed", CompressedImage)
+            depth_sub = Subscriber(self.depth_topic + "/compressed", CompressedImage)
+            rospy.loginfo(f"Subscribed to compressed {self.rgb_topic}")
+            rospy.loginfo(f"Subscribed to compressed {self.rgb_topic}")
         else:
-            self.image_sub = rospy.Subscriber(self.rgb_topic, Image, self.image_callback)
-            rospy.loginfo(f"Subscribed to {self.rgb_topic}")
+            color_sub = Subscriber(self.rgb_topic, Image)
+            depth_sub = Subscriber(self.depth_topic, Image)
+            rospy.loginfo(f"Subscribed to raw {self.rgb_topic}")
+            rospy.loginfo(f"Subscribed to raw {self.rgb_topic}")
 
-        # For depth images, subscribe to either raw or compressed
-        if self.use_compressed and camera_type == "realsense":
-            self.depth_sub = rospy.Subscriber(self.depth_topic + "/compressed", CompressedImage, self.compressed_depth_callback)
-            rospy.loginfo(f"Subscribed to {self.depth_topic}/compressed")
-        else:
-            self.depth_sub = rospy.Subscriber(self.depth_topic, Image, self.depth_callback)
-            rospy.loginfo(f"Subscribed to {self.depth_topic}")
+        # ApproximateTimeSynchronizer setup
+        ats = ApproximateTimeSynchronizer(
+            [color_sub, depth_sub], queue_size=10, slop=0.1
+        )
+        ats.registerCallback(self.synchronized_callback)
+
+    def synchronized_callback(self, color_data, depth_data):
+        try:
+            # Color image processing
+            if isinstance(color_data, CompressedImage):
+                np_arr = np.frombuffer(color_data.data, np.uint8)
+                self.color_image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+            else:
+                self.color_image = self.bridge.imgmsg_to_cv2(color_data, desired_encoding="bgr8")
+
+            # Depth image processing
+            if isinstance(depth_data, CompressedImage):
+                np_arr = np.frombuffer(depth_data.data, np.uint8)
+                self.depth_image = cv2.imdecode(np_arr, cv2.IMREAD_UNCHANGED)
+            else:
+                self.depth_image = self.bridge.imgmsg_to_cv2(depth_data, desired_encoding="passthrough")
+
+            if self.color_image is None or self.depth_image is None:
+                rospy.logwarn("synchronized_callback: Decoded images are None.")
+                return
+
+            # Process synchronized images
+            self.process_images()
+
+        except CvBridgeError as e:
+            rospy.logerr(f"synchronized_callback CvBridge Error: {e}")
+        except Exception as e:
+            rospy.logerr(f"synchronized_callback Exception: {e}")
 
     def check_camera_resolution(self, color_image, depth_image):
         """Check if the color and depth images have the same resolution."""
@@ -123,58 +151,24 @@ class FaceDetectionNode:
                 rospy.logerr(f"extract_topics: Data file not found at {config_path}")
         except rospkg.ResourceNotFound as e:
             rospy.logerr(f"ROS package 'face_detection' not found: {e}")
-    
-    def image_callback(self, data):
-        """Callback to receive the raw color image."""
-        try:
-            # Convert the ROS Image message to a NumPy array
-            self.color_image = self.bridge.imgmsg_to_cv2(data, desired_encoding="bgr8")
-            self.process_images()
-        except CvBridgeError as e:
-            rospy.logerr("image_callback: CvBridge Error: {}".format(e))
-    
-    def compressed_image_callback(self, data):
-        """Callback to receive the compressed color image."""
-        try:
-            # Convert the compressed image to a NumPy array
-            np_arr = np.frombuffer(data.data, np.uint8)
-            self.color_image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
-            self.process_images()
-        except Exception as e:
-            rospy.logerr("compressed_image_callback: Error: {}".format(e))
-      
-    def depth_callback(self, data):
-        """Callback to receive the raw depth image."""
-        try:
-            # Convert the ROS Image message to a NumPy array
-            self.depth_image = self.bridge.imgmsg_to_cv2(data, desired_encoding="passthrough")
-            self.process_images()
-        except CvBridgeError as e:
-            rospy.logerr("depth_callback: CvBridge Error: {}".format(e))
-    
-    def compressed_depth_callback(self, data):
-        """Callback to receive the compressed depth image."""
-        try:
-            # Convert the compressed image to a NumPy array
-            np_arr = np.frombuffer(data.data, np.uint8)
-            # Depth images might need special handling depending on the compression format
-            self.depth_image = cv2.imdecode(np_arr, cv2.IMREAD_UNCHANGED)
-            self.process_images()
-        except Exception as e:
-            rospy.logerr("compressed_depth_callback: Error: {}".format(e))
-    
+        
     def process_images(self):
-        """Process both color and depth images when available."""
-        if self.color_image is not None and self.depth_image is not None:
-            # Check if resolution matches
-            if self.check_camera_resolution(self.color_image, self.depth_image):
-                # Process the color image with the appropriate implementation
-                if hasattr(self, 'face_mesh'):  # MediaPipe implementation
-                    self.process_face_mesh(self.color_image)
-                elif hasattr(self, 'yolo_model'):  # SixDrepNet implementation
-                    self.latest_frame = self.process_frame(self.color_image)
-            else:
-                rospy.logwarn("process_images: Color and depth image resolutions do not match")
+        if self.color_image is None or self.depth_image is None:
+            rospy.logwarn("process_images: Missing images.")
+            return
+
+        if not self.check_camera_resolution(self.color_image, self.depth_image):
+            rospy.logwarn("process_images: Color and depth image resolutions do not match.")
+            return
+
+        if hasattr(self, 'face_mesh'):  # MediaPipe implementation
+            rgb_frame = cv2.cvtColor(self.color_image, cv2.COLOR_BGR2RGB)
+            img_h, img_w = self.color_image.shape[:2]
+            self.process_face_mesh(self.color_image, rgb_frame, img_h, img_w)
+        elif hasattr(self, 'yolo_model'):  # SixDrepNet implementation
+            self.latest_frame = self.process_frame(self.color_image)
+        else:
+            rospy.logwarn("process_images: No processing method found (face_mesh/yolo_model missing).")
 
     def display_depth_image(self):
         if self.depth_image is not None:
@@ -336,22 +330,6 @@ class MediaPipe(FaceDetectionNode):
                 rospy.logerr("Color camera and depth camera have different resolutions.")
                 rospy.signal_shutdown("Resolution mismatch")
         
-    def image_callback(self, data):
-        """Callback to receive the color image."""
-        frame = self.bridge.imgmsg_to_cv2(data, desired_encoding='bgr8')
-        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        img_h, img_w, _ = frame.shape
-
-        # Process with face mesh
-        self.process_face_mesh(frame, rgb_frame, img_h, img_w)
-
-        # Print message every 10 seconds
-        if rospy.get_time() - self.timer > 10:
-            rospy.loginfo("face_detection: running.")
-            self.timer = rospy.get_time()
-
-        # Store the processed frame for dispay
-        self.latest_frame = frame.copy()
 
     def spin(self):
         """Main loop to display processed frames and depth images."""
@@ -615,22 +593,6 @@ class SixDrepNet(FaceDetectionNode):
         cv2.line(img, (int(tdx), int(tdy)), (int(x1), int(y1)), (0, 0, 255), 2)
         cv2.line(img, (int(tdx), int(tdy)), (int(x2), int(y2)), (0, 255, 0), 2)
         cv2.line(img, (int(tdx), int(tdy)), (int(x3), int(y3)), (255, 0, 0), 2)
-
-    def image_callback(self, msg):            
-        try:
-            # Convert the ROS image message to an OpenCV image
-            cv_image = self.bridge.imgmsg_to_cv2(msg, 'bgr8')
-            
-            # Process the frame
-            self.latest_frame = self.process_frame(cv_image)
-
-             # Print message every 10 seconds
-            if rospy.get_time() - self.timer > 10:
-                rospy.loginfo("face_detection: running.")
-                self.timer = rospy.get_time()
-
-        except CvBridgeError as e:
-            rospy.logerr("CvBridge Error: {}".format(e))
 
     def process_frame(self, cv_image):
         """
