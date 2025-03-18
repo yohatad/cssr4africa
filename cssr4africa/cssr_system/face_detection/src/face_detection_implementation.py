@@ -25,7 +25,6 @@ import onnxruntime
 import multiprocessing
 import json
 import random
-import zlib
 from math import cos, sin, pi
 from sensor_msgs.msg import Image, CompressedImage
 from cv_bridge import CvBridge, CvBridgeError
