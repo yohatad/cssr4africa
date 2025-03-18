@@ -94,7 +94,7 @@ Example of instantiation of the module
     (In a new terminal)
     rosrun face_detection face_detection_application.py
 
-Author: Yohannes Tadesse Haile
+Author: Yohannes Tadesse Haile, Carnegie Mellon University Africa
 Email: yohanneh@andrew.cmu.edu
 Date: March 15, 2025
 Version: v1.0
