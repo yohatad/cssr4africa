@@ -703,6 +703,17 @@ class SixDrepNet(FaceDetectionNode):
 
             cv2.putText(debug_image, f"Face: {face_id}", (x1 + 10, y1 - 30),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.7, face_color, 2)
+            
+               # Draw depth information below the box
+            cv2.putText(
+                debug_image,
+                f"Depth: {cz:.2f}m",
+                (x1 + 10, y2 + 20),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.6,
+                face_color,
+                2
+            )
 
         # Publish tracking data
         self.publish_face_detection(tracking_data)
