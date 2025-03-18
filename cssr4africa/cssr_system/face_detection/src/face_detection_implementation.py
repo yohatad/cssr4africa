@@ -25,6 +25,7 @@ import onnxruntime
 import multiprocessing
 import json
 import random
+import zlib
 from math import cos, sin, pi
 from sensor_msgs.msg import Image, CompressedImage
 from cv_bridge import CvBridge, CvBridgeError
@@ -63,7 +64,7 @@ class FaceDetectionNode:
 
         if self.use_compressed and camera_type == "realsense":
             color_sub = Subscriber(self.rgb_topic + "/compressed", CompressedImage)
-            depth_sub = Subscriber(self.depth_topic + "/compressed", CompressedImage)
+            depth_sub = Subscriber(self.depth_topic + "/compressedDepth", CompressedImage)
             rospy.loginfo(f"Subscribed to compressed {self.rgb_topic}")
             rospy.loginfo(f"Subscribed to compressed {self.rgb_topic}")
         else:
@@ -80,17 +81,39 @@ class FaceDetectionNode:
 
     def synchronized_callback(self, color_data, depth_data):
         try:
-            # Color image processing
+            # --- Color Image Processing ---
             if isinstance(color_data, CompressedImage):
                 np_arr = np.frombuffer(color_data.data, np.uint8)
                 self.color_image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
             else:
                 self.color_image = self.bridge.imgmsg_to_cv2(color_data, desired_encoding="bgr8")
 
-            # Depth image processing
+            # --- Depth Image Processing ---
             if isinstance(depth_data, CompressedImage):
-                np_arr = np.frombuffer(depth_data.data, np.uint8)
-                self.depth_image = cv2.imdecode(np_arr, cv2.IMREAD_UNCHANGED)
+                # Check if this is compressedDepth PNG format
+                if "compressedDepth png" in depth_data.format:
+                    try:
+                        # 16UC1 format with PNG compression as indicated in the message
+                        # First 12 bytes are the header for compressedDepth
+                        depth_header_size = 12
+                        depth_img_data = depth_data.data[depth_header_size:]
+                        
+                        # Convert compressed data to numpy array
+                        np_arr = np.frombuffer(depth_img_data, np.uint8)
+                        
+                        # Use IMREAD_ANYDEPTH to properly handle 16-bit depth data
+                        depth_img = cv2.imdecode(np_arr, cv2.IMREAD_ANYDEPTH)
+                        
+                        if depth_img is not None:
+                            self.depth_image = depth_img
+                        else:
+                            rospy.logerr("Failed to decode PNG depth image")
+                    except Exception as e:
+                        rospy.logerr(f"Depth decoding error: {e}")
+                else:
+                    # Regular compressed image
+                    np_arr = np.frombuffer(depth_data.data, np.uint8)
+                    self.depth_image = cv2.imdecode(np_arr, cv2.IMREAD_UNCHANGED)
             else:
                 self.depth_image = self.bridge.imgmsg_to_cv2(depth_data, desired_encoding="passthrough")
 
@@ -105,7 +128,7 @@ class FaceDetectionNode:
             rospy.logerr(f"synchronized_callback CvBridge Error: {e}")
         except Exception as e:
             rospy.logerr(f"synchronized_callback Exception: {e}")
-
+    
     def check_camera_resolution(self, color_image, depth_image):
         """Check if the color and depth images have the same resolution."""
         if color_image is None or depth_image is None:
