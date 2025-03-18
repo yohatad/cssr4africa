@@ -64,13 +64,13 @@ class FaceDetectionNode:
         if self.use_compressed and camera_type == "realsense":
             color_sub = Subscriber(self.rgb_topic + "/compressed", CompressedImage)
             depth_sub = Subscriber(self.depth_topic + "/compressedDepth", CompressedImage)
-            rospy.loginfo(f"Subscribed to compressed {self.rgb_topic}")
-            rospy.loginfo(f"Subscribed to compressed {self.rgb_topic}")
+            rospy.loginfo(f"Subscribed to {self.rgb_topic}/compressed")
+            rospy.loginfo(f"Subscribed to {self.rgb_topic}/compressedDepth")
         else:
             color_sub = Subscriber(self.rgb_topic, Image)
             depth_sub = Subscriber(self.depth_topic, Image)
-            rospy.loginfo(f"Subscribed to raw {self.rgb_topic}")
-            rospy.loginfo(f"Subscribed to raw {self.rgb_topic}")
+            rospy.loginfo(f"Subscribed to {self.rgb_topic}")
+            rospy.loginfo(f"Subscribed to {self.rgb_topic}")
 
         # ApproximateTimeSynchronizer setup
         ats = ApproximateTimeSynchronizer(
@@ -357,7 +357,7 @@ class MediaPipe(FaceDetectionNode):
             if self.latest_frame is not None:
                 if self.verbose_mode:
                     # Display the processed frame
-                    cv2.imshow("Face Detection & Head Pose Estimation", self.latest_frame)
+                    cv2.imshow("Face Detection & Mutual Gaze Estimation", self.latest_frame)
 
             # Display the depth image if verbose mode is enabled
             if self.verbose_mode:
