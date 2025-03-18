@@ -29,7 +29,6 @@ The following table provides the key-value pairs used in the configuration file:
 | `image_interval`    | Interval (seconds) between captured images    | Positive integer           | `5`           |
 | `recording_delay`   | Delay (seconds) before recording starts       | Positive integer           | `5`           |
 | `max_frames_buffer` | Maximum number of frames to store in buffer   | Positive integer           | `300`         |
-| `speaker`           | Enable speaker announcements for active tests | `True`, `False`            | `True`        |
 | `verbose_mode`      | Enable detailed logging and visual output     | `True`, `False`            | `True`        |
 
 ---
@@ -65,7 +64,7 @@ The test can be performed on a **physical robot using realsense or pepper camera
 3. **Launch the Physical Robot**
 ```bash
 # The camera in the launch file could be set as 'pepper', 'realsense' or 'video'
-roslaunch unit_test face_detection_test_launch_robot.launch camera:=<camera> bag_file:=<bag_file> <robot_ip> <network_interface>
+roslaunch unit_test face_detection_test_launch_robot.launch camera:=<camera> bag_file:=<bag_file> robot_ip:=<robot_ip> network_interface:=<network_interface>
 ```
 
 ### Camera Input Options

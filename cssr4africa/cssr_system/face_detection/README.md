@@ -70,7 +70,7 @@ The following table provides the key-value pairs used in the configuration file:
 |-----------------------------|------------------------------------------------------------------|-------------------------|---------------|
 | `algorithm`                 | Algorithm selected for face detection                            | `mediapipe`, `sixdrep`  | `sixdrep`     |
 | `use_compressed`            | Use compressed ROS image topics                                  | `True`, `False`         | `True`        |
-| `mpd_confidence`            | Face detection confidence threshold (MediaPipe)                  | `[0.0 - 1.0]`           | `0.5`         |
+| `mp_confidence`            | Face detection confidence threshold (MediaPipe)                  | `[0.0 - 1.0]`           | `0.5`         |
 | `mp_headpose_angle`         | Head pose angle threshold in degrees (MediaPipe)                 | Positive integer        | `8`           |
 | `centroid_max_distance`     | Maximum centroid distance for centroid tracking                  | Positive integer        | `15`          |
 | `centroid_max_disappeared`  | Frames allowed before centroid tracker deregisters an object     | Positive integer        | `100`         |
@@ -113,7 +113,7 @@ Follow below steps, run in different terminals.
   rosrun cssr_system face_detection_application.py
   ```
 
-##  🖥️ Output
+#  🖥️ Output
 The node publishes the detected faces and their corresponding centroid, the width and height of the bounding box and the a boolean array whether a mutual gaze is established or not. When running in the verbose it display the OpenCv annotated color image and depth image that could help to visualize the result obtained. 
 
 Subscription to the topic **faceDetection/data** allows verification of its publication status using the following command:
@@ -122,7 +122,7 @@ Subscription to the topic **faceDetection/data** allows verification of its publ
 rostopic echo /faceDetection/data
 ```
 
-##  💡 Support
+# 💡 Support
 
 For issues or questions:
 - Create an issue on GitHub
@@ -130,7 +130,7 @@ For issues or questions:
 - Visit: <a href="http://www.cssr4africa.org">www.cssr4africa.org</a>
 
 
-## 📜License
+# 📜License
 Copyright (C) 2023 CSSR4Africa Consortium  
 Funded by African Engineering and Technology Network (Afretec)  
 Inclusive Digital Transformation Research Grant Programme
