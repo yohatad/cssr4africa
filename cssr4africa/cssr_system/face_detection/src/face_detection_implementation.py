@@ -183,7 +183,7 @@ class FaceDetectionNode:
             rgb_frame = cv2.cvtColor(self.color_image, cv2.COLOR_BGR2RGB)
             img_h, img_w = self.color_image.shape[:2]
             self.process_face_mesh(self.color_image, rgb_frame, img_h, img_w)
-            # Note: self.latest_frame is now set inside process_face_mesh
+
         elif hasattr(self, 'yolo_model'):  # SixDrepNet implementation
             self.latest_frame = self.process_frame(self.color_image)
         else:
