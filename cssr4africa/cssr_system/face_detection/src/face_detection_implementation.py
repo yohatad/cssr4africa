@@ -65,12 +65,12 @@ class FaceDetectionNode:
             color_sub = Subscriber(self.rgb_topic + "/compressed", CompressedImage)
             depth_sub = Subscriber(self.depth_topic + "/compressedDepth", CompressedImage)
             rospy.loginfo(f"Subscribed to {self.rgb_topic}/compressed")
-            rospy.loginfo(f"Subscribed to {self.rgb_topic}/compressedDepth")
+            rospy.loginfo(f"Subscribed to {self.depth_topic}/compressedDepth")
         else:
             color_sub = Subscriber(self.rgb_topic, Image)
             depth_sub = Subscriber(self.depth_topic, Image)
             rospy.loginfo(f"Subscribed to {self.rgb_topic}")
-            rospy.loginfo(f"Subscribed to {self.rgb_topic}")
+            rospy.loginfo(f"Subscribed to {self.depth_topic}")
 
         # ApproximateTimeSynchronizer setup
         ats = ApproximateTimeSynchronizer(
@@ -89,26 +89,21 @@ class FaceDetectionNode:
 
             # --- Depth Image Processing ---
             if isinstance(depth_data, CompressedImage):
-                # Check if this is compressedDepth PNG format
-                if "compressedDepth png" in depth_data.format:
+                # Ensure depth_data.format is valid before accessing it
+                if hasattr(depth_data, "format") and depth_data.format and "compressedDepth png" in depth_data.format:
                     try:
-                        # 16UC1 format with PNG compression as indicated in the message
-                        # First 12 bytes are the header for compressedDepth
+                        # Handle PNG compression in compressedDepth format
                         depth_header_size = 12
                         depth_img_data = depth_data.data[depth_header_size:]
-                        
-                        # Convert compressed data to numpy array
                         np_arr = np.frombuffer(depth_img_data, np.uint8)
-                        
-                        # Use IMREAD_ANYDEPTH to properly handle 16-bit depth data
                         depth_img = cv2.imdecode(np_arr, cv2.IMREAD_ANYDEPTH)
-                        
+
                         if depth_img is not None:
                             self.depth_image = depth_img
                         else:
                             rospy.logerr("Failed to decode PNG depth image")
                     except Exception as e:
-                        rospy.logerr(f"Depth decoding error: {e}")
+                        rospy.logerr(f"Depth decoding error: {str(e)}")
                 else:
                     # Regular compressed image
                     np_arr = np.frombuffer(depth_data.data, np.uint8)
@@ -124,9 +119,10 @@ class FaceDetectionNode:
             self.process_images()
 
         except CvBridgeError as e:
-            rospy.logerr(f"synchronized_callback CvBridge Error: {e}")
+            rospy.logerr(f"synchronized_callback CvBridge Error: {str(e)}")
         except Exception as e:
-            rospy.logerr(f"synchronized_callback Exception: {e}")
+            rospy.logerr(f"synchronized_callback Exception: {str(e)}")
+
     
     def check_camera_resolution(self, color_image, depth_image):
         """Check if the color and depth images have the same resolution."""
@@ -449,6 +445,8 @@ class MediaPipe(FaceDetectionNode):
                 
                 face_color = self.face_colors[face_id]
                 cz = self.get_depth_at_centroid(centroid[0], centroid[1])
+                cz = cz if cz is not None else 0.0  # Default to 0.0 meters
+
                 
                 point = Point(x=float(centroid[0]), y=float(centroid[1]), z=float(cz) if cz else 0.0)
                 
@@ -679,6 +677,7 @@ class SixDrepNet(FaceDetectionNode):
             self.draw_axis(debug_image, yaw_deg, pitch_deg, roll_deg, cx, cy, size=100)
 
             cz = self.get_depth_in_region(cx, cy, width, height)
+            cz = cz if cz is not None else 0.0
 
             # Determine if the person is engaged
             sixdrep_angle = rospy.get_param("/faceDetection_config/sixdrepnet_headpose_angle", 10)

@@ -1,5 +1,5 @@
 {
-    "algorithm": "mediapipe",
+    "algorithm": "sixdrep",
     "use_compressed": true,
     "mp_facedet_confidence": 0.5,
     "mp_headpose_angle": 8,
