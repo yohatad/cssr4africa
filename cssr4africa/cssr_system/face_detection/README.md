@@ -96,7 +96,7 @@ Follow below steps, run in different terminals.
 
   1️. Launch the robot and specifiy which camera to use. 
   ```bash
-  roslaunch cssr_system cssrSystemLaunchRobot.launch robot_ip:=<robot_ip> roscore_ip:=<roscore_ip> network_interface:=<network_interface> camera:=<camera>
+  roslaunch cssr_system face_detection_robot.launch robot_ip:=<robot_ip> roscore_ip:=<roscore_ip> network_interface:=<network_interface> camera:=<camera>
   ```
 
   The default camera is set to the realsense.

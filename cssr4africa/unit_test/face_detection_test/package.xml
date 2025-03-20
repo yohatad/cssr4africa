@@ -1,5 +1,5 @@
 <package format="2">
-  <name>face_detection_test</name>
+  <name>unit_test</name>
   <version>0.0.0</version>
   <description>The face_detection test package</description>
 

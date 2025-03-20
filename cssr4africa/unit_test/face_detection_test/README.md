@@ -62,16 +62,16 @@ The test can be performed on a **physical robot using realsense or pepper camera
   Navigate to `~/workspace/pepper_rob_ws/src/unit_tests/face_detection_test/config/face_detection_test_configuration.json` and update the configuration according to the key-value pairs as shown above.
 
 3. **Launch the Physical Robot**
-```bash
-# The camera in the launch file could be set as 'pepper', 'realsense' or 'video'
-roslaunch unit_test face_detection_test_launch_robot.launch camera:=<camera> bag_file:=<bag_file> robot_ip:=<robot_ip> network_interface:=<network_interface>
-```
-
 ### Camera Input Options
 
 - **`pepper`**: Use Pepper robot's built-in camera. If you choose **pepper** set the right **robot_ip** and **network_interface**. 
 - **`realsense`**: Use Intel RealSense camera.
 - **`video`**: Use a rosbag video recorded using the intel RealSense camera. 
+
+```bash
+# The camera in the launch file could be set as 'pepper', 'realsense' or 'video'
+roslaunch unit_test face_detection_test_launch_robot.launch camera:=<camera> bag_file:=<bag_file> robot_ip:=<robot_ip> network_interface:=<network_interface>
+```
 
 ### Bag File Options (`bag_file`):
 
