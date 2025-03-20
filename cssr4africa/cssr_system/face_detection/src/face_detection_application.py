@@ -138,7 +138,7 @@ def main():
         for key, value in filtered_config.items():
             rospy.set_param('/faceDetection_config/' + key, value)
 
-    algorthim = rospy.get_param('faceDetection_config/algorithm', default="sixdrep")
+    algorthim = rospy.get_param('/faceDetection_config/algorithm', default="sixdrep")
 
     if algorthim == 'mediapipe':
         face_detection = MediaPipe()
