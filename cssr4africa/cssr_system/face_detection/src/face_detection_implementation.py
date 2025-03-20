@@ -183,6 +183,7 @@ class FaceDetectionNode:
             rgb_frame = cv2.cvtColor(self.color_image, cv2.COLOR_BGR2RGB)
             img_h, img_w = self.color_image.shape[:2]
             self.process_face_mesh(self.color_image, rgb_frame, img_h, img_w)
+            # Note: self.latest_frame is now set inside process_face_mesh
         elif hasattr(self, 'yolo_model'):  # SixDrepNet implementation
             self.latest_frame = self.process_frame(self.color_image)
         else:
@@ -375,6 +376,10 @@ class MediaPipe(FaceDetectionNode):
         face_widths = []
         face_heights = []
         face_boxes = []  # Store bounding boxes for each face
+        tracking_data = []  # Initialize tracking_data here
+        
+        # Create a copy of the frame to draw on
+        display_frame = frame.copy()
         
         # Dictionary to store face ID colors
         if not hasattr(self, "face_colors"):
@@ -433,8 +438,6 @@ class MediaPipe(FaceDetectionNode):
             # Use the centroid tracker to match centroids with object IDs
             centroid_to_face_id = self.centroid_tracker.match_centroids(centroids)
             
-            tracking_data = []
-            
             for idx, (centroid, width, height, box) in enumerate(zip(centroids, face_widths, face_heights, face_boxes)):
                 centroid_tuple = tuple(centroid)
                 face_id = centroid_to_face_id.get(centroid_tuple, None)
@@ -446,7 +449,6 @@ class MediaPipe(FaceDetectionNode):
                 face_color = self.face_colors[face_id]
                 cz = self.get_depth_at_centroid(centroid[0], centroid[1])
                 cz = cz if cz is not None else 0.0  # Default to 0.0 meters
-
                 
                 point = Point(x=float(centroid[0]), y=float(centroid[1]), z=float(cz) if cz else 0.0)
                 
@@ -463,17 +465,31 @@ class MediaPipe(FaceDetectionNode):
                 x_min, y_min, x_max, y_max = box
                 
                 # Draw bounding box with assigned color
-                cv2.rectangle(frame, (x_min, y_min), (x_max, y_max), face_color, 2)
+                cv2.rectangle(display_frame, (x_min, y_min), (x_max, y_max), face_color, 2)
                 
                 # Add label above bounding box
                 label = "Engaged" if mutualGaze_list[idx] else "Not Engaged"
-                cv2.putText(frame, label, (x_min, y_min - 10),
+                cv2.putText(display_frame, label, (x_min, y_min - 10),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.7, face_color, 2)
-                cv2.putText(frame, f"Face: {face_id}", (x_min, y_min - 30),
+                cv2.putText(display_frame, f"Face: {face_id}", (x_min, y_min - 30),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.7, face_color, 2)
+                
+                # Draw depth information below the box
+                cv2.putText(
+                    display_frame,
+                    f"Depth: {cz:.2f}m",
+                    (x_min, y_max + 20),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.6,
+                    face_color,
+                    2
+                )
             
-            # Publish the tracking data
-            self.publish_face_detection(tracking_data)
+        # Save the processed frame for display in spin()
+        self.latest_frame = display_frame
+        
+        # Publish the tracking data
+        self.publish_face_detection(tracking_data)
 class YOLOONNX:
     def __init__(self, model_path: str, class_score_th: float = 0.65,
         providers: List[str] = ['CUDAExecutionProvider', 'CPUExecutionProvider']):
