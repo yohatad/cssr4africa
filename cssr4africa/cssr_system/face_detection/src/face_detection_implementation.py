@@ -122,7 +122,6 @@ class FaceDetectionNode:
             rospy.logerr(f"synchronized_callback CvBridge Error: {str(e)}")
         except Exception as e:
             rospy.logerr(f"synchronized_callback Exception: {str(e)}")
-
     
     def check_camera_resolution(self, color_image, depth_image):
         """Check if the color and depth images have the same resolution."""
@@ -137,8 +136,9 @@ class FaceDetectionNode:
     def read_json_file():
         rospack = rospkg.RosPack()
         try:
-            package_path = rospack.get_path('face_detection')
-            config_path = os.path.join(package_path, 'config', 'face_detection_configuration.json')
+            package_path = rospack.get_path('cssr_system')
+            print(package_path)
+            config_path = os.path.join(package_path, 'face_detection/config', 'face_detection_configuration.json')
             if os.path.exists(config_path):
                 with open(config_path, 'r') as file:
                     data = json.load(file)
@@ -147,14 +147,14 @@ class FaceDetectionNode:
                 rospy.logerr(f"read_json_file: Configuration file not found at {config_path}")
         
         except rospkg.ResourceNotFound as e:
-            rospy.logerr(f"ROS package 'face_detection' not found: {e}")
+            rospy.logerr(f"ROS package 'cssr_system' not found: {e}")
     
     @staticmethod
     def extract_topics(image_topic):
         rospack = rospkg.RosPack()
         try:
-            package_path = rospack.get_path('face_detection')
-            config_path = os.path.join(package_path, 'data', 'pepper_topics.dat')
+            package_path = rospack.get_path('cssr_system')
+            config_path = os.path.join(package_path, 'face_detection/data', 'pepper_topics.dat')
 
             if os.path.exists(config_path):
                 with open(config_path, 'r') as file:
@@ -168,7 +168,7 @@ class FaceDetectionNode:
             else:
                 rospy.logerr(f"extract_topics: Data file not found at {config_path}")
         except rospkg.ResourceNotFound as e:
-            rospy.logerr(f"ROS package 'face_detection' not found: {e}")
+            rospy.logerr(f"ROS package 'cssr_system' not found: {e}")
         
     def process_images(self):
         if self.color_image is None or self.depth_image is None:
@@ -547,8 +547,8 @@ class SixDrepNet(FaceDetectionNode):
             rospy.loginfo("Initializing SixDrepNet...")
 
         # Set up model paths
-        yolo_model_path = rospkg.RosPack().get_path('face_detection') + '/models/face_detection_goldYOLO.onnx'
-        sixdrepnet_model_path = rospkg.RosPack().get_path('face_detection') + '/models/face_detection_sixdrepnet360.onnx'
+        yolo_model_path = rospkg.RosPack().get_path('cssr_system') + '/face_detection/models/face_detection_goldYOLO.onnx'
+        sixdrepnet_model_path = rospkg.RosPack().get_path('cssr_system') + '/face_detection/models/face_detection_sixdrepnet360.onnx'
         
         self.latest_frame = None
         

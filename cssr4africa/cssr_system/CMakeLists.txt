@@ -50,6 +50,8 @@ find_package(catkin REQUIRED COMPONENTS
 
 ## Add service and message files
 add_message_files(
+  DIRECTORY
+  face_detection/msg
   FILES
   msg_file.msg
 )
