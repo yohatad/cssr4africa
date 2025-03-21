@@ -1,9 +1,9 @@
 <package format="2">
   <name>unit_test</name>
-  <version>0.0.0</version>
-  <description>The face_detection test package</description>
+  <version>1.0</version>
+  <description>face_detection test package</description>
 
-  <maintainer email="yohanneh@andrew.cmu.edu">TODO: Maintainer Name</maintainer>
+  <maintainer email="yohanneh@andrew.cmu.edu">Yohannes Haile</maintainer>
 
   <license>TODO: License declaration</license>
 

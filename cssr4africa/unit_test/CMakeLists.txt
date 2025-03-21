@@ -71,6 +71,8 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 add_message_files(
+  DIRECTORY
+  face_detection_test/msg
   FILES
   msg_file.msg
 )
