@@ -22,7 +22,7 @@ To set up the Face and Mutual Gaze Detection package on a Linux system, follow t
 Make sure you are running a supported Linux distribution (e.g., Ubuntu 20.04 or later).
 
 
-2. Install Python 3.8 and Virtual Environment (If you don't have none).
+2. Install Python 3.8 and Virtual Environment (If it isn't installed).
 ```sh
 # Update system packages
 sudo apt update && sudo apt upgrade -y
@@ -32,8 +32,8 @@ sudo apt install software-properties-common -y
 sudo add-apt-repository ppa:deadsnakes/ppa -y
 sudo apt update
 
-# Install Python 3.10
-sudo apt install python3.10 python3.10-venv python3.10-distutils -y
+# Install Python 3.8
+sudo apt install python3.8 python3.8-venv python3.8-distutils -y
 
 # Verify Python installation
 python3.8 --version
