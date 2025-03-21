@@ -13,7 +13,8 @@ The main documentation for this deliverable is found in [D4.2.2 Face and Mutual 
 
 # 🛠️ Installation 
 
-Install the required software components to instantiate and set up the development environment for controlling the Pepper robot. Use the [CSSR4Africa Software Installation Manual](https://cssr4africa.github.io/deliverables/CSSR4Africa_Deliverable_D3.3.pdf)
+Install the required software components to instantiate and set up the development environment for controlling the Pepper robot. Use the [CSSR4Africa Software Installation Manual](https://cssr4africa.github.io/deliverables/CSSR4Africa_Deliverable_D3.3.pdf). This includes downloading the models files and putting in the models files directory. 
+
 
 To set up the Face and Mutual Gaze Detection package on a Linux system, follow these steps:
 
@@ -21,7 +22,7 @@ To set up the Face and Mutual Gaze Detection package on a Linux system, follow t
 Make sure you are running a supported Linux distribution (e.g., Ubuntu 20.04 or later).
 
 
-2. Install Python 3.10 and Virtual Environment.
+2. Install Python 3.8 and Virtual Environment (If you don't have none).
 ```sh
 # Update system packages
 sudo apt update && sudo apt upgrade -y
@@ -35,13 +36,13 @@ sudo apt update
 sudo apt install python3.10 python3.10-venv python3.10-distutils -y
 
 # Verify Python installation
-python3.10 --version
+python3.8 --version
 ```
 3. Set Up Virtual Environment
 ```sh
 # Create a virtual environment:
 cd $HOME
-python3.10 -m venv ~/workspace/pepper_rob_ws/face_detection
+python3.8 -m venv ~/workspace/pepper_rob_ws/face_detection
 
 # Activate the virtual environment:
 source ~/workspace/pepper_rob_ws/face_detection/bin/activate
@@ -52,15 +53,23 @@ pip install --upgrade pip
 
 4. Install Required Packages
 ```sh
+# Install torch 
+pip install https://developer.download.nvidia.cn/compute/redist/jp/v51/pytorch/torch-2.0.0a0+8aa34602.nv23.03-cp38-cp38-linux_aarch64.whl
+
+# Install onnxruntime package 
+# Download pip wheel from location above for your version of JetPack
+$ wget https://nvidia.box.com/shared/static/iizg3ggrtdkqawkmebbfixo7sce6j365.whl -O onnxruntime_gpu-1.16.0-cp38-cp38-linux_aarch64.whl
+
+# Install pip wheel
+$ pip3 install onnxruntime_gpu-1.16.0-cp38-cp38-linux_aarch64.whl
+```
+```sh
 # Install PyTorch with CUDA support:
 pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 
 # Install additional requirements:
 pip install -r face_detection_requirements.txt
 ```
-
-## 🤗 Download the model (Hugging Face)
-You need to download the [YOLO](https://drive.google.com/file/d/1-2n3ASmi7L0H6_1ssB_1yUHzuOKN9fTt/view?usp=sharing) and [Sixdrepnet360](https://drive.google.com/file/d/1u6JZ-jZNtd6DaNZybGOxvfr_mz8Hr4Cj/view?usp=sharing) models. Put them in the models folder of the face detetection package. 
 
 
 # 🔧 Configuration Parameters

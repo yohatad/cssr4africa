@@ -75,12 +75,12 @@ roslaunch unit_test face_detection_test_launch_robot.launch camera:=<camera> bag
 
 ### Bag File Options (`bag_file`):
 
-- **`singleFace`**: Contains data with a single face for basic detection testing.
+- **`singleFace`**: Contains data with a single face for basic detection testing and tracking with various distance form the robot.
 - **`multipleFaces`**: Includes multiple faces to test detection robustness in crowded scenes.
-- **`faceTracking`**: Designed to evaluate continuous face tracking performance.
 - **`mutualGaze`**: Data intended for analyzing gaze direction and mutual eye-contact scenarios.
-- **`occlusion`**: Includes scenarios where faces are partially occluded to test resilience.
-- **`lighting`**: Features variations in lighting conditions to assess detection stability.
+- **`lighting1`**: Features variations in lighting conditions to assess detection stability.
+- **`lighting2`**: Features variations in lighting conditions to 
+assess detection performance.
 
 > **Note:**  
 > Before running the Test Harness, activate the face detection python environement. Refer the README.md file for the face detection node.

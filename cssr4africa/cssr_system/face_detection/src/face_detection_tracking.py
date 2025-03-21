@@ -2,7 +2,7 @@
 face_detection_tracking.py Functionality for tracking faces using SORT(simple online and realtime tracking) and Centroid Tracking.
 
 Author: Yohannes Tadesse Haile
-Date: December 15, 2024
+Date: March 21, 2025
 Version: v1.0
 
 Copyright (C) 2023 CSSR4Africa Consortium

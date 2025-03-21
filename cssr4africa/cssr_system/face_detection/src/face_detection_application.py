@@ -41,6 +41,7 @@ Libraries
     - math (cos, sin, pi)
     - sensor_msgs.msg (Image, CompressedImage)
     - cv_bridge (CvBridge, CvBridgeError)
+    - message_filters (ApproximateTimeSynchronizer, Subscriber)
     - geometry_msgs.msg (Point)
     - typing (Tuple, List)
     - face_detection.msg (msg_file)
@@ -89,14 +90,14 @@ Configuration File
     face_detection_configuration.json
 
 Example of instantiation of the module
-    roslauch face_detection face_detection_robot.launch camera:=realsense
+    roslauch cssr_system face_detection_robot.launch camera:=realsense
 
     (In a new terminal)
-    rosrun face_detection face_detection_application.py
+    rosrun cssr_system face_detection_application.py
 
 Author: Yohannes Tadesse Haile, Carnegie Mellon University Africa
 Email: yohanneh@andrew.cmu.edu
-Date: March 15, 2025
+Date: March 21, 2025
 Version: v1.0
 """
 
