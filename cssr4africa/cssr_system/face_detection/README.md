@@ -24,6 +24,10 @@ Make sure you are running a supported Linux distribution (e.g., Ubuntu 20.04 or 
 
 2. Install Python 3.8 and Virtual Environment (If it isn't installed).
 ```sh
+# To check if it is installed run the command below
+python3.8 --version 
+
+# If doesn't print the version number then it is not installed. Follow the steps below.
 # Update system packages
 sudo apt update && sudo apt upgrade -y
 
