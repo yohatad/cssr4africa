@@ -1,6 +1,6 @@
 <package format="2">
   <name>unit_test</name>
-  <version>1.0</version>
+  <version>0.0.0</version>
   <description>face_detection test package</description>
 
   <maintainer email="yohanneh@andrew.cmu.edu">Yohannes Haile</maintainer>

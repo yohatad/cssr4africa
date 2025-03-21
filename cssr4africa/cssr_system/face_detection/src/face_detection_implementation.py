@@ -44,6 +44,7 @@ class FaceDetectionNode:
 
     def subscribe_topics(self):
         camera_type = rospy.get_param('/faceDetection/camera', default="realsense")
+        print("camera_type: ", camera_type)
         
         if camera_type == "realsense":
             self.rgb_topic = self.extract_topics("RealSenseCameraRGB")
@@ -51,11 +52,14 @@ class FaceDetectionNode:
         elif camera_type == "pepper":
             self.rgb_topic = self.extract_topics("PepperFrontCamera")
             self.depth_topic = self.extract_topics("PepperDepthCamera")
+        elif camera_type == "video":
+            self.rgb_topic = self.extract_topics("RealSenseCameraRGB")
+            self.depth_topic = self.extract_topics("RealSenseCameraDepth") 
         else:
             rospy.logerr("Invalid camera type specified")
             rospy.signal_shutdown("Invalid camera type")
             return
-
+        
         if not self.rgb_topic or not self.depth_topic:
             rospy.logerr("Camera topic not found.")
             rospy.signal_shutdown("Camera topic not found")
@@ -66,6 +70,20 @@ class FaceDetectionNode:
             depth_sub = Subscriber(self.depth_topic + "/compressedDepth", CompressedImage)
             rospy.loginfo(f"Subscribed to {self.rgb_topic}/compressed")
             rospy.loginfo(f"Subscribed to {self.depth_topic}/compressedDepth")
+        elif self.use_compressed and camera_type == "pepper":
+            # There is no compressed topic for Pepper cameras
+            rospy.logwarn("Compressed images are not available for Pepper cameras.")
+            color_sub = Subscriber(self.rgb_topic, Image)
+            depth_sub = Subscriber(self.depth_topic, Image)
+            rospy.loginfo(f"Subscribed to {self.rgb_topic}")
+            rospy.loginfo(f"Subscribed to {self.depth_topic}")
+
+        elif camera_type == "video":
+            color_sub = Subscriber(self.rgb_topic + "/compressed", CompressedImage)
+            depth_sub = Subscriber(self.depth_topic + "/compressedDepth", CompressedImage)
+            rospy.loginfo(f"Subscribed to {self.rgb_topic}/compressed")
+            rospy.loginfo(f"Subscribed to {self.depth_topic}/compressedDepth")
+
         else:
             color_sub = Subscriber(self.rgb_topic, Image)
             depth_sub = Subscriber(self.depth_topic, Image)

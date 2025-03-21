@@ -1,6 +1,6 @@
 <package format="2">
   <name>cssr_system</name>
-  <version>1.0</version>
+  <version>0.1.0</version>
   <description>Face_detection and mutual gaze detection package</description>
 
   <maintainer email="yohanneh@andrew.cmu.edu">Yohannes Haile</maintainer>
