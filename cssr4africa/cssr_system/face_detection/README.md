@@ -56,17 +56,13 @@ pip install --upgrade pip
 # Install torch 
 pip install https://developer.download.nvidia.cn/compute/redist/jp/v51/pytorch/torch-2.0.0a0+8aa34602.nv23.03-cp38-cp38-linux_aarch64.whl
 
-# Install onnxruntime package 
-# Download pip wheel from location above for your version of JetPack
+# Install onnxruntime package (Downloading pip wheel)
 $ wget https://nvidia.box.com/shared/static/iizg3ggrtdkqawkmebbfixo7sce6j365.whl -O onnxruntime_gpu-1.16.0-cp38-cp38-linux_aarch64.whl
 
 # Install pip wheel
 $ pip3 install onnxruntime_gpu-1.16.0-cp38-cp38-linux_aarch64.whl
 ```
 ```sh
-# Install PyTorch with CUDA support:
-pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
-
 # Install additional requirements:
 pip install -r face_detection_requirements.txt
 ```
