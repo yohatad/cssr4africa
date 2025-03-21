@@ -15,7 +15,6 @@ The main documentation for this deliverable is found in [D4.2.2 Face and Mutual 
 
 Install the required software components to instantiate and set up the development environment for controlling the Pepper robot. Use the [CSSR4Africa Software Installation Manual](https://cssr4africa.github.io/deliverables/CSSR4Africa_Deliverable_D3.3.pdf). This includes downloading the models files and putting in the models files directory. 
 
-
 To set up the Face and Mutual Gaze Detection package on a Linux system, follow these steps:
 
 1. Prerequisites  
@@ -57,9 +56,6 @@ pip install --upgrade pip
 
 4. Install Required Packages
 ```sh
-# Install torch 
-pip install https://developer.download.nvidia.cn/compute/redist/jp/v51/pytorch/torch-2.0.0a0+8aa34602.nv23.03-cp38-cp38-linux_aarch64.whl
-
 # Install onnxruntime package (Downloading pip wheel)
 $ wget https://nvidia.box.com/shared/static/iizg3ggrtdkqawkmebbfixo7sce6j365.whl -O onnxruntime_gpu-1.16.0-cp38-cp38-linux_aarch64.whl
 
