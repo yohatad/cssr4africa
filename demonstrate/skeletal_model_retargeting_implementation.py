@@ -1,7 +1,22 @@
-import sys
+""" angle_calculation_implementation.py Calculates Pepper angles from mediapipe landmarks
+
+    Author:Daniel Barros
+    Date: November 21, 2024
+    Version: v1.0
+
+    Copyright (C) 2023 CSSR4Africa Consortium
+
+    This project is funded by the African Engineering and Technology Network (Afretec
+    Inclusive Digital Transformation Research Grant Programme.
+    
+    Website: www.cssr4africa.org
+
+This program comes with ABSOLUTELY NO WARRANTY.
+"""
 
 import numpy as np
 import math
+import time
 
 ## class KeypointsToAngles
 #
@@ -19,262 +34,195 @@ class HumanToPepperRetargeting:
                     '7':  "LWrist",
                     '8':  "MidHip"}
     '''
+
     ##  method __init__
     #
     #   Initialization method 
     def __init__(self):
-        # init start flag
         pass
-    
+
     #   calculate 3D vector from two points ( vector = P2 - P1 )
     def vector_from_points(self, P1, P2):
         vector = [P2[0] - P1[0], P2[1] - P1[1], P2[2] - P1[2]]
         return vector
-
-    ##  function obtain_LShoulderPitchRoll_angles
-    # 
-    #   Calculate left shoulder pitch and roll angles
-    def obtain_LShoulderPitchRoll_angles(self, P1, P5, P6, P8):
-        # Construct 3D vectors (bones) from points
-        v_1_5 = self.vector_from_points(P1, P5)
-        v_5_1 = self.vector_from_points(P5, P1)
-        v_6_5 = self.vector_from_points(P6, P5)
-        v_5_6 = self.vector_from_points(P5, P6)
-
-        # # Calculate normal of the 1_5_6 plane
-        # n_1_5_6 = np.cross(v_1_5, v_6_5)
-
-        # Left torso Z axis
-        v_8_1 = self.vector_from_points(P8, P1)
-
-        # Left torso X axis 
-        n_8_1_5 = np.cross(v_8_1, v_5_1)
-        # n_8_1_5 = np.cross(v_5_1, v_8_1)
-
-        # Left torso Y axis
-        # R_left_torso = np.cross(v_8_1, n_8_1_5)
-        R_left_torso = np.cross(n_8_1_5, v_8_1) # Left-right arm inverted
-
-        x = np.dot(v_5_6, v_8_1) / (np.linalg.norm(v_5_6))*(np.linalg.norm(v_8_1))
-        # Intermediate angle to calculate positive or negative final Pitch angle
-        try:
-            intermediate_angle = math.acos(x)
-        except ValueError:
-            intermediate_angle = np.pi/2
-        # intermediate_angle = np.arccos(x, where=(abs(x)<1), out=np.full_like(x, np.pi/2))
-        
-        # Module of the LShoulderPitch angle
-        x = np.dot(v_8_1, np.cross(R_left_torso, v_5_6))/(np.linalg.norm(v_8_1) * np.linalg.norm(np.cross(R_left_torso, v_5_6))) 
-        try:
-            theta_LSP_module = math.acos(x)
-        except ValueError:
-            theta_LSP_module = 0
-        # theta_LSP_module = np.arccos(x, where=(abs(x)<1), out=np.full_like(x, 0))
-
-        # Positive or negative LShoulderPitch
-        if intermediate_angle <= np.pi/2 :
-            LShoulderPitch = -theta_LSP_module
-        else:
-            LShoulderPitch = theta_LSP_module
     
-        # Formula for LShoulderRoll
-        # LShoulderRoll = (np.pi/2) - np.arccos((np.dot(v_5_6, R_left_torso)) / (np.linalg.norm(v_5_6) * np.linalg.norm(R_left_torso)))
-        x = (np.dot(v_5_6, R_left_torso)) / (np.linalg.norm(v_5_6) * np.linalg.norm(R_left_torso))
-        try:
-            LShoulderRoll = math.acos(x) - (np.pi/2)
-        except ValueError:
-            LShoulderRoll = 0
-        # LShoulderRoll =  np.arccos(x, where=(abs(x)<1), out=np.full_like(x, 0)) - (np.pi/2) # Left-right arm inverted
-        
-        # Return LShoulder angles
-        return LShoulderPitch, LShoulderRoll
+    def normalize(self, v):
+        """ Return the normalized vector of v. """
+        norm = np.linalg.norm(v)
+        if norm < 1e-10:
+            return v  # Avoid divide-by-zero; return original if near zero-length
+        return v / norm
+
+    def vector_angle_deg(self, v1, v2):
+        """ Return angle in degrees between two vectors. """
+        v1u = self.normalize(v1)
+        v2u = self.normalize(v2)
+        dot = np.dot(v1u, v2u)
+        # Clamp dot to [-1, 1] to avoid floating-point errors
+        dot = max(-1.0, min(1.0, dot))
+        return np.degrees(np.arccos(dot))
     
-    ##  function obtain_RShoulderPitchRoll_angles
-    # 
-    #   Calculate right shoulder pitch and roll angles
-    def obtain_RShoulderPitchRoll_angle(self, P1, P2, P3, P8):
-        # Construct 3D vectors (bones) from points
-        v_2_3 = self.vector_from_points(P2, P3)
-        v_1_2 = self.vector_from_points(P1, P2)
-        v_2_1 = self.vector_from_points(P2, P1)
-
-        # Right torso Z axis
-        v_8_1 = self.vector_from_points(P8, P1)
-        # Right torso X axis
-        n_8_1_2 = np.cross(v_8_1, v_1_2)
-        # Right torso Y axis
-        # R_right_torso = np.cross(v_8_1, n_8_1_2) 
-        R_right_torso = np.cross(n_8_1_2,v_8_1) # Left-right arm inverted
-
-        # # Normal to plane 1_2_3
-        # n_1_2_3 = np.cross(v_2_3, v_2_1)
-
-        # Module of the RShoulderPitch angle
-        x = np.dot(v_8_1, np.cross(R_right_torso, v_2_3))/(np.linalg.norm(v_8_1) * np.linalg.norm(np.cross(R_right_torso, v_2_3)))
-        try:
-            theta_RSP_module = math.acos(x)
-        except ValueError:
-            theta_RSP_module = 0
-        # theta_RSP_module = np.arccos(x, where=(abs(x)<1), out=np.full_like(x, 0))
+    def LShoulderPitchRoll(self, LShoulder, LElbow, MidHip, Neck):
         
-        # Intermediate angle to calculate positive or negative final Pitch angle
-        x = np.dot(v_2_3, v_8_1) / (np.linalg.norm(v_2_3))*(np.linalg.norm(v_8_1))
-        try:
-            intermediate_angle = math.acos(x)
-        except ValueError:
-            intermediate_angle = np.pi/2
-        # intermediate_angle = np.arccos(x, where=(abs(x)<1), out=np.full_like(x, np.pi/2))
+        torso_vector = MidHip - Neck
+        Z = self.normalize(torso_vector)
 
-        # Positive or negative RShoulderPitch
-        if intermediate_angle <= np.pi/2 :
-            RShoulderPitch = - theta_RSP_module
-        else:
-            RShoulderPitch = theta_RSP_module
+        across_shoulders = Neck - LShoulder
 
-        # Formula for RShoulderRoll
-        # RShoulderRoll =  (np.pi/2) - np.arccos((np.dot(v_2_3, R_right_torso)) / (np.linalg.norm(v_2_3) * np.linalg.norm(R_right_torso))) 
-        x = (np.dot(v_2_3, R_right_torso)) / (np.linalg.norm(v_2_3) * np.linalg.norm(R_right_torso))
-        try:
-            RShoulderRoll = math.acos(x) - (np.pi/2)
-        except ValueError:
-            RShoulderRoll = np.pi/2
-        # RShoulderRoll =  np.arccos(x, where=(abs(x)<1), out=np.full_like(x, 0)) - (np.pi/2) # Left-right arm inverted
+        X_unnormalized = np.cross(Z, across_shoulders)
+        X = self.normalize(X_unnormalized)
 
-        # Return RShoulder angles
-        return RShoulderPitch, RShoulderRoll
+        Y = np.cross(Z, X)
+        Y = self.normalize(Y)
 
-    ##  function obtain_LElbowYawRoll_angle
-    #   
-    #   Calculate left elbow yaw and roll angles
-    def obtain_LElbowYawRoll_angle(self, P1, P5, P6, P7):
-        # Construct 3D vectors (bones) from points
-        v_6_7 = self.vector_from_points(P6, P7)
-        v_1_5 = self.vector_from_points(P1, P5)
+        upper_arm = LElbow - LShoulder
 
-        # Left arm Z axis
-        v_6_5 = self.vector_from_points(P6, P5)
-        # Left arm X axis
-        # n_1_5_6 = np.cross(v_6_5, v_1_5) 
-        n_1_5_6 = np.cross(v_1_5, v_6_5) # Right-Left arms inverted
-        # Left arm Y axis
-        R_left_arm = np.cross(v_6_5, n_1_5_6)
+        # Normalize the vector
+        upper_arm = self.normalize(upper_arm)
 
-        # Normal of 5_6_7 plane
-        n_5_6_7 = np.cross(v_6_5, v_6_7) 
-
-        # Formula to calculate the module of LElbowYaw angle
-        x = np.dot(n_1_5_6, n_5_6_7) / (np.linalg.norm(n_1_5_6) * np.linalg.norm(n_5_6_7))
-        try:
-            theta_LEY_module = math.acos(x)
-        except ValueError:
-            theta_LEY_module = 0
-        # theta_LEY_module = np.arccos(x, where=(abs(x)<1), out=np.full_like(x, 0)) 
-
-        # Intermediate angles to choose the right LElbowYaw angle
-        x = np.dot(v_6_7, n_1_5_6) / (np.linalg.norm(v_6_7) * np.linalg.norm(n_1_5_6))
-        try:
-            intermediate_angle_1 = math.acos(x)
-        except ValueError:
-            intermediate_angle_1 = np.pi/2
-        # intermediate_angle_1 = np.arccos(x, where=(abs(x)<1), out=np.full_like(x, np.pi/2))
-
-        x = np.dot(v_6_7, R_left_arm) / (np.linalg.norm(v_6_7) * np.linalg.norm(R_left_arm))
-        try:
-            intermediate_angle_2 = math.acos(x)
-        except ValueError:
-            intermediate_angle_2 = np.pi/2
-        # intermediate_angle_2 = np.arccos(x, where=(abs(x)<1), out=np.full_like(x, np.pi/2))
-
-        # Choice of the correct LElbowYaw angle using intermediate angles values
-        if intermediate_angle_1 <= np.pi/2:
-            LElbowYaw = -theta_LEY_module 
-        else:
-            if intermediate_angle_2 > np.pi/2:
-                LElbowYaw = theta_LEY_module 
-            elif intermediate_angle_2 <= np.pi/2:
-                LElbowYaw = theta_LEY_module - (2 * np.pi)
-
-        # Formula for LElbowRoll angle
-        x = np.dot(v_6_7, v_6_5) / (np.linalg.norm(v_6_7) * np.linalg.norm(v_6_5))
-        try:
-            LElbowRoll = math.acos(x) - np.pi
-        except ValueError:
-            LElbowRoll = 0
-        # LElbowRoll = np.arccos(x, where=(abs(x)<1), out=np.full_like(x, 0)) - np.pi
-        # print('Before', LElbowYaw*180/np.pi, LElbowRoll*180/np.pi)
-        # Return LElbow angles
-        return LElbowYaw, LElbowRoll
-
-    ##  function obtain_RElbowYawRoll_angle
-    # 
-    #   Calculate right elbow yaw and roll angles
-    def obtain_RElbowYawRoll_angle(self, P1, P2, P3, P4):
-        # Construct 3D vectors (bones) from points
-        v_3_4 = self.vector_from_points(P3, P4)
-        v_1_2 = self.vector_from_points(P1, P2)
-
-        # Left arm Z axis
-        v_3_2 = self.vector_from_points(P3, P2)
-        # Left arm X axis
-        # n_1_2_3 = np.cross(v_3_2, v_1_2)  # -- OUT --
-        n_1_2_3 = np.cross(v_1_2, v_3_2)    # -- IN --  Right-left arms inverted
-        # Left arm Y axis
-        R_right_arm = np.cross(v_3_2, n_1_2_3)
-
-        # normal to the 2_3_4 plane
-        n_2_3_4 = np.cross(v_3_2, v_3_4)
-        # n_2_3_4 = np.cross(v_3_4, v_3_2)
-
-        # Formula to calculate the module of RElbowYaw angle
-        x = np.dot(n_1_2_3, n_2_3_4) / (np.linalg.norm(n_1_2_3) * np.linalg.norm(n_2_3_4))
-        try:
-            theta_REY_module = math.acos(x)
-        except ValueError:
-            theta_REY_module = 0
-        # theta_REY_module = np.arccos(x, where=(abs(x)<1), out=np.full_like(x, 0))
-
-        # Intermediate angles to choose the right RElbowYaw angle
-        x = np.dot(v_3_4, n_1_2_3) / (np.linalg.norm(v_3_4) * np.linalg.norm(n_1_2_3))
-        try:
-            intermediate_angle_1 = math.acos(x)
-        except ValueError:
-            intermediate_angle_1 =  np.pi/2
-        # intermediate_angle_1 = np.arccos(x, where=(abs(x)<1), out=np.full_like(x, np.pi/2))
-
-        x = np.dot(v_3_4, R_right_arm) / (np.linalg.norm(v_3_4) * np.linalg.norm(R_right_arm))
-        try:
-            intermediate_angle_2 = math.acos(x)
-        except ValueError:
-            intermediate_angle_2 =  np.pi/2
-        # intermediate_angle_2 = np.arccos(x, where=(abs(x)<1), out=np.full_like(x, np.pi/2))
-
-        # Choice of the correct RElbowYaw angle using intermediate angles values
-        if intermediate_angle_1 <= np.pi/2:
-            RElbowYaw = -theta_REY_module
-        else:
-            if intermediate_angle_2 > np.pi/2:
-                RElbowYaw = theta_REY_module
-            elif intermediate_angle_2 <= np.pi/2:
-                # RElbowYaw = -theta_REY_module + (2 * np.pi)
-                RElbowYaw = theta_REY_module 
+        upper_arm_x = np.dot(upper_arm, X)
+        upper_arm_y = np.dot(upper_arm, Y)
+        upper_arm_z = np.dot(upper_arm, Z)
         
-        # Formula for RElbowRoll angle
-        x = np.dot(v_3_4, v_3_2) / (np.linalg.norm(v_3_4) * np.linalg.norm(v_3_2))
-        try:
-            RElbowRoll =  np.pi - math.acos(x)
-        except ValueError:
-            RElbowRoll =  0
-        # RElbowRoll = np.pi - np.arccos(x, where=(abs(x)<1), out=np.full_like(x, 0))
+        if upper_arm_z < 0 and upper_arm_x < 0:
+            pitch_radians = -(np.pi/2 + np.arctan2(upper_arm_x, upper_arm_z))
+        
+        elif upper_arm_z > 0 and upper_arm_x < 0:
+            pitch_radians = np.pi/2 - np.arctan2(upper_arm_x, upper_arm_z)
+        
+        else:
+            pitch_radians = np.pi/2 - np.arctan2(upper_arm_x, upper_arm_z)
+  
+        roll_radians = -(np.pi/2 - np.arctan2(upper_arm_x, upper_arm_y))
 
-        # print('Before', RElbowYaw*180/np.pi, RElbowRoll*180/np.pi)
-        # Return RElbow angles
-        return RElbowYaw, RElbowRoll
+        # pitch_angle = np.degrees(pitch_radians)
+        # roll_angle =  np.degrees(roll_radians)
+
+        # roll_radians = 0.1
+
+        return pitch_radians, roll_radians
+
+        # return pitch_angle, roll_angle
+
+    def RShoulderPitchRoll(self, RShoulder, RElbow, MidHip, Neck):        
+        
+        torso_vector = MidHip - Neck
+        Z = self.normalize(torso_vector)
+
+        across_shoulders = RShoulder - Neck
+
+        X_unnormalized = np.cross(Z, across_shoulders)
+        X = self.normalize(X_unnormalized)
+
+        Y = np.cross(Z, X)
+        Y = self.normalize(Y)
+
+        upper_arm = RElbow - RShoulder
+
+        # Normalize the vector
+        upper_arm = self.normalize(upper_arm)
+
+        upper_arm_x = np.dot(upper_arm, X)
+        upper_arm_y = np.dot(upper_arm, Y)
+        upper_arm_z = np.dot(upper_arm, Z)
+
+        if upper_arm_z < 0 and upper_arm_x < 0:
+            pitch_radians = -(np.pi/2 + np.arctan2(upper_arm_x, upper_arm_z))
+
+        elif upper_arm_z > 0 and upper_arm_x < 0:
+            pitch_radians = np.pi/2 - np.arctan2(upper_arm_x, upper_arm_z)
+
+        else:
+            pitch_radians = np.pi/2 - np.arctan2(upper_arm_x, upper_arm_z)
+
+  
+        roll_radians  = (np.pi/2 - np.arctan2(upper_arm_x, upper_arm_y))
+        # roll_radians  = -(np.arctan2(upper_arm_x, upper_arm_y) + np.pi/2)
+
+        # if upper_arm_y < 0:
+        #     roll_radians = -0.01
+        # elif upper_arm_x < 0:
+        #     roll_radians = -1.50
+
+        # # if the roll angle is outside [-90 , 0] range then just put -5.67 degrees
+        # if roll_angle < -90 or roll_angle > 0:
+        #     roll_angle = -5.67
+
+        # roll_radians = -0.1  
+        # Change back to radians
+        return pitch_radians, roll_radians
+
+        # return pitch_angle, roll_angle
     
-    ##  function obtain_HipPitch_angles
-    # 
+    def LEblow(self, LShoulder, LElbow, LWrist):
+        Z_elbow = LShoulder - LElbow
+        Z_elbow = self.normalize(Z_elbow)
+
+        ref_vector = LWrist - LElbow
+        ref_vector = self.normalize(ref_vector)
+
+        X_elbow_unnormalized = np.cross(Z_elbow, ref_vector)
+        X_elbow = self.normalize(X_elbow_unnormalized)
+
+        Y_elbow_unnormalized = np.cross(Z_elbow, X_elbow)
+        Y_elbow = self.normalize(Y_elbow_unnormalized)
+
+        forearm_global = (LWrist - LElbow)
+        forearm_global = self.normalize(forearm_global)  # if you just want orientation
+
+        forearm_x = np.dot(forearm_global, X_elbow)
+        forearm_y = np.dot(forearm_global, Y_elbow)
+        forearm_z = np.dot(forearm_global, Z_elbow)
+
+        elbow_roll_radians = np.arctan2(forearm_y, forearm_z)
+        elbow_yaw_radians = np.arctan2(forearm_x, forearm_y)
+
+        elbow_roll_degrees = np.degrees(elbow_roll_radians) + 180
+        elbow_yaw_degrees = np.degrees(elbow_yaw_radians)
+
+        # if elbow roll degree is between 180 and 260, then just put
+            # if elbow_roll_degrees < 0 and elbow_roll_degrees > 80:
+            #     elbow_roll_degrees = 0
+
+        elbow_roll_radians = -0.1334
+        elbow_yaw_radians = -1.7150
+
+        return elbow_yaw_radians, elbow_roll_radians
+
+    def REblow(self, RShoulder, RElbow, RWrist):
+        Z_elbow = RShoulder - RElbow
+        Z_elbow = self.normalize(Z_elbow)
+
+        ref_vector = RWrist - RElbow
+        ref_vector = self.normalize(ref_vector)
+
+        X_elbow_unnormalized = np.cross(Z_elbow, ref_vector)
+        X_elbow = self.normalize(X_elbow_unnormalized)
+
+        Y_elbow_unnormalized = np.cross(Z_elbow, X_elbow)
+        Y_elbow = self.normalize(Y_elbow_unnormalized)
+
+        forearm_global = (RWrist - RElbow)
+        forearm_global = self.normalize(forearm_global)  # if you just want orientation
+
+        forearm_x = np.dot(forearm_global, X_elbow)
+        forearm_y = np.dot(forearm_global, Y_elbow)
+        forearm_z = np.dot(forearm_global, Z_elbow)
+
+        elbow_roll_radians = np.arctan2(forearm_z, forearm_y)
+        elbow_yaw_radians = np.arctan2(forearm_x, forearm_y)
+
+        elbow_yaw_degrees = np.degrees(elbow_yaw_radians)
+        elbow_roll_degrees = np.degrees(elbow_roll_radians)
+
+        elbow_roll_radians = 0.1334
+        elbow_yaw_radians = 1.7150
+        
+        return elbow_yaw_radians, elbow_roll_radians
+    
     #   Calculate right hip pitch angle
     def obtain_HipPitch_angles(self, P0_curr, P8_curr):
-        # Calculate vector
+         # Calculate vector
         v_0_8_curr = self.vector_from_points(P0_curr, P8_curr)
 
         # Normals to axis planes
@@ -310,11 +258,7 @@ class HumanToPepperRetargeting:
             HipPitch = omega_HP_module - np.pi - correction
         
         return HipPitch
-    
-    
-    ##  function invert_right_left
-    #
-    #   Invert left and right arm
+
     def invert_right_left(self, wp_dict):
         temp_dict = {}
 
@@ -341,57 +285,62 @@ class HumanToPepperRetargeting:
         # print(temp_dict)
         return temp_dict
 
-    ##  method get_keypoints
-    #
-    #  retrieve keypoints from socket
-    def get_keypoints(self):
-        # Receive keypoints from socket
-        wp_dict = self.sr.receive_keypoints()
-        return wp_dict
-
     ##  method get_angles
     #
     #   Get angles from socket and calculate joint angles
     def get_angles(self, wp_dict):
-        # LShoulderPitch and LShoulderRoll needed keypoints
-        LS = ['1','5','6','8']
+            # LShoulderPitch and LShoulderRoll needed keypoints
+            LS = ['1','5','6','8']
 
-        # LElbowYaw and LElbowRoll needed keypoints
-        LE = ['1','5','6','7']
+            # LElbowYaw and LElbowRoll needed keypoints
+            LE = ['1','5','6','7']
 
-        # RShoulderPitch and RShoulderRoll needed keypoints
-        RS = ['1','2','3','8']
+            # RShoulderPitch and RShoulderRoll needed keypoints
+            RS = ['1','2','3','8']
 
-        # RElbowYaw and RElbowRoll needed keypoints
-        RE = ['1','2','3','4']   
+            # RElbowYaw and RElbowRoll needed keypoints
+            RE = ['1','2','3','4']   
 
-        # HipPitch needed keypoints
-        HP = ['1', '8']    
+            # HipPitch needed keypoints
+            HP = ['1', '8']
 
-        # Init angles
-        LShoulderPitch = LShoulderRoll = LElbowYaw = LElbowRoll = RShoulderPitch = RShoulderRoll = RElbowYaw = RElbowRoll = HipPitch = None
+            # Invert right arm with left arm
+            wp_dict = self.invert_right_left(wp_dict) 
+            
+            # Init angles
+            LShoulderPitch = LShoulderRoll = LElbowYaw = LElbowRoll = RShoulderPitch = RShoulderRoll = RElbowYaw = RElbowRoll = HipPitch = None
 
-        # Invert right arm with left arm
-        wp_dict = self.invert_right_left(wp_dict) 
-        
-        # HipPitch angles 
-        if all (body_part in wp_dict for body_part in HP):
-            HipPitch = self.obtain_HipPitch_angles(wp_dict.get(HP[0]), wp_dict.get(HP[1]))
+            LShoulderPitch, LShoulderRoll = self.LShoulderPitchRoll(wp_dict.get('5'), wp_dict.get('6'), wp_dict.get('8'), wp_dict.get('1'))
 
-        # LShoulder angles 
-        if all (body_part in wp_dict for body_part in LS):        
-            LShoulderPitch, LShoulderRoll = self.obtain_LShoulderPitchRoll_angles(wp_dict.get(LS[0]), wp_dict.get(LS[1]), wp_dict.get(LS[2]), wp_dict.get(LS[3]))
+            LElbowYaw, LElbowRoll = self.LEblow(wp_dict.get('5'), wp_dict.get('6'), wp_dict.get('7'))
 
-        # LElbow angles
-        if all (body_part in wp_dict for body_part in LE):
-            LElbowYaw, LElbowRoll = self.obtain_LElbowYawRoll_angle(wp_dict.get(LE[0]), wp_dict.get(LE[1]), wp_dict.get(LE[2]), wp_dict.get(LE[3]))
+            RShoulderPitch, RShoulderRoll= self.RShoulderPitchRoll(wp_dict.get('2'), wp_dict.get('3'), wp_dict.get('8'), wp_dict.get('1'))
+                        
+            RElbowYaw, RElbowRoll = self.REblow(wp_dict.get('2'), wp_dict.get('3'), wp_dict.get('4'))
 
-        # RShoulder angles
-        if all (body_part in wp_dict for body_part in RS):        
-            RShoulderPitch, RShoulderRoll = self.obtain_RShoulderPitchRoll_angle(wp_dict.get(RS[0]), wp_dict.get(RS[1]), wp_dict.get(RS[2]), wp_dict.get(RS[3]))
+            
+            # Invert right arm with left arm
+            # wp_dict = self.invert_right_left(wp_dict) 
+            
+            # HipPitch angles 
+            if all (body_part in wp_dict for body_part in HP):
+                HipPitch = self.obtain_HipPitch_angles(wp_dict.get(HP[0]), wp_dict.get(HP[1]))
 
-        # RElbow angles
-        if all (body_part in wp_dict for body_part in RE):
-            RElbowYaw, RElbowRoll = self.obtain_RElbowYawRoll_angle(wp_dict.get(RE[0]), wp_dict.get(RE[1]), wp_dict.get(RE[2]), wp_dict.get(RE[3]))
-        
-        return LShoulderPitch, LShoulderRoll, LElbowYaw, LElbowRoll, RShoulderPitch, RShoulderRoll, RElbowYaw, RElbowRoll, HipPitch
+            # LShoulder angles 
+            # if all (body_part in wp_dict for body_part in LS):        
+            #     LShoulderPitch, LShoulderRoll = self.obtain_LShoulderPitchRoll_angles(wp_dict.get(LS[0]), wp_dict.get(LS[1]), wp_dict.get(LS[2]), wp_dict.get(LS[3]))
+
+            # # LElbow angles
+            # if all (body_part in wp_dict for body_part in LE):
+            #     LElbowYaw, LElbowRoll = self.obtain_LElbowYawRoll_angle(wp_dict.get(LE[0]), wp_dict.get(LE[1]), wp_dict.get(LE[2]), wp_dict.get(LE[3]))
+
+            # RShoulder angles
+            # if all (body_part in wp_dict for body_part in RS):        
+            #     RShoulderPitch, RShoulderRoll = self.obtain_RShoulderPitchRoll_angle(wp_dict.get(RS[0]), wp_dict.get(RS[1]), wp_dict.get(RS[2]), wp_dict.get(RS[3]))
+
+            # RElbow angles
+            # if all (body_part in wp_dict for body_part in RE):
+            #     RElbowYaw, RElbowRoll = self.obtain_RElbowYawRoll_angle(wp_dict.get(RE[0]), wp_dict.get(RE[1]), wp_dict.get(RE[2]), wp_dict.get(RE[3]))
+ 
+            return LShoulderPitch, LShoulderRoll, LElbowRoll, LElbowYaw, RShoulderPitch, RShoulderRoll, RElbowRoll, RElbowYaw, HipPitch
+                

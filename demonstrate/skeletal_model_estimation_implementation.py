@@ -3,6 +3,7 @@ import rospy
 import mediapipe as mp
 import cv2
 import numpy as np
+import time
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 from skeletal_model_retargeting_implementation import HumanToPepperRetargeting
@@ -26,6 +27,8 @@ class SkeletalModelEstimationROS:
         self.mp_pose = mp.solutions.pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5)
         self.retargeting = retargeting
         self.bridge = CvBridge()
+
+        self.last_logged_time = rospy.get_time()
 
         # ROS subscribers
         self.color_sub = rospy.Subscriber("/camera/color/image_raw", Image, self.color_callback)
@@ -102,11 +105,17 @@ class SkeletalModelEstimationROS:
                                 0.6, color, 2)
                     angle_y_pos += 25
                 
-                # Log angles
-                rospy.loginfo("Joint Angles:")
-                for idx, (joint, angle) in enumerate(angles.items()):
-                    rospy.loginfo(f"{joint}: {angle:.2f} degrees")
-                
+                current_time = rospy.get_time()
+                if angles is not None and (current_time - self.last_logged_time) >= 1.0:
+                    rospy.loginfo("Joint Angles:")
+                    colors = ["\033[91m", "\033[92m", "\033[93m", "\033[94m",
+                            "\033[91m", "\033[92m", "\033[93m", "\033[94m"]
+                    for idx, (joint, angle) in enumerate(angles.items()):
+                        color = colors[idx % len(colors)]
+                        rospy.loginfo(f"{color}{joint}: {angle:.2f} radians\033[0m")
+
+                    self.last_logged_time = current_time
+
                 # Update 3D visualization
                 self.visualize_3d_skeleton()
         else:
@@ -390,8 +399,8 @@ if __name__ == "__main__":
     retargeting = HumanToPepperRetargeting()
     skeletal_estimator = SkeletalModelEstimationROS(
         camera_intrinsics=intrinsics,
-        image_width=640,
-        image_height=480,
+        image_width=1280,
+        image_height=720,
         retargeting=retargeting
     )
 
