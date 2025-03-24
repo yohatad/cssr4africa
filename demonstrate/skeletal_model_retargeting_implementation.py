@@ -93,7 +93,7 @@ class HumanToPepperRetargeting:
         else:
             pitch_radians = np.pi/2 - np.arctan2(upper_arm_x, upper_arm_z)
   
-        roll_radians = -(np.pi/2 - np.arctan2(upper_arm_x, upper_arm_y))
+        roll_radians = np.pi/2 - np.arctan2(upper_arm_x, upper_arm_y)
 
         # pitch_angle = np.degrees(pitch_radians)
         # roll_angle =  np.degrees(roll_radians)
@@ -136,7 +136,7 @@ class HumanToPepperRetargeting:
             pitch_radians = np.pi/2 - np.arctan2(upper_arm_x, upper_arm_z)
 
   
-        roll_radians  = (np.pi/2 - np.arctan2(upper_arm_x, upper_arm_y))
+        roll_radians  = (np.pi/2 - np.arctan2(upper_arm_x, upper_arm_y))    
         # roll_radians  = -(np.arctan2(upper_arm_x, upper_arm_y) + np.pi/2)
 
         # if upper_arm_y < 0:

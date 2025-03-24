@@ -382,19 +382,19 @@ class SkeletalModelEstimationROS:
 if __name__ == "__main__":
     rospy.init_node('skeletal_model_estimation_node', anonymous=True)
 
-    intrinsics = [
-        [606.12, 0.0, 321.38],
-        [0.0, 605.72, 256.30],
-        [0.0, 0.0, 1.0]
-    ]
+    # intrinsics = [
+    #     [606.12, 0.0, 321.38],
+    #     [0.0, 605.72, 256.30],
+    #     [0.0, 0.0, 1.0]
+    # ]
 
     # K: [909.1842651367188, 0.0, 642.069580078125, 0.0, 908.5780639648438, 384.4430236816406, 0.0, 0.0, 1.0]
 
-    # intrinsics = [
-    #     [909.1842651367188, 0.0, 642.069580078125],
-    #     [0.0, 908.5780639648438, 384.4430236816406],
-    #     [0.0, 0.0, 1.0]
-    # ]
+    intrinsics = [
+        [909.1842651367188, 0.0, 642.069580078125],
+        [0.0, 908.5780639648438, 384.4430236816406],
+        [0.0, 0.0, 1.0]
+    ]
 
     retargeting = HumanToPepperRetargeting()
     skeletal_estimator = SkeletalModelEstimationROS(
