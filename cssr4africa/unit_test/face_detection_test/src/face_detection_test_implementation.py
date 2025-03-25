@@ -38,7 +38,7 @@ class FaceDetectionTest:
         """
         self.rospack = rospkg.RosPack()
         try:
-            self.face_detection_test_package_path = self.rospack.get_path('unit_test')
+            self.unit_test_package_path = self.rospack.get_path('unit_test')
         except rospkg.ResourceNotFound as e:
             rospy.logerr(f"ROS package not found: {e}")
             raise RuntimeError(f"Required ROS package not found: {e}")
@@ -167,8 +167,7 @@ class FaceDetectionTest:
             str: The topic name or None if not found.
         """
         try:
-            package_path = self.rospack.get_path('face_detection_test')
-            config_path = os.path.join(package_path, 'data', 'pepper_topics.dat')
+            config_path = os.path.join(self.unit_test_package_path, 'face_detection_test/data', 'pepper_topics.dat')
 
             if not os.path.exists(config_path):
                 rospy.logerr(f"extract_topics: Data file not found at {config_path}")
@@ -202,7 +201,7 @@ class FaceDetectionTest:
             dict: Configuration dictionary or None if file couldn't be read.
         """
         try:
-            config_path = os.path.join(self.face_detection_test_package_path, 'face_detection_test/config', 'face_detection_test_configuration.json')
+            config_path = os.path.join(self.unit_test_package_path, 'face_detection_test/config', 'face_detection_test_configuration.json')
             if not os.path.exists(config_path):
                 rospy.logerr(f"read_json_file: Configuration file not found at {config_path}")
                 return None
@@ -372,7 +371,7 @@ class FaceDetectionTest:
         """
         timestamp = int(self.start_time)
         rgb_video_path = os.path.join(
-            self.face_detection_test_package_path, 'face_detection_test/data', f'face_detection_rgb_video_{timestamp}.mp4')
+            self.unit_test_package_path, 'face_detection_test/data', f'face_detection_rgb_video_{timestamp}.mp4')
         
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         self.rgb_writer = cv2.VideoWriter(
@@ -392,7 +391,7 @@ class FaceDetectionTest:
             height (int): Height of the depth image
         """
         timestamp = int(self.start_time)
-        depth_video_path = os.path.join(self.face_detection_test_package_path, 'face_detection_test/data', f'face_detection_depth_video_{timestamp}.mp4')
+        depth_video_path = os.path.join(self.unit_test_package_path, 'face_detection_test/data', f'face_detection_depth_video_{timestamp}.mp4')
         
         # For visualization, convert to colorized 8-bit
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
@@ -492,7 +491,7 @@ class FaceDetectionTest:
             (current_time - self.image_save_time >= self.image_interval)):
             
             image_path = os.path.join(
-                self.face_detection_test_package_path, 
+                self.unit_test_package_path, 
                 'face_detection_test/data', 
                 f'face_detection_rgb_image_{int(current_time)}.png'
             )
@@ -538,7 +537,7 @@ class FaceDetectionTest:
             (current_time - self.image_save_time >= self.image_interval)):
             
             image_path = os.path.join(
-                self.face_detection_test_package_path, 
+                self.unit_test_package_path, 
                 'face_detection_test/data', 
                 f'face_detection_depth_image_{int(current_time)}.png'
             )
@@ -581,7 +580,7 @@ class FaceDetectionTest:
             if self.rgb_writer is None and self.rgb_frames:                    
                 height, width = self.rgb_frames[0].shape[:2]
                 video_path = os.path.join(
-                    self.face_detection_test_package_path, 
+                    self.unit_test_package_path, 
                     'face_detection_test/data', 
                     f'face_detection_rgb_video_{int(self.start_time)}.mp4'
                 )
@@ -612,7 +611,7 @@ class FaceDetectionTest:
             if self.depth_writer is None and self.depth_frames:                    
                 height, width = self.depth_frames[0].shape
                 video_path = os.path.join(
-                    self.face_detection_test_package_path, 
+                    self.unit_test_package_path, 
                     'face_detection_test/data', 
                     f'face_detection_depth_video_{int(self.start_time)}.mp4'
                 )
