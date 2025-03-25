@@ -91,6 +91,8 @@ class FaceDetectionTest:
         # Video writer objects
         self.rgb_writer = None
         self.depth_writer = None
+
+        self.timer = rospy.get_time()
                         
         # Only subscribe to camera if recording or visualization is needed
         if (self.config.get("save_video", False) or 
