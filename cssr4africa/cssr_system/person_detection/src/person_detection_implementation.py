@@ -10,7 +10,7 @@ import random
 from sensor_msgs.msg import Image, CompressedImage
 from message_filters import ApproximateTimeSynchronizer, Subscriber
 from cv_bridge import CvBridge, CvBridgeError
-from person_detection.msg import msg_file
+from cssr_system.msg import msg_file
 from person_detection_tracking import Sort
 from geometry_msgs.msg import Point
 
