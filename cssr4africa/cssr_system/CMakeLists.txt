@@ -53,7 +53,7 @@ add_message_files(
   DIRECTORY
   face_detection/msg
   FILES
-  msg_file.msg
+  face_detection_msg_file.msg
 )
 
 ## Generate services in the 'srv' folder

@@ -31,12 +31,12 @@ from cv_bridge import CvBridge, CvBridgeError
 from message_filters import ApproximateTimeSynchronizer, Subscriber
 from geometry_msgs.msg import Point
 from typing import Tuple, List
-from face_detection.msg import msg_file
+from cssr_system.msg import face_detection_msg_file
 from face_detection_tracking import Sort, CentroidTracker
 
 class FaceDetectionNode:
     def __init__(self):     
-        self.pub_gaze = rospy.Publisher("/faceDetection/data", msg_file, queue_size=10)
+        self.pub_gaze = rospy.Publisher("/faceDetection/data", face_detection_msg_file, queue_size=10)
         self.bridge = CvBridge()
         self.depth_image = None  # Initialize depth_image
         self.color_image = None  # Initialize color_image
@@ -320,7 +320,7 @@ class FaceDetectionNode:
             # Don't publish empty messages
             return
             
-        face_msg = msg_file()
+        face_msg = face_detection_msg_file()
 
         # Initialize lists for each attribute in the message
         face_msg.face_label_id = [data['face_id'] for data in tracking_data]

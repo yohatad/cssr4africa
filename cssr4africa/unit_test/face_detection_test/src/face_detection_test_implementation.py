@@ -27,7 +27,7 @@ import colorsys
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 from message_filters import ApproximateTimeSynchronizer, Subscriber
-from face_detection_test.msg import msg_file
+from unit_test.msg import face_detection_test_msg_file
 
 class FaceDetectionTest:
     def __init__(self):
@@ -109,7 +109,7 @@ class FaceDetectionTest:
         # Subscribe to face detection data
         self.face_data_sub = rospy.Subscriber(
             '/faceDetection/data',
-            msg_file,
+            face_detection_test_msg_file,
             self.face_data_callback,
             queue_size=10
         )

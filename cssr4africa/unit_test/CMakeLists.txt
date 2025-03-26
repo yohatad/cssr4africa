@@ -74,7 +74,7 @@ add_message_files(
   DIRECTORY
   face_detection_test/msg
   FILES
-  msg_file.msg
+  face_detection_test_msg_file.msg
 )
 
 generate_messages(
