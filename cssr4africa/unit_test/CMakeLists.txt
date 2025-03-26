@@ -74,7 +74,7 @@ add_message_files(
   DIRECTORY
   person_detection_test/msg
   FILES
-  msg_file.msg
+  person_detection_test_msg_file.msg
 )
 
 generate_messages(

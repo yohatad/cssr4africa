@@ -27,7 +27,7 @@ import colorsys
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 from message_filters import ApproximateTimeSynchronizer, Subscriber
-from unit_test.msg import msg_file
+from unit_test.msg import person_detection_test_msg_file
 
 class PersonDetectionTest:
     def __init__(self):
@@ -109,7 +109,7 @@ class PersonDetectionTest:
         # Subscribe to person detection data
         self.person_data_sub = rospy.Subscriber(
             '/personDetection/data',
-            msg_file,
+            person_detection_test_msg_file,
             self.person_data_callback,
             queue_size=10
         )
@@ -147,7 +147,6 @@ class PersonDetectionTest:
         self.person_centroids = msg.centroids
         self.person_widths = msg.width  # Store the width values
         self.person_heights = msg.height  # Store the height values
-        self.person_mutual_gazes = msg.mutualGaze
         
         # Generate colors for new person
         for person_id in self.person_labels:
@@ -410,8 +409,8 @@ class PersonDetectionTest:
         if not self.person_labels or not self.person_centroids:
             return
         
-        for i, (person_id, centroid, width, height, mutual_gaze) in enumerate(zip(
-            self.person_labels, self.person_centroids, self.person_widths, self.person_heights, self.person_mutual_gazes)):
+        for i, (person_id, centroid, width, height) in enumerate(zip(
+            self.person_labels, self.person_centroids, self.person_widths, self.person_heights)):
             
             # Get person coordinates
             centroid_x, centroid_y = int(centroid.x), int(centroid.y)
@@ -431,11 +430,6 @@ class PersonDetectionTest:
             
             # Draw bounding box with assigned color
             cv2.rectangle(image, (x1, y1), (x2, y2), person_color, 2)
-            
-            # Add labels above bounding box
-            label = "Engaged" if mutual_gaze else "Not Engaged"
-            cv2.putText(image, label, (x1 + 10, y1 - 10),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, person_color, 2)
             
             cv2.putText(image, f"person: {person_id}", (x1 + 10, y1 - 30),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.7, person_color, 2)

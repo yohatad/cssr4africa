@@ -10,13 +10,13 @@ import random
 from sensor_msgs.msg import Image, CompressedImage
 from message_filters import ApproximateTimeSynchronizer, Subscriber
 from cv_bridge import CvBridge, CvBridgeError
-from cssr_system.msg import msg_file
+from cssr_system.msg import person_detection_msg_file
 from person_detection_tracking import Sort
 from geometry_msgs.msg import Point
 
 class PersonDetectionNode:
     def __init__(self):
-        self.pub_people = rospy.Publisher("/personDetection/data", msg_file, queue_size=10)
+        self.pub_people = rospy.Publisher("/personDetection/data", person_detection_msg_file, queue_size=10)
         self.bridge = CvBridge()
         self.color_image = None
         self.depth_image = None
@@ -189,10 +189,11 @@ class PersonDetectionNode:
                 if hasattr(self, 'tracker') and len(boxes) > 0:
                     detections = np.hstack([boxes, scores.reshape(-1, 1)])
                     tracked_objects = self.tracker.update(detections)
-                    self.latest_frame = self.draw_tracked_objects(frame, tracked_objects)
-                    
-                    # Prepare and publish tracking data
+    
                     tracking_data = self.prepare_tracking_data(tracked_objects)
+
+                    self.latest_frame = self.draw_tracked_objects(frame, tracked_objects, tracking_data)
+                    # Prepare and publish tracking data
                     self.publish_person_detection(tracking_data)
                 else:
                     self.latest_frame = frame
@@ -335,7 +336,7 @@ class PersonDetectionNode:
             # Don't publish empty messages
             return
             
-        person_msg = msg_file()
+        person_msg = person_detection_msg_file()
         person_msg.person_label_id = [data['track_id'] for data in tracking_data]
         person_msg.centroids = [data['centroid'] for data in tracking_data]
         person_msg.width = [data['width'] for data in tracking_data]
@@ -526,13 +527,13 @@ class YOLOv8(PersonDetectionNode):
 
         return inter_area / (box_area + other_area - inter_area + 1e-6)
     
-    def draw_tracked_objects(self, frame, tracked_objects):
+    def draw_tracked_objects(self, frame, tracked_objects, tracking_data):
         """
         Draw bounding boxes for each tracked object. 
         'tracked_objects' is Nx5 = [x1, y1, x2, y2, track_id].
         """
         output_img = frame.copy()
-        for obj in tracked_objects:
+        for i, obj in enumerate(tracked_objects):
             x1, y1, x2, y2, track_id = obj
             track_id = int(track_id)
             
@@ -548,6 +549,23 @@ class YOLOv8(PersonDetectionNode):
             label_str = f"Person: {track_id}"
             cv2.putText(output_img, label_str, (int(x1), int(y1) - 10),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
+            
+            # Use depth from tracking data if available
+            depth = None
+            for data in tracking_data:
+                if data['track_id'] == str(track_id):
+                    depth = data['centroid'].z
+                    break
+            
+            # Format and display depth info
+            if depth is not None and depth > 0:
+                depth_str = f"Depth: {depth:.2f} m"
+            else:
+                depth_str = "Depth: Unknown"
+                
+            cv2.putText(output_img, depth_str, (int(x1), int(y2) + 20), 
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
+                        
         return output_img
 
     def spin(self):

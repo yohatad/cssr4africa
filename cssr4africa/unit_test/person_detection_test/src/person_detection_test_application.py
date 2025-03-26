@@ -97,7 +97,7 @@ Version: v1.0
 """
 
 import rospy
-from person_detection_test_implementation import personDetectionTest
+from person_detection_test_implementation import PersonDetectionTest
 
 def main():
     # Define the node name and software version
@@ -121,7 +121,7 @@ def main():
     rospy.loginfo(f"{node_name}: startup.")
 
     # Create the test instance and run tests
-    personDetectionTest()
+    PersonDetectionTest()
 
     # IMPORTANT: Keep the node alive so callbacks can be triggered
     rospy.spin()

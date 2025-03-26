@@ -53,7 +53,7 @@ add_message_files(
   DIRECTORY
   person_detection/msg
   FILES
-  msg_file.msg
+  person_detection_msg_file.msg
 )
 
 ## Generate services in the 'srv' folder
