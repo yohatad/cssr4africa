@@ -44,7 +44,6 @@ class FaceDetectionNode:
 
     def subscribe_topics(self):
         camera_type = rospy.get_param('/faceDetection/camera', default="realsense")
-        print("camera_type: ", camera_type)
         
         if camera_type == "realsense":
             self.rgb_topic = self.extract_topics("RealSenseCameraRGB")
