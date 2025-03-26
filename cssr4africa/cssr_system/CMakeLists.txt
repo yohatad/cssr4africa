@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(person_detection)
+project(cssr_system)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -50,6 +50,8 @@ find_package(catkin REQUIRED COMPONENTS
 
 ## Add service and message files
 add_message_files(
+  DIRECTORY
+  person_detection/msg
   FILES
   msg_file.msg
 )

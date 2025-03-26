@@ -1,5 +1,4 @@
 {
-    "algorithm": "mediapipe",
     "use_compressed": false,
     "confidence_iou_threshold": 0.8,
     "sort_max_disappeared": 30,

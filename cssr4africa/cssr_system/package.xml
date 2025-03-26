@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>person_detection</name>
+  <name>cssr_system</name>
   <version>0.0.0</version>
   <description>The package detects uses YOLO to detect person</description>
 
