@@ -1,9 +1,9 @@
 <div align="center">
-<h1> Person Detection </h1>
+<h1> Person Detection and Localization </h1>
 </div>
 
 <div align="center">
-  <img src="CSSR4AfricaLogo.svg" alt="CSSR4Africa Logo" style="width:50%; height:auto;">
+  <img src="../CSSR4AfricaLogo.svg" alt="CSSR4Africa Logo" style="width:50%; height:auto;">
 </div>
 
 The **Person Detection and Localization** package is a ROS package designed to detect multiple persons in real-time by subscribing to color and depth image topics. It publishes an array of detected persons to the **/personDetection/data** topic. Each entry in the published data includes the **label ID** of the detected person, the **centroid** coordinates representing the center point of each person, the **width** and **height** of the bounding box, and the **depth** information in meters.
@@ -73,7 +73,6 @@ The following table provides the key-value pairs used in the configuration file:
 
 | Parameter                   | Description                                                      | Range/Values            | Default Value |
 |-----------------------------|------------------------------------------------------------------|-------------------------|---------------|
-| `camera`                    | Camera type to use for detection                                | `realsense`, `pepper`, `video` | `realsense` |
 | `use_compressed`            | Use compressed ROS image topics                                  | `True`, `False`         | `False`       |
 | `confidence_iou_threshold`  | Confidence threshold for person detection                       | `[0.0 - 1.0]`           | `0.5`         |
 | `sort_max_disappeared`      | Maximum frames allowed for disappearance in SORT tracking        | Positive integer        | `50`          |
