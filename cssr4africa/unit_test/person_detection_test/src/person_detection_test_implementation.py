@@ -95,8 +95,13 @@ class PersonDetectionTest:
             self.config.get("save_image", False)):
             if self.camera in ["realsense", "pepper"]:
                 self.subscribe_camera_topics()
+            
+            elif self.camera == "video":
+                # Don't do anything for video camera
+                rospy.loginfo("No recording for recorded video.")
+            
             else:
-                rospy.logerr(f"Unsupported camera type: {self.camera}")
+                rospy.logerr(f"Unsupported camera type: {self.camera}.")
                 raise ValueError(f"Unsupported camera type: {self.camera}")
         else:
             # Only subscribe to person detection data, not camera feeds
