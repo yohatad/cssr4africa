@@ -99,6 +99,11 @@ class FaceDetectionTest:
             self.config.get("save_image", False)):
             if self.camera in ["realsense", "pepper"]:
                 self.subscribe_camera_topics()
+
+            elif self.camera == "video":
+                if self.verbose_mode:
+                    rospy.loginfo("Using video camera - no subscription to camera topics")
+
             else:
                 rospy.logerr(f"Unsupported camera type: {self.camera}")
                 raise ValueError(f"Unsupported camera type: {self.camera}")
