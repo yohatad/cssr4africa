@@ -150,20 +150,47 @@ class FaceDetectionNode:
         return rgb_h == depth_h and rgb_w == depth_w
 
     @staticmethod
-    def read_json_file():
+    def read_json_file(package_name):
+        """
+        Read and parse a JSON configuration file from the specified ROS package.
+        
+        Args:
+            package_name (str): Name of the ROS package containing the config file
+            
+        Returns:
+            dict: Configuration data from JSON file, or empty dict if file not found
+        """
         rospack = rospkg.RosPack()
         try:
-            package_path = rospack.get_path('cssr_system')
-            config_path = os.path.join(package_path, 'face_detection/config', 'face_detection_configuration.json')
+            package_path = rospack.get_path(package_name)
+            
+            # Determine the directory and file name based on the package name
+            if package_name == 'unit_test':
+                directory = 'face_detection_test/config'
+                config_file = 'face_detection_test_configuration.json'
+            else:
+                directory = 'face_detection/config'
+                config_file = 'face_detection_configuration.json'
+            
+            config_path = os.path.join(package_path, directory, config_file)
+            
             if os.path.exists(config_path):
                 with open(config_path, 'r') as file:
                     data = json.load(file)
                     return data
             else:
                 rospy.logerr(f"read_json_file: Configuration file not found at {config_path}")
-        
+                return {}
+                
         except rospkg.ResourceNotFound as e:
-            rospy.logerr(f"ROS package 'cssr_system' not found: {e}")
+            rospy.logerr(f"ROS package '{package_name}' not found: {e}")
+            return {}
+        except json.JSONDecodeError as e:
+            rospy.logerr(f"Error parsing JSON configuration file: {e}")
+            return {}
+        except Exception as e:
+            rospy.logerr(f"Unexpected error reading configuration file: {e}")
+            return {}
     
     @staticmethod
     def extract_topics(image_topic):
@@ -348,7 +375,7 @@ class MediaPipe(FaceDetectionNode):
         self.centroid_tracker = CentroidTracker(rospy.get_param("/faceDetection_config/max_disappeared", 15), rospy.get_param("/faceDetection_config/distance_threshold", 100))
         self.latest_frame = None
 
-        self.verbose_mode = bool(rospy.get_param("/faceDetection_config/verbose_mode", False))
+        self.verbose_mode = rospy.get_param("/faceDetection_config/verbose_mode", False)
 
         # Timer for printing message every 5 seconds
         self.timer = rospy.get_time()

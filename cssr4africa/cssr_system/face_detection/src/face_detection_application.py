@@ -128,7 +128,7 @@ def main():
     rospy.loginfo(f"{node_name}: startup.")
     
     # Read the configuration file
-    config = FaceDetectionNode.read_json_file()
+    config = FaceDetectionNode.read_json_file('cssr_system')
     
     unit_test = rospy.get_param('/faceDetection/unit_test', default=False)
     
@@ -143,6 +143,14 @@ def main():
         for key, value in filtered_config.items():
             rospy.set_param('/faceDetection_config/' + key, value)
 
+        # Set the algorthim, use_compressed, and verbose_mode parameters
+        config_test = FaceDetectionNode.read_json_file('unit_test')
+        
+        # Filter and set only the specific parameters from the test config
+        for key, value in config_test.items():
+            if key in ["use_compressed", "algorithm", "verbose_mode"]:
+                rospy.set_param('/faceDetection_config/' + key, value)
+        
     algorthim = rospy.get_param('/faceDetection_config/algorithm', default="sixdrep")
 
     if algorthim == 'mediapipe':
