@@ -67,7 +67,7 @@ class HumanToPepperRetargeting:
         torso_vector = MidHip - Neck
         Z = self.normalize(torso_vector)
 
-        across_shoulders = Neck - LShoulder
+        across_shoulders = LShoulder - Neck
 
         X_unnormalized = np.cross(Z, across_shoulders)
         X = self.normalize(X_unnormalized)
@@ -83,15 +83,19 @@ class HumanToPepperRetargeting:
         upper_arm_x = np.dot(upper_arm, X)
         upper_arm_y = np.dot(upper_arm, Y)
         upper_arm_z = np.dot(upper_arm, Z)
+
+        print("upper_arm_x: ", upper_arm_x)
+        print("upper_arm_y: ", upper_arm_y)
+        print("upper_arm_z: ", upper_arm_z)
         
-        if upper_arm_z < 0 and upper_arm_x < 0:
-            pitch_radians = -(np.pi/2 + np.arctan2(upper_arm_x, upper_arm_z))
+        # if upper_arm_z < 0 and upper_arm_x < 0:
+        #     pitch_radians = -(np.pi/2 + np.arctan2(upper_arm_x, upper_arm_z))
         
-        elif upper_arm_z > 0 and upper_arm_x < 0:
-            pitch_radians = np.pi/2 - np.arctan2(upper_arm_x, upper_arm_z)
+        # elif upper_arm_z > 0 and upper_arm_x < 0:
+        #     pitch_radians = np.pi/2 - np.arctan2(upper_arm_x, upper_arm_z)
         
-        else:
-            pitch_radians = np.pi/2 - np.arctan2(upper_arm_x, upper_arm_z)
+        # else:
+        pitch_radians = np.pi/2 - np.arctan2(upper_arm_x, upper_arm_z)
   
         roll_radians = np.pi/2 - np.arctan2(upper_arm_x, upper_arm_y)
 
@@ -136,7 +140,7 @@ class HumanToPepperRetargeting:
             pitch_radians = np.pi/2 - np.arctan2(upper_arm_x, upper_arm_z)
 
   
-        roll_radians  = (np.pi/2 - np.arctan2(upper_arm_x, upper_arm_y))    
+        roll_radians  = np.pi/2 - np.arctan2(upper_arm_x, upper_arm_y)   
         # roll_radians  = -(np.arctan2(upper_arm_x, upper_arm_y) + np.pi/2)
 
         # if upper_arm_y < 0:
@@ -317,8 +321,7 @@ class HumanToPepperRetargeting:
             RShoulderPitch, RShoulderRoll= self.RShoulderPitchRoll(wp_dict.get('2'), wp_dict.get('3'), wp_dict.get('8'), wp_dict.get('1'))
                         
             RElbowYaw, RElbowRoll = self.REblow(wp_dict.get('2'), wp_dict.get('3'), wp_dict.get('4'))
-
-            
+    
             # Invert right arm with left arm
             # wp_dict = self.invert_right_left(wp_dict) 
             
