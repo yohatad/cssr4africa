@@ -22,6 +22,7 @@ The following table provides the key-value pairs used in the configuration file:
 
 | Parameter           | Description                                   | Possible Values            | Default Value |
 |---------------------|-----------------------------------------------|----------------------------|---------------|
+| `use_compressed`    | Use compressed ROS image topics               | `True`, `False`            | `True`       |
 | `save_video`        | Save the output video of the test             | `True`, `False`            | `False`       |
 | `save_image`        | Save individual image frames from the test    | `True`, `False`            | `False`       |
 | `video_duration`    | Duration (seconds) for saved video            | Positive integer           | `10`          |
