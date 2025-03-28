@@ -1,7 +1,7 @@
 <launch>
     <!-- Declare arguments -->
     <arg name="camera"              default="video" doc="Set realsense for realsense camera, pepper for pepper camera, video for recorded video data" />
-    <arg name="bag_file"            default="singleFace" doc="Choose which bag file to play (e.g., 'singleFace' for file ending in _singleFace.bag)" />
+    <arg name="bag_file"            default="singlePerson" doc="Choose which bag file to play (e.g., 'singlePerson' for file ending in _singlePerson.bag)" />
     <arg name="robot_ip"            default="172.29.111.230" />
     <arg name="robot_port"          default="9559" />
     <arg name="network_interface"   default="wlp0s20f3" />

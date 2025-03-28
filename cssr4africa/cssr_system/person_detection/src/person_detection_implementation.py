@@ -41,8 +41,8 @@ class PersonDetectionNode:
         self.verbose_mode = rospy.get_param("/personDetection_config/verbose_mode", False)
     
     def subscribe_topics(self):
-        camera_type = rospy.get_param("/personDetection_config/camera", "realsense")
-        
+        camera_type = rospy.get_param("/personDetection/camera", "realsense")
+
         if camera_type == "realsense":
             self.rgb_topic = self.extract_topics("RealSenseCameraRGB")
             self.depth_topic = self.extract_topics("RealSenseCameraDepth")
@@ -409,7 +409,7 @@ class YOLOv8(PersonDetectionNode):
             so.intra_op_num_threads = multiprocessing.cpu_count()
             so.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_ALL
 
-            model_path = rospkg.RosPack().get_path('cssr_system') + '/person_detection/models/yolov8s.onnx'
+            model_path = rospkg.RosPack().get_path('cssr_system') + '/person_detection/models/person_detection_yolov8s.onnx'
             self.session = onnxruntime.InferenceSession(model_path, sess_options=so, providers=['CUDAExecutionProvider', 'CPUExecutionProvider']
             )
 

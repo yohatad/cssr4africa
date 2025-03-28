@@ -50,10 +50,6 @@ class PersonDetectionTest:
             raise RuntimeError("Configuration file could not be loaded.")
         
         self.camera = rospy.get_param('personDetection/camera', default='video')
-
-        # Set the algorithm to test based on the configuration
-        self.algorithm = self.config.get("algorithm", "sixdrep")
-        rospy.set_param('/personDetection_config/algorithm', self.algorithm)
         
         # Set the verbose mode based on the configuration
         self.verbose_mode = self.config.get("verbose_mode", False)
@@ -435,15 +431,8 @@ class PersonDetectionTest:
                         cv2.FONT_HERSHEY_SIMPLEX, 0.7, person_color, 2)
             
             # Draw depth information below the box
-            cv2.putText(
-                image,
-                f"Depth: {centroid.z:.2f}m",
-                (x1 + 10, y2 + 20),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.6,
-                person_color,
-                2
-            )
+            cv2.putText(image, f"Depth: {centroid.z:.2f}m", (x1 + 10, y2 + 20),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.6, person_color, 2)
             
             # Draw centroid point
             cv2.circle(image, (centroid_x, centroid_y), 4, (255, 0, 0), -1)
