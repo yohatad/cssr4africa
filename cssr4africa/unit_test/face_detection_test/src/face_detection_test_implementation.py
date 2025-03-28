@@ -97,10 +97,10 @@ class FaceDetectionTest:
         # Only subscribe to camera if recording or visualization is needed
         if (self.config.get("save_video", False) or 
             self.config.get("save_image", False)):
-            if self.camera in ["realsense", "pepper", "video"]:
+            if self.camera in ["realsense", "pepper"]:
                 self.subscribe_camera_topics()
             else:
-                rospy.logerr(f"Unsupported camera type: {self.camera}. Supported types are 'realsense', 'pepper', or 'video'.")
+                rospy.logerr(f"Unsupported camera type: {self.camera}")
                 raise ValueError(f"Unsupported camera type: {self.camera}")
         else:
             # Only subscribe to face detection data, not camera feeds
@@ -224,7 +224,7 @@ class FaceDetectionTest:
         Subscribe to RGB and depth camera topics based on the configured camera type.
         Can use either separate callbacks or synchronized callbacks based on configuration.
         """        
-        if self.camera == "realsense" or "video":
+        if self.camera == "realsense":
             self.rgb_topic = self.extract_topics("RealSenseCameraRGB")
             self.depth_topic = self.extract_topics("RealSenseCameraDepth")
         elif self.camera == "pepper":
