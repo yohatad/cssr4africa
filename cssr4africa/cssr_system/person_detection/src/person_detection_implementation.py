@@ -67,6 +67,7 @@ class PersonDetectionNode:
             depth_sub = Subscriber(self.depth_topic + "/compressedDepth", CompressedImage)
             rospy.loginfo(f"Subscribed to {self.rgb_topic}/compressed")
             rospy.loginfo(f"Subscribed to {self.depth_topic}/compressedDepth")
+        
         elif self.use_compressed and camera_type == "pepper":
             # There is no compressed topic for Pepper cameras
             rospy.logwarn("Compressed images are not available for Pepper cameras.")
