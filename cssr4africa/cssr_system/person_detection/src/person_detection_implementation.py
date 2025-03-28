@@ -1,18 +1,35 @@
+""""
+person_detection_implementation.py Implementation code for running the Person Detection and Localization ROS node.
+
+Author: Yohannes Tadesse Haile
+Date: March 28, 2025
+Version: v1.0
+
+Copyright (C) 2023 CSSR4Africa Consortium
+
+This project is funded by the African Engineering and Technology Network (Afretec)
+Inclusive Digital Transformation Research Grant Programme.
+
+Website: www.cssr4africa.org
+
+This program comes with ABSOLUTELY NO WARRANTY.
+"""
+
 import cv2
-import rospy
-import os
-import rospkg
 import numpy as np
+import rospy
+import rospkg
+import os
 import onnxruntime
 import multiprocessing
 import json
 import random
 from sensor_msgs.msg import Image, CompressedImage
-from message_filters import ApproximateTimeSynchronizer, Subscriber
 from cv_bridge import CvBridge, CvBridgeError
+from message_filters import ApproximateTimeSynchronizer, Subscriber
+from geometry_msgs.msg import Point
 from cssr_system.msg import person_detection_msg_file
 from person_detection_tracking import Sort
-from geometry_msgs.msg import Point
 
 class PersonDetectionNode:
     def __init__(self):

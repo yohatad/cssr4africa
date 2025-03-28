@@ -1,5 +1,5 @@
 """"
-person_detection_tracking.py Functionality for tracking faces using SORT(simple online and realtime tracking).
+person_detection_tracking.py Functionality for tracking people using SORT (simple online and realtime tracking).
 
 Author: Yohannes Tadesse Haile
 Date: March 28, 2025
