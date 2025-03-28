@@ -44,11 +44,15 @@ Libraries
     - message_filters (ApproximateTimeSynchronizer, Subscriber)
     - geometry_msgs.msg (Point)
     - typing (Tuple, List)
-    - face_detection.msg (msg_file)
+    - cssr_system.msg (face_detection_msg_file)
     - face_detection_tracking (Sort, CentroidTracker)
     
-Parameters 
-    None
+Parameters
+    Launch File Parameters:
+        roslaunch cssr_system face_detection_robot.launch camera:=realsense
+            camera: Camera type or video file (realsense or pepper or video)
+            pepper_robot_ip: Pepper robot IP address (e.g 172.29.111.230 or 172.29.111.240)
+            network_interface: Network interface for Pepper robot connection
 
 Configuration File Parameters
     Key                             Value
