@@ -9,24 +9,17 @@
 The **Person Detection and Localization** package is a ROS package designed to detect multiple persons in real-time by subscribing to color and depth image topics. It publishes an array of detected persons to the **/personDetection/data** topic. Each entry in the published data includes the **label ID** of the detected person, the **centroid** coordinates representing the center point of each person, the **width** and **height** of the bounding box, and the **depth** information in meters.
 
 # 📄 Documentation
-The main documentation for this deliverable provides more details about the implementation and usage of the person detection system.
+The main documentation for this deliverable found in [D4.2.1 Person Detection and Localization](https://cssr4africa.github.io/deliverables/CSSR4Africa_Deliverable_D4.2.1.pdf) provides more details about the implementation and usage of the person detection system.
 
-# 🛠️ Installation 
-
-Install the required software components to instantiate and set up the development environment for controlling the Pepper robot. Use the [CSSR4Africa Software Installation Manual](https://cssr4africa.github.io/deliverables/CSSR4Africa_Deliverable_D3.3.pdf). This includes downloading the model files and putting them in the models directory. 
-
+# Installation 
 To set up the Person Detection package on a Linux system, follow these steps:
 
-1. Prerequisites  
-Make sure you are running a supported Linux distribution (e.g., Ubuntu 20.04 or later).
+1. Prerequisites
+Make sure you are running a supported Linux distribution (e.g., Ubuntu 20.04 or later) on x86 processor.
+Install Python 3.10 and required tools.
 
-
-2. Install Python 3.8 and Virtual Environment (If it isn't installed).
+2. Install Python 3.10 and Virtual Environment.
 ```sh
-# To check if it is installed run the command below
-python3.8 --version 
-
-# If doesn't print the version number then it is not installed. Follow the steps below.
 # Update system packages
 sudo apt update && sudo apt upgrade -y
 
@@ -35,20 +28,21 @@ sudo apt install software-properties-common -y
 sudo add-apt-repository ppa:deadsnakes/ppa -y
 sudo apt update
 
-# Install Python 3.8
-sudo apt install python3.8 python3.8-venv python3.8-distutils -y
+# Install Python 3.10
+sudo apt install python3.10 python3.10-venv python3.10-distutils -y
 
 # Verify Python installation
-python3.8 --version
+python3.10 --version
 ```
+
 3. Set Up Virtual Environment
 ```sh
 # Create a virtual environment:
 cd $HOME
-python3.8 -m venv ~/workspace/pepper_rob_ws/person_detection
+python3.10 -m venv face_person_detection
 
 # Activate the virtual environment:
-source ~/workspace/pepper_rob_ws/person_detection/bin/activate
+source face_person_detection/bin/activate
 
 # Upgrade pip in the virtual environment:
 pip install --upgrade pip
@@ -56,17 +50,12 @@ pip install --upgrade pip
 
 4. Install Required Packages
 ```sh
-# Install onnxruntime package (Downloading pip wheel)
-$ wget https://nvidia.box.com/shared/static/iizg3ggrtdkqawkmebbfixo7sce6j365.whl -O onnxruntime_gpu-1.16.0-cp38-cp38-linux_aarch64.whl
+# Install PyTorch with CUDA support:
+pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 
-# Install pip wheel
-$ pip3 install onnxruntime_gpu-1.16.0-cp38-cp38-linux_aarch64.whl
-```
-```sh
 # Install additional requirements:
 pip install -r person_detection_requirements.txt
 ```
-
 
 # 🔧 Configuration Parameters
 The following table provides the key-value pairs used in the configuration file:
@@ -74,7 +63,7 @@ The following table provides the key-value pairs used in the configuration file:
 | Parameter                   | Description                                                      | Range/Values            | Default Value |
 |-----------------------------|------------------------------------------------------------------|-------------------------|---------------|
 | `use_compressed`            | Use compressed ROS image topics                                  | `True`, `False`         | `False`       |
-| `confidence_iou_threshold`  | Confidence threshold for person detection                       | `[0.0 - 1.0]`           | `0.5`         |
+| `confidence_iou_threshold`  | Confidence threshold for person detection                        | `[0.0 - 1.0]`           | `0.5`         |
 | `sort_max_disappeared`      | Maximum frames allowed for disappearance in SORT tracking        | Positive integer        | `50`          |
 | `sort_max_hits`             | Minimum consecutive detections to confirm object tracking (SORT) | Positive integer        | `3`           |
 | `sort_iou_threshold`        | IoU threshold for SORT tracker                                   | `[0.0 - 1.0]`           | `0.5`         |
@@ -94,6 +83,9 @@ Source the workspace in first terminal:
 Follow below steps, run in different terminals.
 
   1️. Launch the robot and specify which camera to use. 
+
+  > If you are using Pepper's cmaera's you need to specify the robot_ip, roscore_ip and network_interface and specify in the camera `pepper`. If you are using the intel realsense, just specify camera as `realsense`. 
+
   ```bash
   roslaunch cssr_system person_detection_robot.launch robot_ip:=<robot_ip> roscore_ip:=<roscore_ip> network_interface:=<network_interface> camera:=<camera>
   ```
