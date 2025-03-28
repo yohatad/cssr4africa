@@ -110,7 +110,7 @@ def main():
     rospy.loginfo(f"{node_name}: startup.")
     
     # Read the configuration file
-    config = PersonDetectionNode.read_json_file()
+    config = PersonDetectionNode.read_json_file('cssr_system')
     
     unit_test = rospy.get_param('/personDetection/unit_test', default=False)
     
@@ -124,6 +124,16 @@ def main():
         # Set the filtered parameters to the parameter server
         for key, value in filtered_config.items():
             rospy.set_param('/personDetection_config/' + key, value)
+
+        rospy.set_param('/personDetection_config/' + key, value)
+
+        # Set the algorthim, use_compressed, and verbose_mode parameters
+        config_test = PersonDetectionNode.read_json_file('unit_test')
+        
+        # Filter and set only the specific parameters from the test config
+        for key, value in config_test.items():
+            if key in ["use_compressed", "algorithm", "verbose_mode"]:
+                rospy.set_param('/personDetection_config/' + key, value)
     
     person_detection = YOLOv8()
     person_detection.spin()
