@@ -125,8 +125,7 @@ class FaceDetectionTest:
         
         rospy.on_shutdown(self.shutdown_hook)
         
-    
-    def start_recording_callback(self, event):
+    def start_recording_callback(self):
         """
         Callback to start recording after the initial delay.
         """
