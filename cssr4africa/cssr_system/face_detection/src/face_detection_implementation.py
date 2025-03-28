@@ -154,7 +154,6 @@ class FaceDetectionNode:
         rospack = rospkg.RosPack()
         try:
             package_path = rospack.get_path('cssr_system')
-            print(package_path)
             config_path = os.path.join(package_path, 'face_detection/config', 'face_detection_configuration.json')
             if os.path.exists(config_path):
                 with open(config_path, 'r') as file:
