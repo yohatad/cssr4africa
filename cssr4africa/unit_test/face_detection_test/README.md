@@ -1,5 +1,5 @@
 <div align="center">
-  <h1>Face and Mutual Gaze Detection Unit Test</h1>
+  <h1>Face and Mutual Gaze Detection and Localization Unit Test</h1>
 </div>
 
 <div align="center">
