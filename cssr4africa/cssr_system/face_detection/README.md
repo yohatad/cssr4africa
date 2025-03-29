@@ -75,7 +75,7 @@ The following table provides the key-value pairs used in the configuration file:
 |-----------------------------|------------------------------------------------------------------|-------------------------|---------------|
 | `algorithm`                 | Algorithm selected for face detection                            | `mediapipe`, `sixdrep`  | `sixdrep`     |
 | `use_compressed`            | Use compressed ROS image topics                                  | `True`, `False`         | `True`        |
-| `mp_confidence`            | Face detection confidence threshold (MediaPipe)                  | `[0.0 - 1.0]`           | `0.5`         |
+| `mp_confidence`             | Face detection confidence threshold (MediaPipe)                  | `[0.0 - 1.0]`           | `0.5`         |
 | `mp_headpose_angle`         | Head pose angle threshold in degrees (MediaPipe)                 | Positive integer        | `8`           |
 | `centroid_max_distance`     | Maximum centroid distance for centroid tracking                  | Positive integer        | `15`          |
 | `centroid_max_disappeared`  | Frames allowed before centroid tracker deregisters an object     | Positive integer        | `100`         |
@@ -101,7 +101,7 @@ Follow below steps, run in different terminals.
 
   1️. Launch the robot and specifiy which camera to use. 
   ```bash
-  roslaunch cssr_system face_detection_robot.launch robot_ip:=<robot_ip> roscore_ip:=<roscore_ip> network_interface:=<network_interface> camera:=<camera>
+  roslaunch cssr_system face_detection_launch_robot.launch robot_ip:=<robot_ip> roscore_ip:=<roscore_ip> network_interface:=<network_interface> camera:=<camera>
   ```
 
   The default camera is set to the realsense.
@@ -110,7 +110,7 @@ Follow below steps, run in different terminals.
 
   In a new terminal activate the python environment. 
   ```bash
-  source ~/workspace/pepper_rob_ws/face_detection/bin/activate
+  source ~/workspace/pepper_rob_ws/face_person_detection/bin/activate
   ```
 
   ```bash

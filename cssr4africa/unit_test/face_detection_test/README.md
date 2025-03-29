@@ -75,23 +75,23 @@ roslaunch unit_test face_detection_test_launch_robot.launch camera:=<camera> bag
 
 ### Bag File Options (`bag_file`):
 
-- **`singleFace`**: Contains data with a single face for basic detection testing and tracking with various distance form the robot.
-- **`multipleFaces`**: Includes multiple faces to test detection robustness in crowded scenes.
-- **`mutualGaze`**: Data intended for analyzing gaze direction and mutual eye-contact scenarios.
-- **`lighting1`**: Features variations in lighting conditions to assess detection stability.
-- **`lighting2`**: Features variations in lighting conditions to 
+- **`single_face`**: Contains data with a single face for basic detection testing and tracking with various distance form the robot.
+- **`multiple_faces`**: Includes multiple faces to test detection robustness in crowded scenes.
+- **`mutual_gaze`**: Data intended for analyzing gaze direction and mutual eye-contact scenarios.
+- **`lighting_1`**: Features variations in lighting conditions to assess detection stability.
+- **`lighting_2`**: Features variations in lighting conditions to 
 assess detection performance.
 
 > **Note:**  
 > Before running the Test Harness, activate the face detection python environement. Refer the README.md file for the face detection node.
 ```bash
-  source ~/workspace/pepper_rob_ws/face_detection/bin/activate
+  source ~/workspace/pepper_rob_ws/face_person_detection/bin/activate
 ```
 
 4. **Run Face Detection Test Harness**
 ```bash
 # The launch file launches the face_detection_node for the unit test.
-roslaunch unit_test face_detection_test_launch_testHarness.launch
+roslaunch unit_test face_detection_test_launch_test_harness.launch
 ```
 
 # 🖥️ Output Result
