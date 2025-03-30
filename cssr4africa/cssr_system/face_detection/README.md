@@ -17,16 +17,13 @@ Install the required software components to instantiate and set up the developme
 
 To set up the Face and Mutual Gaze Detection package on a Linux system, follow these steps:
 
+## Installation on Ubuntu (x86-based Systems)
+
 1. Prerequisites  
 Make sure you are running a supported Linux distribution (e.g., Ubuntu 20.04 or later).
 
-
-2. Install Python 3.8 and Virtual Environment (If it isn't installed).
+2. Install Python 3.10 and Virtual Environment.
 ```sh
-# To check if it is installed run the command below
-python3.8 --version 
-
-# If doesn't print the version number then it is not installed. Follow the steps below.
 # Update system packages
 sudo apt update && sudo apt upgrade -y
 
@@ -35,20 +32,21 @@ sudo apt install software-properties-common -y
 sudo add-apt-repository ppa:deadsnakes/ppa -y
 sudo apt update
 
-# Install Python 3.8
-sudo apt install python3.8 python3.8-venv python3.8-distutils -y
+# Install Python 3.10
+sudo apt install python3.10 python3.10-venv python3.10-distutils -y
 
 # Verify Python installation
-python3.8 --version
+python3.10 --version
 ```
+
 3. Set Up Virtual Environment
 ```sh
 # Create a virtual environment:
 cd $HOME
-python3.8 -m venv ~/workspace/pepper_rob_ws/face_detection
+python3.10 -m venv face_person_detection
 
 # Activate the virtual environment:
-source ~/workspace/pepper_rob_ws/face_detection/bin/activate
+source face_person_detection/bin/activate
 
 # Upgrade pip in the virtual environment:
 pip install --upgrade pip
@@ -56,17 +54,12 @@ pip install --upgrade pip
 
 4. Install Required Packages
 ```sh
-# Install onnxruntime package (Downloading pip wheel)
-$ wget https://nvidia.box.com/shared/static/iizg3ggrtdkqawkmebbfixo7sce6j365.whl -O onnxruntime_gpu-1.16.0-cp38-cp38-linux_aarch64.whl
+# Install PyTorch with CUDA support:
+pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 
-# Install pip wheel
-$ pip3 install onnxruntime_gpu-1.16.0-cp38-cp38-linux_aarch64.whl
-```
-```sh
 # Install additional requirements:
 pip install -r face_detection_requirements.txt
 ```
-
 
 # 🔧 Configuration Parameters
 The following table provides the key-value pairs used in the configuration file:
