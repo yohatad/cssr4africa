@@ -31,7 +31,7 @@
     <!-- If Pepper camera is selected, launch only naoqi_driver -->
     <group if="$(eval arg('camera') == 'pepper')">
         <node pkg="naoqi_driver" type="naoqi_driver_node" name="$(arg namespace)" required="true"
-            args="--qi-url=tcp://$(arg robot_ip):$(arg robot_port) --network_interface=$(arg network_interface) --namespace=$(arg namespace)"
+            args="--qi-url=tcp://$(arg robot_ip):$(arg robot_port) --roscore_ip=$(arg roscore_ip) --network_interface=$(arg network_interface) --namespace=$(arg namespace)"
             output="screen" />
     </group>
 
