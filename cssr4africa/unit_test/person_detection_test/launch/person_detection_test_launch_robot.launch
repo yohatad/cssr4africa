@@ -1,9 +1,9 @@
 <launch>
     <!-- Declare arguments -->
     <arg name="camera"              default="video" doc="Set realsense for realsense camera, pepper for pepper camera, video for recorded video data" />
-    <arg name="bag_file"            default="singlePerson" doc="Choose which bag file to play (e.g., 'singlePerson' for file ending in _singlePerson.bag)" />
+    <arg name="bag_file"            default="single_person" doc="Choose which bag file to play (e.g., 'single_person' for file ending in _single_person.bag)" />
     <arg name="robot_ip"            default="172.29.111.230" />
-    <arg name="roscore_ip"              default="127.0.0.1" />
+    <arg name="roscore_ip"          default="127.0.0.1" />
     <arg name="robot_port"          default="9559" />
     <arg name="network_interface"   default="wlp0s20f3" />
     <arg name="namespace"           default="naoqi_driver" />
