@@ -104,16 +104,16 @@ from face_detection_test_implementation import FaceDetectionTest
 
 def main():
     # Define the node name and software version
-    node_name = "face_detection_test"
+    node_name = "faceDetectionTest"
     software_version = "v1.0"  # Replace with the actual software version
 
     # Construct the copyright message
     copyright_message = (
         f"{node_name}  {software_version}\n"
-        "This project is funded by the African Engineering and Technology Network (Afretec)\n"
-        "Inclusive Digital Transformation Research Grant Programme.\n"
-        "Website: www.cssr4africa.org\n"
-        "This program comes with ABSOLUTELY NO WARRANTY."
+        "\t\t\t    This project is funded by the African Engineering and Technology Network (Afretec)\n"
+        "\t\t\t    Inclusive Digital Transformation Research Grant Programme.\n"
+        "\t\t\t    Website: www.cssr4africa.org\n"
+        "\t\t\t    This program comes with ABSOLUTELY NO WARRANTY."
     )
 
     # Initialize the ROS node
