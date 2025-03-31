@@ -17,7 +17,7 @@ The person detection is implemented using the ROS image topic that could be conf
 camera. It uses OpenCV to visualize the detected persons. The code utilizes YOLOv8 for person detection.This code contains the main function 
 that initializes the person detection node and starts the person detection algorithm. It subscribes to the intel realsense camera or pepper 
 robot camera topics for the RGB and depth images.It publishes one topic: /personDetection/data that contains the person label ID, the centroid 
-of the person, width and height of the boudning box.
+of the person, width and height of the bounding box.
 
 Libraries
     - cv2
@@ -127,7 +127,7 @@ def main():
 
         rospy.set_param('/personDetection_config/' + key, value)
 
-        # Set the algorthim, use_compressed, and verbose_mode parameters
+        # Set the algorithm, use_compressed, and verbose_mode parameters
         config_test = PersonDetectionNode.read_json_file('unit_test')
         
         # Filter and set only the specific parameters from the test config
