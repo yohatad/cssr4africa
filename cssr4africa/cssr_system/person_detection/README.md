@@ -12,11 +12,10 @@ The **Person Detection and Localization** package is a ROS package designed to d
 The main documentation for this deliverable found in [D4.2.1 Person Detection and Localization](https://cssr4africa.github.io/deliverables/CSSR4Africa_Deliverable_D4.2.1.pdf) provides more details about the implementation and usage of the person detection system.
 
 ## Installation on Ubuntu (x86-based Systems)
-To set up the Person Detection package on a Linux system, follow these steps:
+Install the required software components to instantiate and set up the development environment for controlling the Pepper robot. Use the [CSSR4Africa Software Installation Manual](https://cssr4africa.github.io/deliverables/CSSR4Africa_Deliverable_D3.3.pdf). This includes downloading the models files and putting in the models files directory. 
 
 1. Prerequisites
-Make sure you are running Ubuntu 20.04. If you have setup the python environment using person detection README you can 
-skip this step.
+Make sure you are running Ubuntu 20.04. If you have setup the python environment using person detection README you can skip this step.
 
 2. Install Python 3.10 and Virtual Environment.
 ```sh
