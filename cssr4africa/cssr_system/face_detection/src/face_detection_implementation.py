@@ -2,7 +2,7 @@
 face_detection_implementation.py Implementation code for running the Face and Mutual Gaze Detection and Localization ROS node.
 
 Author: Yohannes Tadesse Haile
-Date: March 21, 2025
+Date: March 30, 2025
 Version: v1.0
 
 Copyright (C) 2023 CSSR4Africa Consortium
