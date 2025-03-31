@@ -278,7 +278,6 @@ class FaceDetectionNode:
             depth_in_meters = depth_value / 1000.0
             return depth_in_meters
         else:
-            # rospy.logwarn(f"Invalid depth value at coordinates ({x}, {y}): {depth_value}")
             return None
         
     def get_depth_in_region(self, centroid_x, centroid_y, box_width, box_height, region_scale=0.1):

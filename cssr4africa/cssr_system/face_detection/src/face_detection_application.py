@@ -22,7 +22,7 @@ mesh landmarks which uses Google's MediaPipe library. The media pipe utilizes CP
 The SixDrepNet uses YOLOONNX for face detection and SixDrepNet for gaze direction. The SixDrepNet utilizes GPU for faster
 inference and better performance. This code contains the main function that initializes the face detection node and 
 starts the face detection algorithm. The face detection algorithm can be either MediaPipe Face Detection or SixDrepNet 
-that can be configured from the configuration file. It is also responsible for detecting the head pose esimation of the 
+that can be configured from the configuration file. It is also responsible for detecting the head pose estimation of the 
 detected face. It subscribes to the intel realsense camera or pepper robot camera topics for the RGB and depth images.
 It publishes three one topic: /faceDetection/data that contains the face label ID, the centroid of the face, 
 mutual gaze direction. 
@@ -143,7 +143,7 @@ def main():
         for key, value in filtered_config.items():
             rospy.set_param('/faceDetection_config/' + key, value)
 
-        # Set the algorthim, use_compressed, and verbose_mode parameters
+        # Set the algorithm, use_compressed, and verbose_mode parameters
         config_test = FaceDetectionNode.read_json_file('unit_test')
         
         # Filter and set only the specific parameters from the test config
@@ -151,12 +151,12 @@ def main():
             if key in ["use_compressed", "algorithm", "verbose_mode"]:
                 rospy.set_param('/faceDetection_config/' + key, value)
         
-    algorthim = rospy.get_param('/faceDetection_config/algorithm', default="sixdrep")
+    algorithm = rospy.get_param('/faceDetection_config/algorithm', default="sixdrep")
 
-    if algorthim == 'mediapipe':
+    if algorithm == 'mediapipe':
         face_detection = MediaPipe()
         face_detection.spin()
-    elif algorthim == 'sixdrep':
+    elif algorithm == 'sixdrep':
         face_detection = SixDrepNet()
         face_detection.spin()
     else:
