@@ -15,7 +15,8 @@ The main documentation for this deliverable found in [D4.2.1 Person Detection an
 To set up the Person Detection package on a Linux system, follow these steps:
 
 1. Prerequisites
-Make sure you are running a supported Linux distribution (e.g., Ubuntu 20.04) on x86 processor.
+Make sure you are running Ubuntu 20.04. If you have setup the python environment using person detection README you can 
+skip this step.
 
 2. Install Python 3.10 and Virtual Environment.
 ```sh
@@ -88,7 +89,6 @@ Follow below steps, run in different terminals.
   ```bash
   roslaunch cssr_system person_detection_robot.launch robot_ip:=<robot_ip> roscore_ip:=<roscore_ip> network_interface:=<network_interface> camera:=<camera>
   ```
-
   The default camera is set to the realsense.
 
   2️. Then run the Person Detection and Localization.
