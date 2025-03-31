@@ -15,13 +15,10 @@ The main documentation for this deliverable is found in [D4.2.2 Face and Mutual 
 
 Install the required software components to instantiate and set up the development environment for controlling the Pepper robot. Use the [CSSR4Africa Software Installation Manual](https://cssr4africa.github.io/deliverables/CSSR4Africa_Deliverable_D3.3.pdf). This includes downloading the models files and putting in the models files directory. 
 
-To set up the Face and Mutual Gaze Detection package on a Linux system, follow these steps:
-
 ## Installation on Ubuntu (x86-based Systems)
 
 1. Prerequisites  
-Make sure you are running Ubuntu 20.04. THe environment to run face detection similar to person detection. If you have setup the person detection python 
-environment you can skip this step.
+Make sure you are running Ubuntu 20.04. The python environment to run face detection similar to person detection. If you have setup the person detection python environment you can skip this step.
 
 2. Install Python 3.10 and Virtual Environment.
 ```sh
