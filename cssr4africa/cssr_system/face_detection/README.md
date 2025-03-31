@@ -20,7 +20,8 @@ To set up the Face and Mutual Gaze Detection package on a Linux system, follow t
 ## Installation on Ubuntu (x86-based Systems)
 
 1. Prerequisites  
-Make sure you are running a supported Linux distribution (e.g., Ubuntu 20.04 or later).
+Make sure you are running Ubuntu 20.04. THe environment to run face detection similar to person detection. If you have setup the person detection python 
+environment you can skip this step.
 
 2. Install Python 3.10 and Virtual Environment.
 ```sh
@@ -42,7 +43,7 @@ python3.10 --version
 3. Set Up Virtual Environment
 ```sh
 # Create a virtual environment:
-cd $HOME
+cd $HOME/workspace/pepper_rob_ws
 python3.10 -m venv face_person_detection
 
 # Activate the virtual environment:
@@ -92,7 +93,7 @@ Source the workspace in first terminal:
 
 Follow below steps, run in different terminals.
 
-  1️. Launch the robot and specifiy which camera to use. 
+  1️. Launch the robot and specify which camera to use. 
   ```bash
   roslaunch cssr_system face_detection_launch_robot.launch robot_ip:=<robot_ip> roscore_ip:=<roscore_ip> network_interface:=<network_interface> camera:=<camera>
   ```
