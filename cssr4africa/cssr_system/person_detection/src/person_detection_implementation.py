@@ -396,7 +396,7 @@ class YOLOv8(PersonDetectionNode):
         """
         super().__init__()
         
-        self.conf_iou_threshold = rospy.get_param("/personDetection_config/confidence_iou_threshold", 0.5)
+        self.confidence_threshold = rospy.get_param("/personDetection_config/confidence_iou_threshold", 0.5)
         self.sort_max_disap = rospy.get_param("/personDetection_config/sort_max_disappeared", 50)
         self.sort_min_hits = rospy.get_param("/personDetection_config/sort_max_hits", 3)
         self.sort_iou_threshold = rospy.get_param("/personDetection_config/sort_iou_threshold", 0.5)
@@ -492,7 +492,7 @@ class YOLOv8(PersonDetectionNode):
         """
         preds = np.squeeze(model_output[0]).T  # [num_boxes, 4 + #classes]
         conf_scores = np.max(preds[:, 4:], axis=1)
-        mask = conf_scores > self.conf_iou_threshold
+        mask = conf_scores > self.confidence_threshold
         preds, conf_scores = preds[mask], conf_scores[mask]
 
         if not len(conf_scores):
@@ -503,7 +503,7 @@ class YOLOv8(PersonDetectionNode):
         boxes = self.rescale_boxes(boxes)
         boxes = self.xywh2xyxy(boxes)
 
-        keep_idx = self.multiclass_nms(boxes, conf_scores, class_ids, self.conf_iou_threshold)
+        keep_idx = self.multiclass_nms(boxes, conf_scores, class_ids, self.confidence_threshold)
         boxes, conf_scores, class_ids = boxes[keep_idx], conf_scores[keep_idx], class_ids[keep_idx]
 
         # Filter only 'person' (COCO class 0)

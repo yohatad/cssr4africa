@@ -1,6 +1,6 @@
 {
     "use_compressed": true,
-    "confidence_iou_threshold": 0.8,
+    "confidence_threshold": 0.8,
     "sort_max_disappeared": 30,
     "sort_min_hits": 20,
     "sort_iou_threshold": 0.3,
