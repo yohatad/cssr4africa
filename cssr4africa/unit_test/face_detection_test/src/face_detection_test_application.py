@@ -50,13 +50,13 @@ Parameters
     Configuration File Parameters
         Key                             Value
         algorithm                       sixdrep
-        saveVideo                      false
-        saveImage                      false
-        videoDuration                  10
-        imageInterval                  5
-        recordingDelay                 5
+        saveVideo                       false
+        saveImage                       false
+        videoDuration                   10
+        imageInterval                   5
+        recordingDelay                  5
         max_frames_buffer               300
-        verboseMode                    false
+        verboseMode                     false
 
 Subscribed Topics
     Topic Name                                  Message Type
