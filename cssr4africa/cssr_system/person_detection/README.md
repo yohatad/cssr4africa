@@ -15,7 +15,7 @@ The main documentation for this deliverable found in [D4.2.1 Person Detection an
 Install the required software components to instantiate and set up the development environment for controlling the Pepper robot. Use the [CSSR4Africa Software Installation Manual](https://cssr4africa.github.io/deliverables/CSSR4Africa_Deliverable_D3.3.pdf). This includes downloading the models files and putting in the models files directory. 
 
 1. Prerequisites
-Make sure you are running Ubuntu 20.04. If you have setup the python environment using face detection README you can skip this step.
+Make sure you are running Ubuntu 20.04. If you have setup the python environment using ``face detection`` README you can skip this step.
 
 2. Install Python 3.10 and Virtual Environment.
 ```sh
@@ -38,10 +38,10 @@ python3.10 --version
 ```sh
 # Create a virtual environment:
 cd $HOME/workspace/pepper_rob_ws
-python3.10 -m venv face_person_detection
+python3.10 -m venv cssr4africa_face_person_detection_env
 
 # Activate the virtual environment:
-source face_person_detection/bin/activate
+source cssr4africa_face_person_detection_env/bin/activate
 
 # Upgrade pip in the virtual environment:
 pip install --upgrade pip
@@ -61,12 +61,12 @@ The following table provides the key-value pairs used in the configuration file:
 
 | Parameter                   | Description                                                      | Range/Values            | Default Value |
 |-----------------------------|------------------------------------------------------------------|-------------------------|---------------|
-| `useCompressed`            | Use compressed ROS image topics                                  | `True`, `False`         | `False`       |
+| `useCompressed`             | Use compressed ROS image topics                                  | `True`, `False`         | `False`       |
 | `confidence_iou_threshold`  | Confidence threshold for person detection                        | `[0.0 - 1.0]`           | `0.5`         |
-| `sortMaxDisappeared`      | Maximum frames allowed for disappearance in SORT tracking        | Positive integer        | `50`          |
-| `sortMinHits`             | Minimum consecutive detections to confirm object tracking (SORT) | Positive integer        | `3`           |
-| `sortIouThreshold`        | IoU threshold for SORT tracker                                   | `[0.0 - 1.0]`           | `0.5`         |
-| `verboseMode`              | Enable visualization using OpenCV windows and detailed logging   | `True`, `False`         | `False`       |
+| `sortMaxDisappeared`        | Maximum frames allowed for disappearance in SORT tracking        | Positive integer        | `50`          |
+| `sortMinHits`               | Minimum consecutive detections to confirm object tracking (SORT) | Positive integer        | `3`           |
+| `sortIouThreshold`          | IoU threshold for SORT tracker                                   | `[0.0 - 1.0]`           | `0.5`         |
+| `verboseMode`               | Enable visualization using OpenCV windows and detailed logging   | `True`, `False`         | `False`       |
 
 > **Note:**  
 > Enabling **`verboseMode`** (`True`) will activate real-time visualization via OpenCV windows. 
