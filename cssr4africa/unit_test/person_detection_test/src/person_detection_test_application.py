@@ -57,10 +57,8 @@ Configuration File Parameters
 
 Subscribed Topics
     Topic Name                                              Message Type
-    /camera/color/image_raw                                 sensor_msgs/Image
-    /camera/color/image_raw/compressed                      sensor_msgs/CompressedImage              
+    /camera/color/image_raw                                 sensor_msgs/Image             
     /camera/aligned_depth_to_color/image_raw                sensor_msgs/Image
-    /camera/aligned_depth_to_color/image_raw/compressed     sensor_msgs/CompressedImage
     /naoqi_driver/camera/front/image_raw                    sensor_msgs/Image
     /naoqi_driver/camera/depth/image_raw                    sensor_msgs/Image
     /personDetection/data                                   person_detection/person_detection_test_msg_file.msg
@@ -70,11 +68,10 @@ Published Topics
 
 Input Data Files
     - pepperTopics.dat: Data file for Pepper robot camera topics
-    - person_detection_test_input_realsense_singleperson.bag
-    - person_detection_test_input_realsense_multiplepersons.bag
-    - person_detection_test_input_realsense_personTracking.bag
-    - person_detection_test_input_realsense_occlusion.bag
-    - person_detection_test_input_realsense_lighting.bag
+    - person_detection_test_input_realsense_single_person.bag
+    - person_detection_test_input_realsense_multiple_people.bag
+    - person_detection_test_input_realsense_lighting_1.bag
+    - person_detection_test_input_realsense_lighting_2.bag
 
 Output Data Files
     - person_detection_rgb_video_{start_time}.mp4
