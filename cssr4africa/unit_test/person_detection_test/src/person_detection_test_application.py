@@ -47,13 +47,13 @@ Parameters
 
     Configuration File Parameters
         Key                             Value
-        save_video                      false
-        save_image                      false
-        video_duration                  10
-        image_interval                  5
-        recording_delay                 5
-        max_frames_buffer               300
-        verbose_mode                    false
+        saveVideo                      false
+        saveImage                      false
+        videoDuration                  10
+        imageInterval                  5
+        recordingDelay                 5
+        maxFramesBuffer               300
+        verboseMode                    false
 
 Subscribed Topics
     Topic Name                                  Message Type
@@ -71,7 +71,6 @@ Input Data Files
     - person_detection_test_input_realsense_singleperson.bag
     - person_detection_test_input_realsense_multiplepersons.bag
     - person_detection_test_input_realsense_personTracking.bag
-    - person_detection_test_input_realsense_mutualGaze.bag
     - person_detection_test_input_realsense_occlusion.bag
     - person_detection_test_input_realsense_lighting.bag
 

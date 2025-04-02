@@ -44,12 +44,12 @@ Parameters
 
 Configuration File Parameters
     Key                             Value
-    use_compressed                  true
+    useCompressed                   true
     confidence_iou_threshold        0.8
-    sort_max_disappeared            30
-    sort_min_hits                   20
-    sort_iou_threshold              0.3
-    verbose_mode                    true
+    sortMaxDisappeared              30
+    sortMinHits                     20
+    sortIouThreshold                0.3
+    verboseMode                    true
 
 Subscribed Topics
     Topic Name                                  Message Type
@@ -119,7 +119,7 @@ def main():
     else:
         # Create a filtered config without the excluded keys
         filtered_config = {k: v for k, v in config.items() 
-                        if k not in ["use_compressed", "verbose_mode"]}
+                        if k not in ["useCompressed", "verboseMode"]}
         
         # Set the filtered parameters to the parameter server
         for key, value in filtered_config.items():
@@ -127,12 +127,12 @@ def main():
 
         rospy.set_param('/personDetection_config/' + key, value)
 
-        # Set the algorithm, use_compressed, and verbose_mode parameters
+        # Set the algorithm, useCompressed, and verboseMode parameters
         config_test = PersonDetectionNode.read_json_file('unit_test')
         
         # Filter and set only the specific parameters from the test config
         for key, value in config_test.items():
-            if key in ["use_compressed", "algorithm", "verbose_mode"]:
+            if key in ["useCompressed", "algorithm", "verboseMode"]:
                 rospy.set_param('/personDetection_config/' + key, value)
     
     person_detection = YOLOv8()

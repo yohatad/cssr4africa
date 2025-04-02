@@ -52,8 +52,8 @@ class PersonDetectionTest:
         self.camera = rospy.get_param('personDetection/camera', default='video')
         
         # Set the verbose mode based on the configuration
-        self.verbose_mode = self.config.get("verbose_mode", False)
-        rospy.set_param('/personDetection_config/verbose_mode', self.verbose_mode)
+        self.verbose_mode = self.config.get("verboseMode", False)
+        rospy.set_param('/personDetection_config/verboseMode', self.verbose_mode)
 
         # Initialize ROS topic subscription and CvBridge
         self.bridge = CvBridge()
@@ -76,9 +76,9 @@ class PersonDetectionTest:
         self.person_colors = {}
         
         # Configuration parameters with defaults
-        self.video_duration = self.config.get("video_duration", 10)  # Default: 10 seconds
-        self.image_interval = self.config.get("image_interval", 5)   # Default: 5 seconds
-        self.max_frames_buffer = self.config.get("max_frames_buffer", 300)  # Default: ~10s at 30fps
+        self.video_duration = self.config.get("videoDuration", 10)  # Default: 10 seconds
+        self.image_interval = self.config.get("imageInterval", 5)   # Default: 5 seconds
+        self.max_frames_buffer = self.config.get("maxFramesBuffer", 300)  # Default: ~10s at 30fps
         
         # Timing variables
         self.start_time = None
@@ -91,8 +91,8 @@ class PersonDetectionTest:
         self.timer = rospy.get_time()
                         
         # Only subscribe to camera if recording or visualization is needed
-        if (self.config.get("save_video", False) or 
-            self.config.get("save_image", False)):
+        if (self.config.get("saveVideo", False) or 
+            self.config.get("saveImage", False)):
             if self.camera in ["realsense", "pepper"]:
                 self.subscribe_camera_topics()
             
@@ -116,8 +116,8 @@ class PersonDetectionTest:
         )
         
         # Set a delay for recording if configured
-        if self.config.get("recording_delay", 0) > 0:
-            delay = self.config.get("recording_delay", 5)  # Default 5 second delay
+        if self.config.get("recordingDelay", 0) > 0:
+            delay = self.config.get("recordingDelay", 5)  # Default 5 second delay
             if self.verbose_mode:
                 rospy.loginfo(f"Will start recording after {delay} seconds delay")
             rospy.Timer(rospy.Duration(delay), self.start_recording_callback, oneshot=True)
@@ -283,7 +283,7 @@ class PersonDetectionTest:
                 self.image_save_time = self.start_time
                 
                 # Initialize video writers if needed
-                if self.config.get("save_video", False) and self.recording_enabled:
+                if self.config.get("saveVideo", False) and self.recording_enabled:
                     self.initialize_video_writers(cv_rgb.shape, cv_depth.shape)
             
             # Process RGB frame with person detection overlay
@@ -312,7 +312,7 @@ class PersonDetectionTest:
                 self.image_save_time = self.start_time
                 
                 # Initialize video writers if needed
-                if self.config.get("save_video", False) and self.recording_enabled:
+                if self.config.get("saveVideo", False) and self.recording_enabled:
                     height, width = cv_image.shape[:2]
                     self.initialize_rgb_video_writer(width, height)
             
@@ -339,7 +339,7 @@ class PersonDetectionTest:
                 self.image_save_time = self.start_time
                 
                 # Initialize video writers if needed
-                if self.config.get("save_video", False) and self.recording_enabled:
+                if self.config.get("saveVideo", False) and self.recording_enabled:
                     height, width = cv_depth.shape
                     self.initialize_depth_video_writer(width, height)
             
@@ -459,7 +459,7 @@ class PersonDetectionTest:
         self.draw_person_detection_overlay(display_image)
         
         # Store frames for video if enabled
-        if self.config.get("save_video", False) and self.recording_enabled:
+        if self.config.get("saveVideo", False) and self.recording_enabled:
             if self.rgb_writer is not None:
                 # Write directly to video
                 self.rgb_writer.write(display_image)
@@ -476,7 +476,7 @@ class PersonDetectionTest:
                 self.finalize_rgb_video()
         
         # Save individual images at specified intervals
-        if (self.config.get("save_image", False) and 
+        if (self.config.get("saveImage", False) and 
             self.recording_enabled and
             (current_time - self.image_save_time >= self.image_interval)):
             
@@ -504,7 +504,7 @@ class PersonDetectionTest:
         elapsed_time = current_time - self.start_time
         
         # Store depth frames for video if enabled
-        if self.config.get("save_video", False) and self.recording_enabled:
+        if self.config.get("saveVideo", False) and self.recording_enabled:
             if self.depth_writer is not None:
                 # Normalize and colorize depth for visualization
                 depth_colored = self.colorize_depth_for_video(cv_depth)
@@ -522,7 +522,7 @@ class PersonDetectionTest:
                 self.finalize_depth_video()
         
         # Save individual images at specified intervals
-        if (self.config.get("save_image", False) and 
+        if (self.config.get("saveImage", False) and 
             self.recording_enabled and
             (current_time - self.image_save_time >= self.image_interval)):
             

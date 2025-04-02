@@ -22,19 +22,18 @@ The following table provides the key-value pairs used in the configuration file:
 
 | Parameter           | Description                                   | Possible Values            | Default Value |
 |---------------------|-----------------------------------------------|----------------------------|---------------|
-| `use_compressed`    | Use compressed ROS image topics               | `True`, `False`            | `True`       |
-| `save_video`        | Save the output video of the test             | `True`, `False`            | `False`       |
-| `save_image`        | Save individual image frames from the test    | `True`, `False`            | `False`       |
-| `video_duration`    | Duration (seconds) for saved video            | Positive integer           | `10`          |
-| `image_interval`    | Interval (seconds) between captured images    | Positive integer           | `5`           |
-| `recording_delay`   | Delay (seconds) before recording starts       | Positive integer           | `5`           |
-| `max_frames_buffer` | Maximum number of frames to store in buffer   | Positive integer           | `300`         |
-| `verbose_mode`      | Enable detailed logging and visual output     | `True`, `False`            | `True`        |
+| `saveVideo`        | Save the output video of the test             | `True`, `False`            | `False`       |
+| `saveImage`        | Save individual image frames from the test    | `True`, `False`            | `False`       |
+| `videoDuration`    | Duration (seconds) for saved video            | Positive integer           | `10`          |
+| `imageInterval`    | Interval (seconds) between captured images    | Positive integer           | `5`           |
+| `recordingDelay`   | Delay (seconds) before recording starts       | Positive integer           | `5`           |
+| `maxFramesBuffer` | Maximum number of frames to store in buffer   | Positive integer           | `300`         |
+| `verboseMode`      | Enable detailed logging and visual output     | `True`, `False`            | `True`        |
 
 ---
 
 > **Note:**  
-> Enabling **`verbose_mode`** (`True`) will activate detailed logging and **visualize outputs using OpenCV windows**.  
+> Enabling **`verboseMode`** (`True`) will activate detailed logging and **visualize outputs using OpenCV windows**.  
 
 #  🚀 Run the Person Detection Unit Test
 Before running the node, the configuration file must be set up correctly with the appropriate key-value pairs. The configuration file is typically located in the package folder under the `config` directory.

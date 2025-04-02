@@ -61,15 +61,15 @@ The following table provides the key-value pairs used in the configuration file:
 
 | Parameter                   | Description                                                      | Range/Values            | Default Value |
 |-----------------------------|------------------------------------------------------------------|-------------------------|---------------|
-| `use_compressed`            | Use compressed ROS image topics                                  | `True`, `False`         | `False`       |
+| `useCompressed`            | Use compressed ROS image topics                                  | `True`, `False`         | `False`       |
 | `confidence_iou_threshold`  | Confidence threshold for person detection                        | `[0.0 - 1.0]`           | `0.5`         |
-| `sort_max_disappeared`      | Maximum frames allowed for disappearance in SORT tracking        | Positive integer        | `50`          |
-| `sort_max_hits`             | Minimum consecutive detections to confirm object tracking (SORT) | Positive integer        | `3`           |
-| `sort_iou_threshold`        | IoU threshold for SORT tracker                                   | `[0.0 - 1.0]`           | `0.5`         |
-| `verbose_mode`              | Enable visualization using OpenCV windows and detailed logging   | `True`, `False`         | `False`       |
+| `sortMaxDisappeared`      | Maximum frames allowed for disappearance in SORT tracking        | Positive integer        | `50`          |
+| `sortMinHits`             | Minimum consecutive detections to confirm object tracking (SORT) | Positive integer        | `3`           |
+| `sortIouThreshold`        | IoU threshold for SORT tracker                                   | `[0.0 - 1.0]`           | `0.5`         |
+| `verboseMode`              | Enable visualization using OpenCV windows and detailed logging   | `True`, `False`         | `False`       |
 
 > **Note:**  
-> Enabling **`verbose_mode`** (`True`) will activate real-time visualization via OpenCV windows. 
+> Enabling **`verboseMode`** (`True`) will activate real-time visualization via OpenCV windows. 
 
 # 🚀 Running the node
 **Run the `personDetection` from the `cssr_system` package:**

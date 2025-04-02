@@ -37,8 +37,8 @@ class PersonDetectionNode:
         self.bridge = CvBridge()
         self.color_image = None
         self.depth_image = None
-        self.use_compressed = rospy.get_param("/personDetection_config/use_compressed", False)
-        self.verbose_mode = rospy.get_param("/personDetection_config/verbose_mode", False)
+        self.use_compressed = rospy.get_param("/personDetection_config/useCompressed", False)
+        self.verbose_mode = rospy.get_param("/personDetection_config/verboseMode", False)
     
     def subscribe_topics(self):
         camera_type = rospy.get_param("/personDetection/camera", "realsense")
@@ -396,10 +396,10 @@ class YOLOv8(PersonDetectionNode):
         """
         super().__init__()
         
-        self.confidence_threshold = rospy.get_param("/personDetection_config/confidence_iou_threshold", 0.5)
-        self.sort_max_disap = rospy.get_param("/personDetection_config/sort_max_disappeared", 50)
-        self.sort_min_hits = rospy.get_param("/personDetection_config/sort_max_hits", 3)
-        self.sort_iou_threshold = rospy.get_param("/personDetection_config/sort_iou_threshold", 0.5)
+        self.confidence_threshold = rospy.get_param("/personDetection_config/confidenceThreshold", 0.5)
+        self.sort_max_disap = rospy.get_param("/personDetection_config/sortMaxDisappeared", 50)
+        self.sort_min_hits = rospy.get_param("/personDetection_config/sortMinHits", 3)
+        self.sort_iou_threshold = rospy.get_param("/personDetection_config/sortIouThreshold", 0.5)
 
         # Initialize model
         if not self._init_model():
