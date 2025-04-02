@@ -94,7 +94,7 @@ Follow below steps, run in different terminals.
 
   In a new terminal activate the python environment. 
   ```bash
-  source ~/workspace/pepper_rob_ws/person_detection/bin/activate
+  source ~/workspace/pepper_rob_ws/cssr4africa_face_person_detection_env/bin/activate
   ```
 
   ```bash

@@ -83,7 +83,7 @@ roslaunch unit_test person_detection_test_launch_robot.launch camera:=<camera> b
 > **Note:**  
 > Before running the Test Harness, activate the person detection python environment. Refer the README.md file for the person detection node.
 ```bash
-  source ~/workspace/pepper_rob_ws/face_person_detection/bin/activate
+  source ~/workspace/pepper_rob_ws/cssr4africa_face_person_detection_env/bin/activate
 ```
 
 4. **Run Person Detection Test Harness**
