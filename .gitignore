@@ -1,7 +1,8 @@
 **/microphone.wav
 *.mp4
 **/sensorTestOutput.dat
-**/models/**
+**/models/
 **/*.bag
 *.pyc
-__pycache__/
+**/__pycache__/
+**/models/**

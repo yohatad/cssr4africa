@@ -15,6 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
   cv_bridge
   message_generation
 )
+<<<<<<< HEAD
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
@@ -75,6 +76,15 @@ add_message_files(
   face_detection_test/msg
   FILES
   face_detection_test_msg_file.msg
+=======
+
+
+add_message_files(
+  DIRECTORY
+  person_detection_test/msg
+  FILES
+  person_detection_test_msg_file.msg
+>>>>>>> PersonDetection
 )
 
 generate_messages(
@@ -83,6 +93,7 @@ generate_messages(
   geometry_msgs
 )
 
+<<<<<<< HEAD
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -104,6 +115,8 @@ generate_messages(
 #   cfg/DynReconf2.cfg
 # )
 
+=======
+>>>>>>> PersonDetection
 ###################################
 ## catkin specific configuration ##
 ###################################
@@ -126,6 +139,7 @@ catkin_package(
 include_directories(
 # include
   ${catkin_INCLUDE_DIRS}
+<<<<<<< HEAD
 )
 
 ## Declare a C++ library
@@ -212,3 +226,6 @@ include_directories(
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+=======
+)
+>>>>>>> PersonDetection
