@@ -1,9 +1,9 @@
 {   "algorthim": "sixdrep",
-    "saveVideo": true,
+    "saveVideo": false,
     "saveImage": false, 
     "videoDuration": 10,
     "imageInterval": 5,
-    "recordingDelay": 5,
-    "maxFrameBuffer": 300,
-    "verboseMode": true
+    "recordingDelay": 0,
+    "maxFramesBuffer": 300,
+    "verboseMode": false
 }

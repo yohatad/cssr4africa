@@ -51,7 +51,7 @@ class FaceDetectionTest:
         
         self.camera = rospy.get_param('faceDetection/camera', default='video')
 
-        self.verbose_mode = rospy.get_param('faceDetection/verbose_mode', default=False)
+        self.verbose_mode = self.config.get("verboseMode", False)
 
         # Initialize ROS topic subscription and CvBridge
         self.bridge = CvBridge()
@@ -59,6 +59,7 @@ class FaceDetectionTest:
         # Use locks to protect shared resources
         self.rgb_frames_lock = threading.Lock()
         self.depth_frames_lock = threading.Lock()
+        self.face_data_lock = threading.Lock()  # Add lock for face detection data
         
         self.rgb_frames = []        # For saving RGB video
         self.depth_frames = []      # For saving Depth video
@@ -76,7 +77,7 @@ class FaceDetectionTest:
         # Configuration parameters with defaults
         self.video_duration = self.config.get("videoDuration", 10)  # Default: 10 seconds
         self.image_interval = self.config.get("imageInterval", 5)   # Default: 5 seconds
-        self.max_frames_buffer = self.config.get("maxFramesBuffer", 300)  # Default: ~10s at 30fps
+        self.max_frames_buffer = self.config.get("maxFramesBuffer", 300)
         
         # Timing variables
         self.start_time = None
@@ -125,9 +126,12 @@ class FaceDetectionTest:
         
         rospy.on_shutdown(self.shutdown_hook)
         
-    def start_recording_callback(self):
+    def start_recording_callback(self, event):
         """
         Callback to start recording after the initial delay.
+        
+        Args:
+            event (rospy.timer.TimerEvent): Timer event object
         """
         self.recording_enabled = True
         if self.verbose_mode:
@@ -140,21 +144,23 @@ class FaceDetectionTest:
         Args:
             msg: Custom message with face_label_id, centroids, width, height, and mutualGaze arrays
         """
-        # Store the face detection data
-        self.face_labels = msg.face_label_id
-        self.face_centroids = msg.centroids
-        self.face_widths = msg.width  # Store the width values
-        self.face_heights = msg.height  # Store the height values
-        self.face_mutual_gazes = msg.mutualGaze
-        
-        # Generate colors for new faces
-        for face_id in self.face_labels:
-            if face_id not in self.face_colors:
-                # Generate a visually distinct color for this face
-                hue = hash(face_id) % 100 / 100.0  # Use hash to get consistent color for same ID
-                rgb = colorsys.hsv_to_rgb(hue, 0.8, 1.0)
-                bgr = (int(rgb[2] * 255), int(rgb[1] * 255), int(rgb[0] * 255))  # Convert to BGR
-                self.face_colors[face_id] = bgr
+        # Use lock to protect face detection data
+        with self.face_data_lock:
+            # Store the face detection data
+            self.face_labels = msg.face_label_id
+            self.face_centroids = msg.centroids
+            self.face_widths = msg.width            # Store the width values
+            self.face_heights = msg.height          # Store the height values
+            self.face_mutual_gazes = msg.mutualGaze
+            
+            # Generate colors for new faces
+            for face_id in self.face_labels:
+                if face_id not in self.face_colors:
+                    # Generate a visually distinct color for this face
+                    hue = hash(face_id) % 100 / 100.0  # Use hash to get consistent color for same ID
+                    rgb = colorsys.hsv_to_rgb(hue, 0.8, 1.0)
+                    bgr = (int(rgb[2] * 255), int(rgb[1] * 255), int(rgb[0] * 255))  # Convert to BGR
+                    self.face_colors[face_id] = bgr
 
     def extract_topics(self, image_topic):
         """
@@ -255,7 +261,7 @@ class FaceDetectionTest:
         sync = ApproximateTimeSynchronizer([rgb_sub, depth_sub], queue_size=10, slop=0.1)
         sync.registerCallback(self.synchronized_callback)
 
-        # Print message every 5 seconds
+        # Print message every 10 seconds
         if rospy.get_time() - self.timer > 10:
             rospy.loginfo("face_detection_test: running.")
             self.timer = rospy.get_time()
@@ -373,11 +379,14 @@ class FaceDetectionTest:
         rgb_video_path = os.path.join(
             self.unit_test_package_path, 'face_detection_test/data', f'face_detection_rgb_video_{timestamp}.mp4')
         
+        # Ensure directory exists
+        os.makedirs(os.path.dirname(rgb_video_path), exist_ok=True)
+        
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         self.rgb_writer = cv2.VideoWriter(
             rgb_video_path, 
             fourcc, 
-            30, 
+            15, 
             (width, height), 
             True  # isColor=True for RGB
         )
@@ -393,9 +402,12 @@ class FaceDetectionTest:
         timestamp = int(self.start_time)
         depth_video_path = os.path.join(self.unit_test_package_path, 'face_detection_test/data', f'face_detection_depth_video_{timestamp}.mp4')
         
+        # Ensure directory exists
+        os.makedirs(os.path.dirname(depth_video_path), exist_ok=True)
+        
         # For visualization, convert to colorized 8-bit
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        self.depth_writer = cv2.VideoWriter(depth_video_path, fourcc, 30, (width, height), True) # isColor=True for RGB output
+        self.depth_writer = cv2.VideoWriter(depth_video_path, fourcc, 15, (width, height), True) # isColor=True for RGB output
         
     def draw_face_detection_overlay(self, image):
         """
@@ -404,12 +416,23 @@ class FaceDetectionTest:
         Args:
             image (numpy.ndarray): RGB image to draw on
         """
-        # Check if we have face data
-        if not self.face_labels or not self.face_centroids:
-            return
+        # Use lock to access face detection data safely
+        with self.face_data_lock:
+            # Check if we have face data
+            if not self.face_labels or not self.face_centroids:
+                return
+            
+            # Make local copies of the data to avoid holding lock during drawing
+            face_labels = self.face_labels.copy() if hasattr(self.face_labels, 'copy') else list(self.face_labels)
+            face_centroids = self.face_centroids.copy() if hasattr(self.face_centroids, 'copy') else list(self.face_centroids)
+            face_widths = self.face_widths.copy() if hasattr(self.face_widths, 'copy') else list(self.face_widths)
+            face_heights = self.face_heights.copy() if hasattr(self.face_heights, 'copy') else list(self.face_heights)
+            face_mutual_gazes = self.face_mutual_gazes.copy() if hasattr(self.face_mutual_gazes, 'copy') else list(self.face_mutual_gazes)
+            face_colors = self.face_colors.copy()
         
+        # Process each face outside the lock to minimize lock time
         for i, (face_id, centroid, width, height, mutual_gaze) in enumerate(zip(
-            self.face_labels, self.face_centroids, self.face_widths, self.face_heights, self.face_mutual_gazes)):
+            face_labels, face_centroids, face_widths, face_heights, face_mutual_gazes)):
             
             # Get face coordinates
             centroid_x, centroid_y = int(centroid.x), int(centroid.y)
@@ -425,7 +448,7 @@ class FaceDetectionTest:
             y2 = min(image.shape[0], centroid_y + face_height // 2)
             
             # Get color for this face
-            face_color = self.face_colors.get(face_id, (0, 255, 0))
+            face_color = face_colors.get(face_id, (0, 255, 0))
             
             # Draw bounding box with assigned color
             cv2.rectangle(image, (x1, y1), (x2, y2), face_color, 2)
@@ -461,7 +484,7 @@ class FaceDetectionTest:
         """
         current_time = time.time()
         elapsed_time = current_time - self.start_time if self.start_time else 0
-        
+
         # Create a copy of the frame for drawing overlays
         display_image = cv_image.copy()
         
@@ -585,8 +608,11 @@ class FaceDetectionTest:
                     f'face_detection_rgb_video_{int(self.start_time)}.mp4'
                 )
                 
+                # Ensure directory exists
+                os.makedirs(os.path.dirname(video_path), exist_ok=True)
+                
                 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-                video_writer = cv2.VideoWriter(video_path, fourcc, 30, (width, height), True)
+                video_writer = cv2.VideoWriter(video_path, fourcc, 15, (width, height), True)
                 
                 for frame in self.rgb_frames:
                     video_writer.write(frame)
@@ -601,9 +627,13 @@ class FaceDetectionTest:
                 if self.verbose_mode:
                     rospy.loginfo("RGB video recording completed")
                 self.rgb_writer = None
-                
-        # Reset timing for next video
-        self.start_time = None
+        
+        # Store a reference to allow depth processing to complete
+        self.rgb_video_completed = True
+        if hasattr(self, 'depth_video_completed') and self.depth_video_completed:
+            self.start_time = None
+            self.rgb_video_completed = False
+            self.depth_video_completed = False
             
     def finalize_depth_video(self):
         """Finalize depth video recording and reset for next capture."""
@@ -616,8 +646,11 @@ class FaceDetectionTest:
                     f'face_detection_depth_video_{int(self.start_time)}.mp4'
                 )
                 
+                # Ensure directory exists
+                os.makedirs(os.path.dirname(video_path), exist_ok=True)
+                
                 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-                video_writer = cv2.VideoWriter(video_path, fourcc, 30, (width, height), True)
+                video_writer = cv2.VideoWriter(video_path, fourcc, 15, (width, height), True)
                 
                 for frame in self.depth_frames:
                     colored_frame = self.colorize_depth_for_video(frame)
@@ -634,35 +667,12 @@ class FaceDetectionTest:
                     rospy.loginfo("Depth video recording completed")
                 self.depth_writer = None
 
-    def save_video(self, frames, output_path, is_depth=False):
-        """
-        Save video frames as an MP4 file.
-        
-        Args:
-            frames (list): List of video frames (images as numpy arrays).
-            output_path (str): Path to save the video file.
-            is_depth (bool): Flag to indicate if the frames are depth images.
-        """
-        try:
-            if not frames:
-                rospy.logwarn("No frames to save.")
-                return
-
-            height, width = frames[0].shape if is_depth else frames[0].shape[:2]
-            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-            video_writer = cv2.VideoWriter(output_path, fourcc, 30, (width, height), not is_depth)
-
-            for frame in frames:
-                if is_depth:
-                    # Create a more visually informative depth visualization
-                    frame = self.colorize_depth_for_video(frame)
-                video_writer.write(frame)
-
-            video_writer.release()
-            if self.verbose_mode:
-                rospy.loginfo(f"Video saved successfully at: {output_path}")
-        except Exception as e:
-            rospy.logerr(f"Failed to save video: {e}")
+        # Store a reference to allow RGB processing to complete
+        self.depth_video_completed = True
+        if hasattr(self, 'rgb_video_completed') and self.rgb_video_completed:
+            self.start_time = None
+            self.rgb_video_completed = False
+            self.depth_video_completed = False
 
     def save_image(self, image, output_path, is_depth=False):
         """
@@ -677,6 +687,9 @@ class FaceDetectionTest:
             if image is None:
                 rospy.logwarn("No image to save.")
                 return
+                 
+            # Ensure directory exists
+            os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
             if is_depth:
                 # Create a normalized 8-bit visualization for viewing
@@ -712,15 +725,10 @@ class FaceDetectionTest:
             if self.verbose_mode:
                 rospy.loginfo("Depth video writer closed on shutdown")
             
-        # Unsubscribe from topics
-        if hasattr(self, 'image_sub'):
-            self.image_sub.unregister()
-            
-        if hasattr(self, 'depth_sub'):
-            self.depth_sub.unregister()
-            
-        if hasattr(self, 'face_data_sub'):
-            self.face_data_sub.unregister()
+        # Unsubscribe from topics - safely check if attributes exist first
+        for attr in ['image_sub', 'depth_sub', 'face_data_sub']:
+            if hasattr(self, attr) and getattr(self, attr) is not None:
+                getattr(self, attr).unregister()
             
         if self.verbose_mode:
             rospy.loginfo("FaceDetectionTest shutdown complete")
