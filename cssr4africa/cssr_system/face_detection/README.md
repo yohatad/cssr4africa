@@ -41,10 +41,10 @@ python3.10 --version
 ```sh
 # Create a virtual environment:
 cd $HOME/workspace/pepper_rob_ws
-python3.10 -m venv face_person_detection
+python3.10 -m venv cssr4africa_face_person_detection_env
 
 # Activate the virtual environment:
-source face_person_detection/bin/activate
+source cssr4africa_face_person_detection_env/bin/activate
 
 # Upgrade pip in the virtual environment:
 pip install --upgrade pip
@@ -65,17 +65,17 @@ The following table provides the key-value pairs used in the configuration file:
 | Parameter                   | Description                                                      | Range/Values            | Default Value |
 |-----------------------------|------------------------------------------------------------------|-------------------------|---------------|
 | `algorithm`                 | Algorithm selected for face detection                            | `mediapipe`, `sixdrep`  | `sixdrep`     |
-| `useCompressed`            | Use compressed ROS image topics                                  | `True`, `False`         | `True`        |
-| `mpFacedetConfidence`             | Face detection confidence threshold (MediaPipe)                  | `[0.0 - 1.0]`           | `0.5`         |
-| `mpHeadposeAngle`         | Head pose angle threshold in degrees (MediaPipe)                 | Positive integer        | `8`           |
-| `centroidMaxDistance`     | Maximum centroid distance for centroid tracking                  | Positive integer        | `15`          |
-| `centroidMaxDisappeared`  | Frames allowed before centroid tracker deregisters an object     | Positive integer        | `100`         |
-| `sixdrepnetConfidence`     | Confidence threshold for face detection (SixDRepNet)             | `[0.0 - 1.0]`           | `0.65`        |
-| `sixdrepnetHeadposeAngle` | Head pose angle threshold in degrees (SixDRepNet)                | Positive integer        | `10`          |
-| `sortMaxDisappeared`      | Maximum frames allowed for disappearance in SORT tracking        | Positive integer        | `30`          |
-| `sortMinHits`             | Minimum consecutive detections to confirm object tracking (SORT) | Positive integer        | `20`          |
-| `sortIouThreshold`        | IoU threshold for SORT tracker                                   | `[0.0 - 1.0]`           | `0.3`         |
-| `verboseMode`              | Enable visualization using OpenCV windows and detailed logging   | `True`, `False`         | `True`        |
+| `useCompressed`             | Use compressed ROS image topics                                  | `True`, `False`         | `True`        |
+| `mpFacedetConfidence`       | Face detection confidence threshold (MediaPipe)                  | `[0.0 - 1.0]`           | `0.5`         |
+| `mpHeadposeAngle`           | Head pose angle threshold in degrees (MediaPipe)                 | Positive integer        | `8`           |
+| `centroidMaxDistance`       | Maximum centroid distance for centroid tracking                  | Positive integer        | `15`          |
+| `centroidMaxDisappeared`    | Frames allowed before centroid tracker deregisters an object     | Positive integer        | `100`         |
+| `sixdrepnetConfidence`      | Confidence threshold for face detection (SixDRepNet)             | `[0.0 - 1.0]`           | `0.65`        |
+| `sixdrepnetHeadposeAngle`   | Head pose angle threshold in degrees (SixDRepNet)                | Positive integer        | `10`          |
+| `sortMaxDisappeared`        | Maximum frames allowed for disappearance in SORT tracking        | Positive integer        | `30`          |
+| `sortMinHits`               | Minimum consecutive detections to confirm object tracking (SORT) | Positive integer        | `20`          |
+| `sortIouThreshold`          | IoU threshold for SORT tracker                                   | `[0.0 - 1.0]`           | `0.3`         |
+| `verboseMode`               | Enable visualization using OpenCV windows and detailed logging   | `True`, `False`         | `True`        |
 
 > **Note:**  
 > Enabling **`verboseMode`** (`True`) will activate real-time visualization via OpenCV windows. 
@@ -101,7 +101,7 @@ Follow below steps, run in different terminals.
 
   In a new terminal activate the python environment. 
   ```bash
-  source ~/workspace/pepper_rob_ws/face_person_detection/bin/activate
+  source ~/workspace/pepper_rob_ws/cssr4africa_face_person_detection_env/bin/activate
   ```
 
   ```bash
