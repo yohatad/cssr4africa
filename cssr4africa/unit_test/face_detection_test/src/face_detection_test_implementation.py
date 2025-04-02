@@ -378,7 +378,7 @@ class FaceDetectionTest:
         """
         timestamp = int(self.start_time)
         rgb_video_path = os.path.join(
-            self.unit_test_package_path, 'face_detection_test/data', f'face_detection_rgb_video_{timestamp}.mp4')
+            self.unit_test_package_path, 'face_detection_test/data', f'face_detection_test_rgb_video_{timestamp}.mp4')
         
         # Ensure directory exists
         os.makedirs(os.path.dirname(rgb_video_path), exist_ok=True)
@@ -401,7 +401,7 @@ class FaceDetectionTest:
             height (int): Height of the depth image
         """
         timestamp = int(self.start_time)
-        depth_video_path = os.path.join(self.unit_test_package_path, 'face_detection_test/data', f'face_detection_depth_video_{timestamp}.mp4')
+        depth_video_path = os.path.join(self.unit_test_package_path, 'face_detection_test/data', f'face_detection_test_depth_video_{timestamp}.mp4')
         
         # Ensure directory exists
         os.makedirs(os.path.dirname(depth_video_path), exist_ok=True)
@@ -606,7 +606,7 @@ class FaceDetectionTest:
                 video_path = os.path.join(
                     self.unit_test_package_path, 
                     'face_detection_test/data', 
-                    f'face_detection_rgb_video_{int(self.start_time)}.mp4'
+                    f'face_detection_test_rgb_video_{int(self.start_time)}.mp4'
                 )
                 
                 # Ensure directory exists
@@ -644,7 +644,7 @@ class FaceDetectionTest:
                 video_path = os.path.join(
                     self.unit_test_package_path, 
                     'face_detection_test/data', 
-                    f'face_detection_depth_video_{int(self.start_time)}.mp4'
+                    f'face_detection_test_depth_video_{int(self.start_time)}.mp4'
                 )
                 
                 # Ensure directory exists

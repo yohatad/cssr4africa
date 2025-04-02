@@ -78,10 +78,10 @@ Input Data Files
     - face_detection_test_input_realsense_lighting_2.bag
 
 Output Data Files
-    - face_detection_rgb_video_{start_time}.mp4
-    - face_detection_depth_video_{start_time}.mp4
-    - face_detection_rgb_image_{start_time}.png
-    - face_detection_depth_image_{start_time}.png
+    - face_detection_test_rgb_video_{start_time}.mp4
+    - face_detection_test_depth_video_{start_time}.mp4
+    - face_detection_test_rgb_image_{start_time}.png
+    - face_detection_test_depth_image_{start_time}.png
 
 Configuration File
     face_detection_test_configuration.json
