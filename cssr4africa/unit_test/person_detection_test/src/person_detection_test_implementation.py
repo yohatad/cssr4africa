@@ -61,11 +61,12 @@ class PersonDetectionTest:
         # Use locks to protect shared resources
         self.rgb_frames_lock = threading.Lock()
         self.depth_frames_lock = threading.Lock()
+        self.person_data_lock = threading.Lock()
         
         self.rgb_frames = []        # For saving RGB video
         self.depth_frames = []      # For saving Depth video
         
-        # For storing multiple faces and their data
+        # For storing multiple persons and their data
         self.person_labels = []
         self.person_centroids = []
         self.person_widths = []
@@ -131,6 +132,9 @@ class PersonDetectionTest:
     def start_recording_callback(self, event):
         """
         Callback to start recording after the initial delay.
+        
+        Args:
+            event (rospy.timer.TimerEvent): Timer event object
         """
         self.recording_enabled = True
         if self.verbose_mode:
@@ -143,11 +147,13 @@ class PersonDetectionTest:
         Args:
             msg: Custom message with person_label_id, centroids, width, height, and mutualGaze arrays
         """
-        # Store the person detection data
-        self.person_labels = msg.person_label_id
-        self.person_centroids = msg.centroids
-        self.person_widths = msg.width  # Store the width values
-        self.person_heights = msg.height  # Store the height values
+        # Use lock to protect person detection data
+        with self.person_data_lock:
+            # Store the person detection data
+            self.person_labels = msg.person_label_id
+            self.person_centroids = msg.centroids
+            self.person_widths = msg.width  # Store the width values
+            self.person_heights = msg.height  # Store the height values
         
         # Generate colors for new person
         for person_id in self.person_labels:
@@ -257,7 +263,7 @@ class PersonDetectionTest:
         sync = ApproximateTimeSynchronizer([rgb_sub, depth_sub], queue_size=10, slop=0.1)
         sync.registerCallback(self.synchronized_callback)
 
-        # Print message every 5 seconds
+        # Print message every 10 seconds
         if rospy.get_time() - self.timer > 10:
             rospy.loginfo("person_detection_test: running.")
             self.timer = rospy.get_time()
@@ -375,11 +381,14 @@ class PersonDetectionTest:
         rgb_video_path = os.path.join(
             self.unit_test_package_path, 'person_detection_test/data', f'person_detection_rgb_video_{timestamp}.mp4')
         
+        # Ensure directory exists
+        os.makedirs(os.path.dirname(rgb_video_path), exist_ok=True)
+        
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         self.rgb_writer = cv2.VideoWriter(
             rgb_video_path, 
             fourcc, 
-            30, 
+            15, 
             (width, height), 
             True  # isColor=True for RGB
         )
@@ -394,10 +403,13 @@ class PersonDetectionTest:
         """
         timestamp = int(self.start_time)
         depth_video_path = os.path.join(self.unit_test_package_path, 'person_detection_test/data', f'person_detection_depth_video_{timestamp}.mp4')
+
+        # Ensure directory exists
+        os.makedirs(os.path.dirname(depth_video_path), exist_ok=True)
         
         # For visualization, convert to colorized 8-bit
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        self.depth_writer = cv2.VideoWriter(depth_video_path, fourcc, 30, (width, height), True) # isColor=True for RGB output
+        self.depth_writer = cv2.VideoWriter(depth_video_path, fourcc, 15, (width, height), True) # isColor=True for RGB output
         
     def draw_person_detection_overlay(self, image):
         """
@@ -406,9 +418,18 @@ class PersonDetectionTest:
         Args:
             image (numpy.ndarray): RGB image to draw on
         """
-        # Check if we have person data
-        if not self.person_labels or not self.person_centroids:
-            return
+        
+        # Use lock to acess person detection data 
+        with self.person_data_lock:
+            # Check if we have person data
+            if not self.person_labels or not self.person_centroids:
+                return
+            
+            person_labels = self.person_labels.copy() if hasattr(self.person_labels, 'copy') else list(self.person_labels)
+            person_centroids = self.person_centroids.copy() if hasattr(self.person_centroids, 'copy') else list(self.person_centroids)
+            person_widths = self.person_widths.copy() if hasattr(self.person_widths, 'copy') else list(self.person_widths)
+            person_heights = self.person_heights.copy() if hasattr(self.person_heights, 'copy') else list(self.person_heights)
+            person_color = self.person_colors.copy()
         
         for i, (person_id, centroid, width, height) in enumerate(zip(
             self.person_labels, self.person_centroids, self.person_widths, self.person_heights)):
@@ -574,6 +595,8 @@ class PersonDetectionTest:
                     'person_detection_test/data', 
                     f'person_detection_rgb_video_{int(self.start_time)}.mp4'
                 )
+
+                os.makedirs(os.path.dirname(video_path), exist_ok=True)
                 
                 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
                 video_writer = cv2.VideoWriter(video_path, fourcc, 30, (width, height), True)
@@ -592,8 +615,12 @@ class PersonDetectionTest:
                     rospy.loginfo("RGB video recording completed")
                 self.rgb_writer = None
                 
-        # Reset timing for next video
-        self.start_time = None
+        # Store a reference to allow depth processing to complete
+        self.rgb_video_completed = True
+        if hasattr(self, 'depth_video_completed') and self.depth_video_completed:
+            self.start_time = None
+            self.rgb_video_completed = False
+            self.depth_video_completed = False
             
     def finalize_depth_video(self):
         """Finalize depth video recording and reset for next capture."""
@@ -605,6 +632,9 @@ class PersonDetectionTest:
                     'person_detection_test/data', 
                     f'person_detection_depth_video_{int(self.start_time)}.mp4'
                 )
+
+                # Ensure directory exists
+                os.makedirs(os.path.dirname(video_path), exist_ok=True)
                 
                 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
                 video_writer = cv2.VideoWriter(video_path, fourcc, 30, (width, height), True)
@@ -624,35 +654,12 @@ class PersonDetectionTest:
                     rospy.loginfo("Depth video recording completed")
                 self.depth_writer = None
 
-    def save_video(self, frames, output_path, is_depth=False):
-        """
-        Save video frames as an MP4 file.
-        
-        Args:
-            frames (list): List of video frames (images as numpy arrays).
-            output_path (str): Path to save the video file.
-            is_depth (bool): Flag to indicate if the frames are depth images.
-        """
-        try:
-            if not frames:
-                rospy.logwarn("No frames to save.")
-                return
-
-            height, width = frames[0].shape if is_depth else frames[0].shape[:2]
-            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-            video_writer = cv2.VideoWriter(output_path, fourcc, 30, (width, height), not is_depth)
-
-            for frame in frames:
-                if is_depth:
-                    # Create a more visually informative depth visualization
-                    frame = self.colorize_depth_for_video(frame)
-                video_writer.write(frame)
-
-            video_writer.release()
-            if self.verbose_mode:
-                rospy.loginfo(f"Video saved successfully at: {output_path}")
-        except Exception as e:
-            rospy.logerr(f"Failed to save video: {e}")
+        # Store a reference to allow RGB processing to complete
+        self.depth_video_completed = True
+        if hasattr(self, 'rgb_video_completed') and self.rgb_video_completed:
+            self.start_time = None
+            self.rgb_video_completed = False
+            self.depth_video_completed = False
 
     def save_image(self, image, output_path, is_depth=False):
         """
@@ -668,6 +675,9 @@ class PersonDetectionTest:
                 rospy.logwarn("No image to save.")
                 return
 
+            # Ensure directory exists
+            os.makedirs(os.path.dirname(output_path), exist_ok=True)
+            
             if is_depth:
                 # Create a normalized 8-bit visualization for viewing
                 vis_path = output_path.replace('.png', '_vis.png')
@@ -702,15 +712,10 @@ class PersonDetectionTest:
             if self.verbose_mode:
                 rospy.loginfo("Depth video writer closed on shutdown")
             
-        # Unsubscribe from topics
-        if hasattr(self, 'image_sub'):
-            self.image_sub.unregister()
-            
-        if hasattr(self, 'depth_sub'):
-            self.depth_sub.unregister()
-            
-        if hasattr(self, 'person_data_sub'):
-            self.person_data_sub.unregister()
+       # Unsubscribe from topics - safely check if attributes exist first
+        for attr in ['image_sub', 'depth_sub', 'face_data_sub']:
+            if hasattr(self, attr) and getattr(self, attr) is not None:
+                getattr(self, attr).unregister()
             
         if self.verbose_mode:
             rospy.loginfo("PersonDetectionTest shutdown complete")  
