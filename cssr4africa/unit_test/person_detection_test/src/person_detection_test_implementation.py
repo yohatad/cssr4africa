@@ -432,8 +432,7 @@ class PersonDetectionTest:
             person_color = self.person_colors.copy()
         
         for i, (person_id, centroid, width, height) in enumerate(zip(
-            self.person_labels, self.person_centroids, self.person_widths, self.person_heights)):
-            
+            person_labels, person_centroids, person_widths, person_heights)):            
             # Get person coordinates
             centroid_x, centroid_y = int(centroid.x), int(centroid.y)
             
