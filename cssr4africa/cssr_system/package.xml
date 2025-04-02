@@ -2,7 +2,7 @@
 <package format="2">
   <name>cssr_system</name>
   <version>0.0.0</version>
-  <description>The package detects uses YOLO to detect person</description>
+  <description>CSSR_system</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
