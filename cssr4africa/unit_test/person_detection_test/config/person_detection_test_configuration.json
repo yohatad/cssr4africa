@@ -1,4 +1,4 @@
-{   "saveVideo": false,
+{   "saveVideo": true,
     "saveImage": false, 
     "videoDuration": 10,
     "imageInterval": 5,

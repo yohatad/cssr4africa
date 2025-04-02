@@ -402,7 +402,7 @@ class PersonDetectionTest:
             height (int): Height of the depth image
         """
         timestamp = int(self.start_time)
-        depth_video_path = os.path.join(self.unit_test_package_path, 'person_detection_test/data', f'person_detection_depth_video_{timestamp}.mp4')
+        depth_video_path = os.path.join(self.unit_test_package_path, 'person_detection_test/data', f'person_detection_test_depth_video_{timestamp}.mp4')
 
         # Ensure directory exists
         os.makedirs(os.path.dirname(depth_video_path), exist_ok=True)
@@ -549,7 +549,7 @@ class PersonDetectionTest:
             image_path = os.path.join(
                 self.unit_test_package_path, 
                 'person_detection_test/data', 
-                f'person_detection_depth_image_{int(current_time)}.png'
+                f'person_detection_test_depth_image_{int(current_time)}.png'
             )
             self.save_image(cv_depth, image_path, is_depth=True)
         
@@ -629,7 +629,7 @@ class PersonDetectionTest:
                 video_path = os.path.join(
                     self.unit_test_package_path, 
                     'person_detection_test/data', 
-                    f'person_detection_depth_video_{int(self.start_time)}.mp4'
+                    f'person_detection_test_depth_video_{int(self.start_time)}.mp4'
                 )
 
                 # Ensure directory exists
