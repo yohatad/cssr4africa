@@ -87,7 +87,7 @@ Configuration File
     face_detection_test_configuration.json
 
 Example of instantiation of the module
-    roslaunch unit_test face_detection_test_launch_robot.launch camera:=video bag_file:=singleFace
+    roslaunch unit_test face_detection_test_launch_robot.launch camera:=video bag_file:=single_face
     
     (In a new terminal)
     roslaunch unit_test face_detection_test_launch_test_harness.launch

@@ -517,7 +517,7 @@ class FaceDetectionTest:
             image_path = os.path.join(
                 self.unit_test_package_path, 
                 'face_detection_test/data', 
-                f'face_detection_rgb_image_{int(current_time)}.png'
+                f'face_detection_test_rgb_image_{int(current_time)}.png'
             )
             self.save_image(display_image, image_path)
             self.image_save_time = current_time
