@@ -16,7 +16,7 @@ This program comes with ABSOLUTELY NO WARRANTY.
 """
 person_detection_test_application.py  Application code to run person detection and localization unit test.
 
-This person_detectiion_test is a unit test application code to test the person detection and localization algorithm.
+This person_detection_test is a unit test application code to test the person detection and localization algorithm.
 This code contains the main function that initializes the correct configuration parameters and tests whether person is 
 detected and localized. It has also utility functions to save video and images with the bounding boxes. 
 
@@ -33,7 +33,7 @@ Libraries
     - sensor_msgs.msg (Image)
     - cv_bridge (CvBridge)
     - message_filters (ApproximateTimeSynchronizer, Subscriber)
-    - unit_test.msg (pesron_detection_test_msg_file)
+    - unit_test.msg (person_detection_test_msg_file)
 
 Parameters
     Launch File Parameters:
@@ -74,16 +74,16 @@ Input Data Files
     - person_detection_test_input_realsense_lighting_2.bag
 
 Output Data Files
-    - person_detection_rgb_video_{start_time}.mp4
-    - person_detection_depth_video_{start_time}.mp4
-    - person_detection_rgb_image_{start_time}.png
-    - person_detection_depth_image_{start_time}.png
+    - person_detection_test_rgb_video_{start_time}.mp4
+    - person_detection_test_depth_video_{start_time}.mp4
+    - person_detection_test_rgb_image_{start_time}.png
+    - person_detection_test_depth_image_{start_time}.png
 
 Configuration File
     person_detection_test_configuration.json
 
 Example of instantiation of the module
-    roslaunch unit_test person_detection_test_launch_robot.launch camera:=video bag_file:=singleperson
+    roslaunch unit_test person_detection_test_launch_robot.launch camera:=video bag_file:=single_person
     
     (In a new terminal)
     roslaunch unit_test person_detection_test_launch_testHarness.launch

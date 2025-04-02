@@ -379,7 +379,7 @@ class PersonDetectionTest:
         """
         timestamp = int(self.start_time)
         rgb_video_path = os.path.join(
-            self.unit_test_package_path, 'person_detection_test/data', f'person_detection_rgb_video_{timestamp}.mp4')
+            self.unit_test_package_path, 'person_detection_test/data', f'person_detection_test_rgb_video__{timestamp}.mp4')
         
         # Ensure directory exists
         os.makedirs(os.path.dirname(rgb_video_path), exist_ok=True)
@@ -504,7 +504,7 @@ class PersonDetectionTest:
             image_path = os.path.join(
                 self.unit_test_package_path, 
                 'person_detection_test/data', 
-                f'person_detection_rgb_image_{int(current_time)}.png'
+                f'person_detection_test_rgb_image_{int(current_time)}.png'
             )
             self.save_image(display_image, image_path)
             self.image_save_time = current_time
@@ -593,7 +593,7 @@ class PersonDetectionTest:
                 video_path = os.path.join(
                     self.unit_test_package_path, 
                     'person_detection_test/data', 
-                    f'person_detection_rgb_video_{int(self.start_time)}.mp4'
+                    f'person_detection_test_rgb_video__{int(self.start_time)}.mp4'
                 )
 
                 os.makedirs(os.path.dirname(video_path), exist_ok=True)
