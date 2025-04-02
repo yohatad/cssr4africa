@@ -52,6 +52,7 @@ class FaceDetectionTest:
         self.camera = rospy.get_param('faceDetection/camera', default='video')
 
         self.verbose_mode = self.config.get("verboseMode", False)
+        rospy.set_param('faceDetection/verboseMode', self.verbose_mode)
 
         # Initialize ROS topic subscription and CvBridge
         self.bridge = CvBridge()
