@@ -70,15 +70,17 @@ Configuration File Parameters
     verboseMode                     true
 
 Subscribed Topics
-    Topic Name                                  Message Type
-    /camera/color/image_raw                     sensor_msgs/Image              
-    /camera/aligned_depth_to_color/image_raw    sensor_msgs/Image
-    /naoqi_driver/camera/front/image_raw        sensor_msgs/Image
-    /naoqi_driver/camera/depth/image_raw        sensor_msgs/Image
+    Topic Name                                              Message Type
+    /camera/color/image_raw                                 sensor_msgs/Image
+    /camera/color/image_raw/compressed                      sensor_msgs/CompressedImage                 
+    /camera/aligned_depth_to_color/image_raw                sensor_msgs/Image
+    /camera/aligned_depth_to_color/image_raw/compressed     sensor_msgs/CompressedImage
+    /naoqi_driver/camera/front/image_raw                    sensor_msgs/Image
+    /naoqi_driver/camera/depth/image_raw                    sensor_msgs/Image
 
 Published Topics
-    Topic Name                                  Message Type
-    /faceDetection/data                         face_detection/face_detection.msg
+    Topic Name                                              Message Type
+    /faceDetection/data                                     face_detection/face_detection.msg
 
 Input Data Files
     - pepperTopics.dat: Data file for Pepper robot camera topics
@@ -95,6 +97,9 @@ Configuration File
 
 Example of instantiation of the module
     roslauch cssr_system face_detection_robot.launch camera:=realsense
+
+    # Activate the python environment
+    source ~/workspace/pepper_rob_ws/cssr4africa_face_person_detection_env/bin/activate
 
     (In a new terminal)
     rosrun cssr_system face_detection_application.py
