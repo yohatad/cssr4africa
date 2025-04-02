@@ -34,7 +34,7 @@ The following table provides the key-value pairs used in the configuration file:
 ---
 
 > **Note:**  
-> Enabling **`verbose_mode`** (`True`) will activate detailed logging and **visualize outputs using OpenCV windows**.  
+> Enabling **`verboseMode`** (`True`) will activate detailed logging and **visualize outputs using OpenCV windows**.  
 
 #  🚀 Run the Face Detection Unit Test
 Before running the node, the configuration file must be set up correctly with the appropriate key-value pairs. The configuration file is typically located in the package folder under the `config` directory.
@@ -85,7 +85,7 @@ assess detection performance.
 > **Note:**  
 > Before running the Test Harness, activate the face detection python environement. Refer the README.md file for the face detection node.
 ```bash
-  source ~/workspace/pepper_rob_ws/face_person_detection/bin/activate
+  source ~/workspace/pepper_rob_ws/cssr4africa_face_person_detection_env/bin/activate
 ```
 
 4. **Run Face Detection Test Harness**
