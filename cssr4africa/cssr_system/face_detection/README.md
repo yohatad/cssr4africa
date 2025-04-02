@@ -65,20 +65,20 @@ The following table provides the key-value pairs used in the configuration file:
 | Parameter                   | Description                                                      | Range/Values            | Default Value |
 |-----------------------------|------------------------------------------------------------------|-------------------------|---------------|
 | `algorithm`                 | Algorithm selected for face detection                            | `mediapipe`, `sixdrep`  | `sixdrep`     |
-| `use_compressed`            | Use compressed ROS image topics                                  | `True`, `False`         | `True`        |
-| `mp_confidence`             | Face detection confidence threshold (MediaPipe)                  | `[0.0 - 1.0]`           | `0.5`         |
-| `mp_headpose_angle`         | Head pose angle threshold in degrees (MediaPipe)                 | Positive integer        | `8`           |
-| `centroid_max_distance`     | Maximum centroid distance for centroid tracking                  | Positive integer        | `15`          |
-| `centroid_max_disappeared`  | Frames allowed before centroid tracker deregisters an object     | Positive integer        | `100`         |
-| `sixdrepnet_confidence`     | Confidence threshold for face detection (SixDRepNet)             | `[0.0 - 1.0]`           | `0.65`        |
-| `sixdrepnet_headpose_angle` | Head pose angle threshold in degrees (SixDRepNet)                | Positive integer        | `10`          |
-| `sort_max_disappeared`      | Maximum frames allowed for disappearance in SORT tracking        | Positive integer        | `30`          |
-| `sort_min_hits`             | Minimum consecutive detections to confirm object tracking (SORT) | Positive integer        | `20`          |
-| `sort_iou_threshold`        | IoU threshold for SORT tracker                                   | `[0.0 - 1.0]`           | `0.3`         |
-| `verbose_mode`              | Enable visualization using OpenCV windows and detailed logging   | `True`, `False`         | `True`        |
+| `useCompressed`            | Use compressed ROS image topics                                  | `True`, `False`         | `True`        |
+| `mpFacedetConfidence`             | Face detection confidence threshold (MediaPipe)                  | `[0.0 - 1.0]`           | `0.5`         |
+| `mpHeadposeAngle`         | Head pose angle threshold in degrees (MediaPipe)                 | Positive integer        | `8`           |
+| `centroidMaxDistance`     | Maximum centroid distance for centroid tracking                  | Positive integer        | `15`          |
+| `centroidMaxDisappeared`  | Frames allowed before centroid tracker deregisters an object     | Positive integer        | `100`         |
+| `sixdrepnetConfidence`     | Confidence threshold for face detection (SixDRepNet)             | `[0.0 - 1.0]`           | `0.65`        |
+| `sixdrepnetHeadposeAngle` | Head pose angle threshold in degrees (SixDRepNet)                | Positive integer        | `10`          |
+| `sortMaxDisappeared`      | Maximum frames allowed for disappearance in SORT tracking        | Positive integer        | `30`          |
+| `sortMinHits`             | Minimum consecutive detections to confirm object tracking (SORT) | Positive integer        | `20`          |
+| `sortIouThreshold`        | IoU threshold for SORT tracker                                   | `[0.0 - 1.0]`           | `0.3`         |
+| `verboseMode`              | Enable visualization using OpenCV windows and detailed logging   | `True`, `False`         | `True`        |
 
 > **Note:**  
-> Enabling **`verbose_mode`** (`True`) will activate real-time visualization via OpenCV windows. 
+> Enabling **`verboseMode`** (`True`) will activate real-time visualization via OpenCV windows. 
 
 # 🚀 Running the node
 **Run the `faceDetection` from the `cssr_system` package:**

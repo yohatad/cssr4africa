@@ -35,7 +35,7 @@ Libraries
     - sensor_msgs.msg (Image)
     - cv_bridge (CvBridge)
     - message_filters (ApproximateTimeSynchronizer, Subscriber)
-    - face_detection_test.msg (msg_file)
+    - face_detection_test_msg_file.msg (msg_file)
 
 Parameters
     Launch File Parameters:
@@ -45,18 +45,18 @@ Parameters
             pepper_robot_ip: Pepper robot IP address (e.g 172.29.111.230 or 172.29.111.240)
             network_interface: Network interface for Pepper robot connection
 
-        roslaunch unit_test face_detection_test_launch_testHarness.launch
+        roslaunch unit_test face_detection_test_launch_test_harness.launch
 
     Configuration File Parameters
         Key                             Value
         algorithm                       sixdrep
-        save_video                      false
-        save_image                      false
-        video_duration                  10
-        image_interval                  5
-        recording_delay                 5
+        saveVideo                      false
+        saveImage                      false
+        videoDuration                  10
+        imageInterval                  5
+        recordingDelay                 5
         max_frames_buffer               300
-        verbose_mode                    false
+        verboseMode                    false
 
 Subscribed Topics
     Topic Name                                  Message Type
@@ -64,19 +64,18 @@ Subscribed Topics
     /camera/aligned_depth_to_color/image_raw    sensor_msgs/Image
     /naoqi_driver/camera/front/image_raw        sensor_msgs/Image
     /naoqi_driver/camera/depth/image_raw        sensor_msgs/Image
-    /faceDetection/data                         face_detection/face_detection.msg
+    /faceDetection/data                         face_detection/face_detection_msg_file.msg
 
 Published Topics
     None
 
 Input Data Files
     - pepperTopics.dat: Data file for Pepper robot camera topics
-    - face_detection_test_input_realsense_singleFace.bag
-    - face_detection_test_input_realsense_multipleFaces.bag
-    - face_detection_test_input_realsense_faceTracking.bag
-    - face_detection_test_input_realsense_mutualGaze.bag
-    - face_detection_test_input_realsense_occlusion.bag
-    - face_detection_test_input_realsense_lighting.bag
+    - face_detection_test_input_realsense_single_face.bag
+    - face_detection_test_input_realsense_multiple_faces.bag
+    - face_detection_test_input_realsense_mutual_gaze.bag
+    - face_detection_test_input_realsense_lighting_1.bag
+    - face_detection_test_input_realsense_lighting_2.bag
 
 Output Data Files
     - face_detection_rgb_video_{start_time}.mp4
@@ -91,7 +90,7 @@ Example of instantiation of the module
     roslaunch unit_test face_detection_test_launch_robot.launch camera:=video bag_file:=singleFace
     
     (In a new terminal)
-    roslaunch unit_test face_detection_test_launch_testHarness.launch
+    roslaunch unit_test face_detection_test_launch_test_harness.launch
 
 Author: Yohannes Tadesse Haile
 Email: yohanneh@andrew.cmu.edu

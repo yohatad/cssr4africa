@@ -23,13 +23,13 @@ The following table provides the key-value pairs used in the configuration file:
 | Parameter           | Description                                   | Possible Values            | Default Value |
 |---------------------|-----------------------------------------------|----------------------------|---------------|
 | `algorithm`         | Algorithm selected for face detection         | `mediapipe`, `sixdrep`     | `sixdrep`     |
-| `save_video`        | Save the output video of the test             | `True`, `False`            | `False`       |
-| `save_image`        | Save individual image frames from the test    | `True`, `False`            | `False`       |
-| `video_duration`    | Duration (seconds) for saved video            | Positive integer           | `10`          |
-| `image_interval`    | Interval (seconds) between captured images    | Positive integer           | `5`           |
-| `recording_delay`   | Delay (seconds) before recording starts       | Positive integer           | `5`           |
-| `max_frames_buffer` | Maximum number of frames to store in buffer   | Positive integer           | `300`         |
-| `verbose_mode`      | Enable detailed logging and visual output     | `True`, `False`            | `True`        |
+| `saveVideo`        | Save the output video of the test             | `True`, `False`            | `False`       |
+| `saveImage`        | Save individual image frames from the test    | `True`, `False`            | `False`       |
+| `videoDuration`    | Duration (seconds) for saved video            | Positive integer           | `10`          |
+| `imageInterval`    | Interval (seconds) between captured images    | Positive integer           | `5`           |
+| `recordingDelay`   | Delay (seconds) before recording starts       | Positive integer           | `5`           |
+| `maxFramesBuffer` | Maximum number of frames to store in buffer   | Positive integer           | `300`         |
+| `verboseMode`      | Enable detailed logging and visual output     | `True`, `False`            | `True`        |
 
 ---
 
