@@ -43,24 +43,26 @@ Parameters
     None
 
 Configuration File Parameters
-    Key                             Value
-    useCompressed                   true
-    confidence_iou_threshold        0.8
-    sortMaxDisappeared              30
-    sortMinHits                     20
-    sortIouThreshold                0.3
-    verboseMode                    true
+    Key                                                         Value
+    useCompressed                                               true
+    confidence_iou_threshold                                    0.8
+    sortMaxDisappeared                                          30
+    sortMinHits                                                 20
+    sortIouThreshold                                            0.3
+    verboseMode                                                 true
 
 Subscribed Topics
-    Topic Name                                  Message Type
-    /camera/color/image_raw                     sensor_msgs/Image              
-    /camera/aligned_depth_to_color/image_raw    sensor_msgs/Image
-    /naoqi_driver/camera/front/image_raw        sensor_msgs/Image
-    /naoqi_driver/camera/depth/image_raw        sensor_msgs/Image
+    Topic Name                                                  Message Type
+    /camera/color/image_raw                                     sensor_msgs/Image
+    /camera/color/image_raw/compressed                          sensor_msgs/CompressedImage              
+    /camera/aligned_depth_to_color/image_raw                    sensor_msgs/Image
+    /camera/aligned_depth_to_color/image_raw/compressed         sensor_msgs/CompressedImage
+    /naoqi_driver/camera/front/image_raw                        sensor_msgs/Image
+    /naoqi_driver/camera/depth/image_raw                        sensor_msgs/Image
 
 Published Topics
-    Topic Name                                  Message Type
-    /personDetection/data                       person_detection/person_detection_msg_file.msg
+    Topic Name                                                  Message Type
+    /personDetection/data                                       person_detection/person_detection_msg_file.msg
 
 Input Data Files
     - pepperTopics.dat: Data file for Pepper robot camera topics
@@ -76,6 +78,9 @@ Configuration File
 
 Example of instantiation of the module
     roslauch cssr_system person_detection_robot.launch camera:=realsense
+
+    # Activate the python environment
+    source ~/workspace/pepper_rob_ws/cssr4africa_face_person_detection_env/bin/activate
 
     (In a new terminal)
     rosrun cssr_system person_detection_application.py

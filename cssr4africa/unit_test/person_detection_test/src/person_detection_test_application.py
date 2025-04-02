@@ -33,7 +33,7 @@ Libraries
     - sensor_msgs.msg (Image)
     - cv_bridge (CvBridge)
     - message_filters (ApproximateTimeSynchronizer, Subscriber)
-    - person_detection_test.msg (msg_file)
+    - unit_test.msg (pesron_detection_test_msg_file)
 
 Parameters
     Launch File Parameters:
@@ -43,25 +43,27 @@ Parameters
             pepper_robot_ip: Pepper robot IP address (e.g 172.29.111.230 or 172.29.111.240)
             network_interperson: Network interperson for Pepper robot connection
 
-        roslaunch unit_test person_detection_test_launch_testHarness.launch
+        roslaunch unit_test person_detection_test_launch_test_harness.launch
 
-    Configuration File Parameters
-        Key                             Value
-        saveVideo                      false
-        saveImage                      false
-        videoDuration                  10
-        imageInterval                  5
-        recordingDelay                 5
-        maxFramesBuffer               300
-        verboseMode                    false
+Configuration File Parameters
+    Key                                                     Value
+    saveVideo                                               false
+    saveImage                                               false
+    videoDuration                                           10
+    imageInterval                                           5
+    recordingDelay                                          5
+    maxFramesBuffer                                         300
+    verboseMode                                             false
 
 Subscribed Topics
-    Topic Name                                  Message Type
-    /camera/color/image_raw                     sensor_msgs/Image              
-    /camera/aligned_depth_to_color/image_raw    sensor_msgs/Image
-    /naoqi_driver/camera/front/image_raw        sensor_msgs/Image
-    /naoqi_driver/camera/depth/image_raw        sensor_msgs/Image
-    /personDetection/data                       person_detection/msg_file.msg
+    Topic Name                                              Message Type
+    /camera/color/image_raw                                 sensor_msgs/Image
+    /camera/color/image_raw/compressed                      sensor_msgs/CompressedImage              
+    /camera/aligned_depth_to_color/image_raw                sensor_msgs/Image
+    /camera/aligned_depth_to_color/image_raw/compressed     sensor_msgs/CompressedImage
+    /naoqi_driver/camera/front/image_raw                    sensor_msgs/Image
+    /naoqi_driver/camera/depth/image_raw                    sensor_msgs/Image
+    /personDetection/data                                   person_detection/person_detection_test_msg_file.msg
 
 Published Topics
     None
