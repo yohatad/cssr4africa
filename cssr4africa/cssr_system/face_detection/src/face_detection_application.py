@@ -55,19 +55,19 @@ Parameters
             network_interface: Network interface for Pepper robot connection
 
 Configuration File Parameters
-    Key                             Value
-    algorithm                       sixdrep
-    useCompressed                   true
-    mpFacedetConfidence             0.5
-    mpHeadposeAngle                 5
-    centroidMaxDistance             15
-    centroidMaxDisappeared          100
-    sixdrepnet_confidence           0.65
-    sixdrepnetHeadposeAngle         10
-    sortMaxDisappeared              30
-    sortMinHits                     20
-    sortIouThreshold                0.3
-    verboseMode                     true
+    Key                                                     Value
+    algorithm                                               sixdrep
+    useCompressed                                           true
+    mpFacedetConfidence                                     0.5
+    mpHeadposeAngle                                         5
+    centroidMaxDistance                                     15
+    centroidMaxDisappeared                                  100
+    sixdrepnet_confidence                                   0.65
+    sixdrepnetHeadposeAngle                                 10
+    sortMaxDisappeared                                      30
+    sortMinHits                                             20
+    sortIouThreshold                                        0.3
+    verboseMode                                             true
 
 Subscribed Topics
     Topic Name                                              Message Type
@@ -80,7 +80,7 @@ Subscribed Topics
 
 Published Topics
     Topic Name                                              Message Type
-    /faceDetection/data                                     face_detection/face_detection.msg
+    /faceDetection/data                                     face_detection/face_detection_msg_file.msg
 
 Input Data Files
     - pepperTopics.dat: Data file for Pepper robot camera topics
