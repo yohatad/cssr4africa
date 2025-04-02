@@ -98,6 +98,11 @@ Follow below steps, run in different terminals.
   ```
 
   ```bash
+  # Command to the application.py executable.
+  chmod +x ~/workspace/pepper_rob_ws/src/cssr4africa/cssr_system/person_detection/src/person_detection_application.py
+  ```
+
+  ```bash
   # Run the person_detection node
   rosrun cssr_system person_detection_application.py
   ```

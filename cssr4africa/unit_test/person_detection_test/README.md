@@ -86,6 +86,12 @@ roslaunch unit_test person_detection_test_launch_robot.launch camera:=<camera> b
   source ~/workspace/pepper_rob_ws/cssr4africa_face_person_detection_env/bin/activate
 ```
 
+```bash
+# Command to make person detection applications executable. 
+chmod +x ~/workspace/pepper_rob_ws/src/cssr4africa/cssr_system/person_detection/src/person_detection_application.py
+chmod +x ~/workspace/pepper_rob_ws/src/cssr4africa/unit_test/person_detection_test/src/person_detection_test_application.py
+```
+
 4. **Run Person Detection Test Harness**
 ```bash
 # The launch file launches the person_detection_node for the unit test.
