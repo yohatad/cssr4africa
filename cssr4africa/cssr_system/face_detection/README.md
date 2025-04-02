@@ -101,7 +101,13 @@ Follow below steps, run in different terminals.
 
   In a new terminal activate the python environment. 
   ```bash
+  # Activate the python environment.
   source ~/workspace/pepper_rob_ws/cssr4africa_face_person_detection_env/bin/activate
+  ```
+
+  ```bash
+  # Command to make application executable.  
+  chmod +x ~/workspace/pepper_rob_ws/src/cssr4africa/cssr_system/face_detection/src/face_detection_application.py
   ```
 
   ```bash

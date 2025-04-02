@@ -87,6 +87,11 @@ assess detection performance.
 ```bash
   source ~/workspace/pepper_rob_ws/cssr4africa_face_person_detection_env/bin/activate
 ```
+  ```bash
+# Command to make application executable.  
+chmod +x ~/workspace/pepper_rob_ws/src/cssr4africa/cssr_system/face_detection/src/face_detection_application.py
+chmod +x ~/workspace/pepper_rob_ws/src/cssr4africa/unit_test/face_detection_test/src/face_detection_test_application.py
+```
 
 4. **Run Face Detection Test Harness**
 ```bash
