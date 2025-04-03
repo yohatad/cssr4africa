@@ -84,7 +84,7 @@ from sound_detection_implementation import SoundDetectionNode
 
 def main():
     # Define the node name and software version
-    node_name = "sound_detection"
+    node_name = "soundDetection"
     software_version = " v1.0"  # Replace with the actual software version
 
     # Construct the copyright message
