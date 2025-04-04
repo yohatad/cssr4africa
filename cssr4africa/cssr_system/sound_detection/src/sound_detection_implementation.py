@@ -2,7 +2,7 @@
 sound_implementation.py Implementation code for running the sound detection and localization algorithm
 
 Author: Yohannes Tadesse Haile
-Date: February 15, 2025
+Date: March 15, 2025
 Version: v1.0
 
 Copyright (C) 2023 CSSR4Africa Consortium
@@ -26,11 +26,13 @@ import numpy as np
 from sound_detection.msg import sound_detection
 from threading import Lock
 from std_msgs.msg import Float32MultiArray
+from scipy import signal
 
 class SoundDetectionNode:
     """
     SoundDetectionNode processes audio data from a microphone topic, applies VAD to determine if speech is present,
-    and localizes the sound source by computing the interaural time difference (ITD) via GCC-PHAT.
+    applies bandpass filtering and spectral subtraction on the left channel, and localizes the sound source by computing
+    the interaural time difference (ITD) via GCC-PHAT.
     """
     def __init__(self):
         """
@@ -126,47 +128,8 @@ class SoundDetectionNode:
         except rospkg.ResourceNotFound as e:
             rospy.logerr(f"ROS package 'sound_detection' not found: {e}")
         return None
-    
-    def butter_highpass(lowcut, fs, order=5):
-        """
-        Design a Butterworth high-pass filter.
-        
-        :param lowcut: Frequency below which signals are attenuated (Hz).
-        :param fs: Sampling frequency (Hz).
-        :param order: Filter order.
-        :return: Filter coefficients (b, a).
-        """
-        nyq = 0.5 * fs
-        low = lowcut / nyq
-        b, a = signal.butter(order, low, btype='highpass')
-        return b, a
 
-    def butter_lowpass(highcut, fs, order=5):
-        """
-        Design a Butterworth low-pass filter.
-        
-        :param highcut: Frequency above which signals are attenuated (Hz).
-        :param fs: Sampling frequency (Hz).
-        :param order: Filter order.
-        :return: Filter coefficients (b, a).
-        """
-        nyq = 0.5 * fs
-        high = highcut / nyq
-        b, a = signal.butter(order, high, btype='lowpass')
-        return b, a
-
-    def apply_filter(data, b, a):
-        """
-        Apply a filter to data using given filter coefficients.
-        
-        :param data: Input signal (numpy array).
-        :param b: Numerator filter coefficients.
-        :param a: Denominator filter coefficients.
-        :return: Filtered signal.
-        """
-        return signal.lfilter(b, a, data)
-
-    def spectral_subtraction(noisy_signal, fs, noise_frames=5, n_fft=1024, hop_length=512):
+    def spectral_subtraction(self, noisy_signal, fs, noise_frames=5, n_fft=1024, hop_length=512):
         """
         Perform spectral subtraction on a noisy signal.
         
@@ -199,6 +162,35 @@ class SoundDetectionNode:
         _, recovered_signal = signal.istft(Zxx_clean, fs=fs, nperseg=n_fft, noverlap=n_fft-hop_length)
         return recovered_signal
 
+    def apply_bandpass_and_spectral_subtraction(self, data, fs):
+        """
+        Apply bandpass filter followed by spectral subtraction on the input signal.
+
+        :param data: Input signal (numpy array).
+        :param fs: Sampling frequency.
+        :return: Processed signal.
+        """
+        # Bandpass filter parameters
+        lowcut = 300.0    # Low cutoff frequency in Hz
+        highcut = 3400.0  # High cutoff frequency in Hz
+
+        # Design bandpass filter using a 6th order Butterworth filter
+        nyq = 0.5 * fs
+        low = lowcut / nyq
+        high = highcut / nyq
+        b, a = signal.butter(N=6, Wn=[low, high], btype='bandpass')
+
+        # Apply bandpass filter
+        filtered_signal = signal.lfilter(b, a, data)
+
+        # Apply spectral subtraction
+        processed_signal = self.spectral_subtraction(filtered_signal, fs)
+
+        # Ensure the processed signal has the same length as input
+        processed_signal = processed_signal[:len(data)]
+
+        return processed_signal
+
     def audio_callback(self, msg):
         """
         Callback function for incoming audio messages.
@@ -216,6 +208,12 @@ class SoundDetectionNode:
             # Update buffers in a thread-safe manner.
             with self.lock:
                 self.update_buffers(sigIn_frontLeft, sigIn_frontRight)
+
+            # Apply filtering and spectral subtraction only on left channel
+            sigIn_frontLeft_filtered = self.apply_bandpass_and_spectral_subtraction(self.frontleft_buffer, self.frequency_sample)
+
+            # Publish the processed left signal
+            self.publish_signal(sigIn_frontLeft_filtered)
             
             # If enough samples have been accumulated, process for voice detection and localization.
             if self.accumulated_samples >= self.localization_buffer_size:
@@ -228,29 +226,31 @@ class SoundDetectionNode:
 
     def process_audio_data(self, msg):
         """
-        Convert incoming message data to float32 and normalize to the range [-1, 1].
-        
+        Convert incoming message data to float32, normalize, and process the left channel
+        with bandpass filtering and spectral subtraction.
+
         :param msg: The ROS message of type sound_detection.
-        :return: Tuple (sigIn_frontLeft, sigIn_frontRight) as normalized numpy arrays.
+        :return: Tuple (sigIn_frontLeft, sigIn_frontRight) as numpy arrays.
         """
         try:
             sigIn_frontLeft = np.array(msg.frontLeft, dtype=np.float32) / 32767.0
             sigIn_frontRight = np.array(msg.frontRight, dtype=np.float32) / 32767.0
+
             return sigIn_frontLeft, sigIn_frontRight
+        
         except Exception as e:
             rospy.logerr(f"Error processing audio data: {e}")
-            # Return zeroed signals in case of error.
             return (np.zeros(self.localization_buffer_size, dtype=np.float32),
                     np.zeros(self.localization_buffer_size, dtype=np.float32))
 
-    def is_intense_enough(self, signal):
+    def is_intense_enough(self, signal_data):
         """
         Determine whether the given signal meets the intensity threshold.
         
-        :param signal: A numpy array containing audio data.
+        :param signal_data: A numpy array containing audio data.
         :return: True if the signal intensity is above the threshold, False otherwise.
         """
-        intensity = np.sqrt(np.mean(signal ** 2))
+        intensity = np.sqrt(np.mean(signal_data ** 2))
         return intensity >= self.intensity_threshold
 
     def update_buffers(self, sigIn_frontLeft, sigIn_frontRight):
@@ -344,7 +344,7 @@ class SoundDetectionNode:
             z = itd * (self.speed_of_sound / self.distance_between_ears)
             # Clamp z to the valid range for asin.
             z = max(-1.0, min(1.0, z))
-            angle = math.asin(z) * (180.0 / np.pi)
+            angle = math.asin(z) * (180.0 / math.pi)
             return angle
         except ValueError as e:
             rospy.logwarn(f"Invalid ITD for angle calculation: {e}")
@@ -359,6 +359,16 @@ class SoundDetectionNode:
         angle_msg = std_msgs.msg.Float32()
         angle_msg.data = angle
         self.direction_pub.publish(angle_msg)
+
+    def publish_signal(self, signal_data):
+        """
+        Publish the processed audio signal on a ROS topic.
+        
+        :param signal_data: Processed audio signal (numpy array).
+        """
+        signal_msg = Float32MultiArray()
+        signal_msg.data = signal_data.tolist()
+        self.signal_pub.publish(signal_msg)
 
     def spin(self):
         """

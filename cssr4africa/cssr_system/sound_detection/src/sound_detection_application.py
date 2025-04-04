@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
 
 """
-sound_localization_application.py
-
-Application code to run the sound detection and localization algorithm.
+sound_localization_application.py Application code to run the sound detection and localization algorithm.
 
 Author: Yohannes Tadesse Haile
-Date: February 15, 2025
+Date: March 15, 2025
 Version: v1.0
 
 Copyright (C) 2023 CSSR4Africa Consortium
@@ -20,7 +18,7 @@ This program comes with ABSOLUTELY NO WARRANTY.
 """
 
 """
-sound_localization_application.py   Application code to run the sound detection and localization algorithm.
+sound_detection_application.py   Application code to run the sound detection and localization algorithm.
 
 The sound localization algorithm is implemented using a ROS audio topic that can be configured to receive audio from
 a robot or an external microphone. It processes the incoming audio signal to detect sound events and localize the sound
@@ -74,7 +72,7 @@ Example of instantiation of the module:
 
 Author: Yohannes Tadesse Haile
 Email: yohanneh@andrew.cmu.edu
-Date: February 15, 2025
+Date: March 15, 2025
 Version: v1.0
 
 """
