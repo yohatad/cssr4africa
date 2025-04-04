@@ -13,7 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
 # Add message files
 add_message_files(
   FILES
-  sound_detection_test.msg
+  sound_detection_test_msg_file.msg
 )
 
 ## Generate added messages and services with any dependencies listed here
