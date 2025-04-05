@@ -26,6 +26,7 @@ import numpy as np
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+from sound_detection_filter import NSnet2Enhancer
 from sound_detection.msg import sound_detection
 from threading import Lock
 from std_msgs.msg import Float32MultiArray
@@ -64,6 +65,11 @@ class SoundDetectionNode:
             rospy.logerr("Configuration not found or missing 'intensity_threshold'.")
             raise ValueError("Missing configuration data.")
         self.intensity_threshold = config.get('intensity_threshold', 3.9e-3)
+
+        rospack = rospkg.RosPack()
+        model_path = rospack.get_path('sound_detection') + '/models/sound_detection_nsnet2-20ms-48k.onnx'
+        
+        self.enhancer = NSnet2Enhancer(fs=self.frequency_sample, model_path=model_path)
 
         # Initialize VAD with aggressiveness mode 3
         self.vad = webrtcvad.Vad(3)
@@ -135,15 +141,16 @@ class SoundDetectionNode:
         return recovered_signal
 
     def apply_bandpass_and_spectral_subtraction(self, data, fs):
-        lowcut = 300.0
-        highcut = 3400.0
-        nyq = 0.5 * fs
-        low = lowcut / nyq
-        high = highcut / nyq
-        b, a = signal.butter(N=6, Wn=[low, high], btype='bandpass')
-        filtered_signal = signal.lfilter(b, a, data)
-        processed_signal = self.spectral_subtraction(data, fs)
-        return processed_signal
+        # lowcut = 300.0
+        # highcut = 3400.0
+        # nyq = 0.5 * fs
+        # low = lowcut / nyq
+        # high = highcut / nyq
+        # b, a = signal.butter(N=6, Wn=[low, high], btype='bandpass')
+        # filtered_signal = signal.lfilter(b, a, data)
+        outSig = self.enhancer(data, fs)
+        # processed_signal = self.spectral_subtraction(data, fs)
+        return outSig
 
     def audio_callback(self, msg):
         try:
