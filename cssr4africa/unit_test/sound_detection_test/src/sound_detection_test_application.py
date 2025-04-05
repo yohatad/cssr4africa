@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import rospy
 from sound_detection_test_implementation import SoundDetectionTest
 
