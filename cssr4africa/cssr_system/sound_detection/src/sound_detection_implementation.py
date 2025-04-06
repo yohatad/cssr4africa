@@ -65,6 +65,11 @@ class SoundDetectionNode:
             raise ValueError("Missing configuration data.")
         self.intensity_threshold = config.get('intensity_threshold', 3.9e-3)
 
+        rospack = rospkg.RosPack()
+        model_path = rospack.get_path('sound_detection') + '/models/sound_detection_nsnet2-20ms-48k.onnx'
+        
+        self.enhancer = NSnet2Enhancer(fs=self.frequency_sample, model_path=model_path)
+
         # Initialize VAD with aggressiveness mode 3
         self.vad = webrtcvad.Vad(3)
         self.vad_frame_duration = 0.02  # 20 ms
