@@ -135,14 +135,14 @@ class SoundDetectionNode:
         return recovered_signal
 
     def apply_bandpass_and_spectral_subtraction(self, data, fs):
-        # lowcut = 300.0
-        # highcut = 3400.0
-        # nyq = 0.5 * fs
-        # low = lowcut / nyq
-        # high = highcut / nyq
-        # b, a = signal.butter(N=6, Wn=[low, high], btype='bandpass')
-        # filtered_signal = signal.lfilter(b, a, data)
-        processed_signal = self.spectral_subtraction(data, fs)
+        lowcut = 300.0
+        highcut = 3400.0
+        nyq = 0.5 * fs
+        low = lowcut / nyq
+        high = highcut / nyq
+        b, a = signal.butter(N=6, Wn=[low, high], btype='bandpass')
+        filtered_signal = signal.lfilter(b, a, data)
+        processed_signal = self.spectral_subtraction(filtered_signal, fs)
         return processed_signal
 
     def audio_callback(self, msg):
