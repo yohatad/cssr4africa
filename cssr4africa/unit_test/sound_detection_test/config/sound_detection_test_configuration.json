@@ -1,0 +1,12 @@
+{
+    "sampleRate": 48000,
+    "recordFiltered": true,
+    "recordUnfiltered": true,
+    "generatePlots": true,
+    "recordDuration": 10,
+    "plotInterval": 10,
+    "plotDpi": 150,
+    "maxDirectionPoints": 100,
+    "directionPlotYlimit": 90,
+    "verboseMode": true
+}

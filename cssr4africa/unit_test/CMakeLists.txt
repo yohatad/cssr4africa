@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(sound_detection_test)
+project(unit_test)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -12,7 +12,10 @@ find_package(catkin REQUIRED COMPONENTS
 
 # Add message files
 add_message_files(
+  DIRECTORY
+  sound_detection_test/msg
   FILES
+  microphone_test_msg_file.msg
   sound_detection_test_msg_file.msg
 )
 

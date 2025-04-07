@@ -1,32 +1,80 @@
+"""
+sound_detection_test_implementation.py Implementation code for running the Sound Detection and Processing unit test.
+
+Author: Yohannes Tadesse Haile
+Date: April 06, 2025
+Version: v1.0
+
+Copyright (C) 2023 CSSR4Africa Consortium
+
+This project is funded by the African Engineering and Technology Network (Afretec)
+Inclusive Digital Transformation Research Grant Programme.
+
+Website: www.cssr4africa.org
+
+This program comes with ABSOLUTELY NO WARRANTY.
+"""
+
+import rospkg
+import rospy
 import os
 import time
+import json
 import numpy as np
 import soundfile as sf
-import rospkg
-import json
-import rospy
-from std_msgs.msg import Float32MultiArray
+import matplotlib
+matplotlib.use('Agg')  # Use non-interactive backend
+import matplotlib.pyplot as plt
+from std_msgs.msg import Float32MultiArray, Float32
 from sound_detection.msg import sound_detection
 from datetime import datetime
+from threading import Lock
 
 class SoundDetectionTest:
+    """
+    SoundDetectionTest records and analyzes audio data for testing the sound detection system.
+    It can record both filtered and unfiltered audio and generate plots for analysis.
+    """
     def __init__(self):
         """
         Initialize the SoundDetectionTest class.
-        
-        This sets up ROS subscribers to both filtered and unfiltered audio streams,
-        and saves the received audio data as mp3 files.
+        Sets up configuration, ROS subscribers, and data structures for audio analysis.
         """
-        # Manually set parameters
-        self.save_dir = '/home/yoha/workspace/pepper_rob_ws/src/cssr4africa/unit_test/sound_detection_test/data'
-        self.sample_rate = 48000
-        self.record_filtered = True
-        self.record_unfiltered = True
+        self.rospack = rospkg.RosPack()
+        try:
+            self.unit_test_package_path = self.rospack.get_path('unit_test')
+        except rospkg.ResourceNotFound as e:
+            rospy.logerr(f"ROS package not found: {e}")
+            raise RuntimeError(f"Required ROS package not found: {e}")
+
+        # Read configuration
+        self.config = self.read_json_file()
+        if not self.config:
+            rospy.logerr("Failed to load configuration. Exiting.")
+            raise RuntimeError("Configuration file could not be loaded.")
+        
+        # Set up configuration parameters with defaults
+        self.save_dir = self.unit_test_package_path + '/sound_detection_test/data/'
+        self.sample_rate = self.config.get("sampleRate", 48000)
+        self.record_filtered = self.config.get("recordFiltered", True)
+        self.record_unfiltered = self.config.get("recordUnfiltered", True)
+        self.generate_plots = self.config.get("generatePlots", True)
+        self.record_duration = self.config.get("recordDuration", 10)
+        self.plot_interval = self.config.get("plotInterval", 10)
+        self.verbose_mode = self.config.get("verboseMode", False)
+        self.plot_dpi = self.config.get("plotDpi", 150)
+        self.max_direction_points = self.config.get("maxDirectionPoints", 100)
+        self.direction_plot_ylimit = self.config.get("directionPlotYlimit", 90)
         
         # Create save directory if it doesn't exist
         if not os.path.exists(self.save_dir):
             os.makedirs(self.save_dir)
             rospy.loginfo(f"Created directory for audio recordings: {self.save_dir}")
+        
+        # Locks for thread safety
+        self.filtered_lock = Lock()
+        self.unfiltered_lock = Lock()
+        self.direction_lock = Lock()
         
         # State variables for filtered audio
         self.filtered_audio_buffer = []
@@ -37,6 +85,18 @@ class SoundDetectionTest:
         self.unfiltered_audio_buffer = []
         self.is_recording_unfiltered = False
         self.unfiltered_recording_start_time = None
+        
+        # Plotting buffer for 10 seconds of audio (10 sec * sample_rate)
+        self.plot_buffer_size = self.sample_rate * self.plot_interval
+        self.filtered_plot_buffer = np.zeros(self.plot_buffer_size, dtype=np.float32)
+        self.unfiltered_plot_buffer = np.zeros(self.plot_buffer_size, dtype=np.float32)
+        self.filtered_plot_index = 0
+        self.unfiltered_plot_index = 0
+        
+        # Direction data for plotting
+        self.direction_data = []
+        self.direction_timestamps = []
+        self.last_plot_time = time.time()
         
         # Get the original microphone topic from the config
         self.microphone_topic = self.extract_topics('Microphone')
@@ -54,20 +114,56 @@ class SoundDetectionTest:
             self.unfiltered_sub = rospy.Subscriber(self.microphone_topic, sound_detection, self.unfiltered_audio_callback)
             rospy.loginfo(f"Subscribed to unfiltered audio: {self.microphone_topic}")
         
+        # Subscribe to the direction topic
+        self.direction_sub = rospy.Subscriber("soundDetection/direction", Float32, self.direction_callback)
+        rospy.loginfo("Subscribed to direction data: soundDetection/direction")
+        
+        # Set a timer to periodically generate plots if enabled
+        if self.generate_plots:
+            rospy.Timer(rospy.Duration(self.plot_interval), self.plot_callback)
+        
         rospy.loginfo("SoundDetectionTest: Initialized successfully")
-        rospy.loginfo("Recording will automatically stop after 10 seconds")
-    
+        rospy.loginfo(f"Recording will automatically stop after {self.record_duration} seconds")
+        
+        # Register shutdown hook
+        rospy.on_shutdown(self.shutdown_hook)
 
-    @staticmethod
-    def extract_topics(topic_key):
+    def read_json_file(self):
+        """
+        Read the configuration file and return the parsed JSON object.
+        
+        Returns:
+            dict: Configuration dictionary or None if file couldn't be read.
+        """
+        try:
+            config_path = os.path.join(self.unit_test_package_path, 'sound_detection_test/config', 'sound_detection_test_configuration.json')
+            if not os.path.exists(config_path):
+                rospy.logerr(f"read_json_file: Configuration file not found at {config_path}")
+                return None
+                
+            with open(config_path, 'r') as file:
+                config = json.load(file)
+                return config
+                
+        except json.JSONDecodeError as e:
+            rospy.logerr(f"read_json_file: Error decoding JSON file: {e}")
+            return None
+        except Exception as e:
+            rospy.logerr(f"read_json_file: Unexpected error: {e}")
+            return None
+
+    def extract_topics(self, topic_key):
         """
         Extract the topic name for a given key from the topics data file.
-        Reused from sound_implementation.py
+        
+        Args:
+            topic_key (str): Key to search for in the topics file.
+            
+        Returns:
+            str: The topic name or None if not found.
         """
-        rospack = rospkg.RosPack()
         try:
-            package_path = rospack.get_path('sound_detection')
-            config_path = os.path.join(package_path, 'data', 'pepper_topics.dat')
+            config_path = os.path.join(self.unit_test_package_path, 'sound_detection_test/data', 'pepper_topics.dat')
             if os.path.exists(config_path):
                 with open(config_path, 'r') as file:
                     for line in file:
@@ -80,7 +176,7 @@ class SoundDetectionTest:
             else:
                 rospy.logerr(f"Topics data file not found at {config_path}")
         except rospkg.ResourceNotFound as e:
-            rospy.logerr(f"ROS package 'sound_detection' not found: {e}")
+            rospy.logerr(f"ROS package not found: {e}")
         return None
     
     def filtered_audio_callback(self, msg):
@@ -88,6 +184,9 @@ class SoundDetectionTest:
         Process incoming filtered audio data from soundDetection/signal.
         
         The data is in Float32MultiArray format, with values in the range [-1.0, 1.0].
+        
+        Args:
+            msg (Float32MultiArray): The audio data message
         """
         if not self.record_filtered:
             return
@@ -95,58 +194,238 @@ class SoundDetectionTest:
         # Convert message data to numpy array
         audio_data = np.array(msg.data, dtype=np.float32)
         
-        # If we're currently recording, add to buffer
-        if self.is_recording_filtered:
-            self.filtered_audio_buffer.extend(audio_data.tolist())
-        else:
-            # Start a new recording
-            self.is_recording_filtered = True
-            self.filtered_recording_start_time = rospy.get_time()
-            self.filtered_audio_buffer = audio_data.tolist()
-            rospy.loginfo("Started new FILTERED audio recording")
-        
-        # Check if we've reached the 10-second recording duration
-        buffer_time = rospy.get_time() - self.filtered_recording_start_time
-        
-        if buffer_time >= 10.0:
-            self.save_filtered_audio()
+        with self.filtered_lock:
+            # Update plot buffer
+            if self.generate_plots:
+                data_length = len(audio_data)
+                if self.filtered_plot_index + data_length <= self.plot_buffer_size:
+                    self.filtered_plot_buffer[self.filtered_plot_index:self.filtered_plot_index + data_length] = audio_data
+                    self.filtered_plot_index += data_length
+                else:
+                    remaining = self.plot_buffer_size - self.filtered_plot_index
+                    if remaining > 0:
+                        self.filtered_plot_buffer[self.filtered_plot_index:] = audio_data[:remaining]
+                    self.filtered_plot_index = min(data_length - remaining, self.plot_buffer_size)
+                    if self.filtered_plot_index > 0:
+                        self.filtered_plot_buffer[:self.filtered_plot_index] = audio_data[remaining:remaining + self.filtered_plot_index]
+            
+            # If we're currently recording, add to buffer
+            if self.is_recording_filtered:
+                self.filtered_audio_buffer.extend(audio_data.tolist())
+            else:
+                # Start a new recording
+                self.is_recording_filtered = True
+                self.filtered_recording_start_time = rospy.get_time()
+                self.filtered_audio_buffer = audio_data.tolist()
+                rospy.loginfo("Started new FILTERED audio recording")
+            
+            # Check if we've reached the recording duration
+            buffer_time = rospy.get_time() - self.filtered_recording_start_time
+            
+            if buffer_time >= self.record_duration:
+                self.save_filtered_audio()
     
     def unfiltered_audio_callback(self, msg):
         """
         Process incoming unfiltered audio data from the original microphone topic.
         
         The data is in sound_detection message type with frontLeft and frontRight arrays.
+        
+        Args:
+            msg (sound_detection): The audio data message
         """
         if not self.record_unfiltered:
             return
             
         try:
             # Extract only the left channel data from int16 array and normalize to float
-            # We're only using frontLeft as requested since the audio is mono
             audio_data_int16 = np.array(msg.frontLeft, dtype=np.int16)
             audio_data = audio_data_int16.astype(np.float32) / 32767.0
             
-            # If we're currently recording, add to buffer
-            if self.is_recording_unfiltered:
-                self.unfiltered_audio_buffer.extend(audio_data.tolist())
-            else:
-                # Start a new recording
-                self.is_recording_unfiltered = True
-                self.unfiltered_recording_start_time = rospy.get_time()
-                self.unfiltered_audio_buffer = audio_data.tolist()
-                rospy.loginfo("Started new UNFILTERED audio recording")
-            
-            # Check if we've reached the 10-second recording duration
-            buffer_time = rospy.get_time() - self.unfiltered_recording_start_time
-            
-            if buffer_time >= 10.0:
-                self.save_unfiltered_audio()
+            with self.unfiltered_lock:
+                # Update plot buffer
+                if self.generate_plots:
+                    data_length = len(audio_data)
+                    if self.unfiltered_plot_index + data_length <= self.plot_buffer_size:
+                        self.unfiltered_plot_buffer[self.unfiltered_plot_index:self.unfiltered_plot_index + data_length] = audio_data
+                        self.unfiltered_plot_index += data_length
+                    else:
+                        remaining = self.plot_buffer_size - self.unfiltered_plot_index
+                        if remaining > 0:
+                            self.unfiltered_plot_buffer[self.unfiltered_plot_index:] = audio_data[:remaining]
+                        self.unfiltered_plot_index = min(data_length - remaining, self.plot_buffer_size)
+                        if self.unfiltered_plot_index > 0:
+                            self.unfiltered_plot_buffer[:self.unfiltered_plot_index] = audio_data[remaining:remaining + self.unfiltered_plot_index]
                 
+                # If we're currently recording, add to buffer
+                if self.is_recording_unfiltered:
+                    self.unfiltered_audio_buffer.extend(audio_data.tolist())
+                else:
+                    # Start a new recording
+                    self.is_recording_unfiltered = True
+                    self.unfiltered_recording_start_time = rospy.get_time()
+                    self.unfiltered_audio_buffer = audio_data.tolist()
+                    rospy.loginfo("Started new UNFILTERED audio recording")
+                
+                # Check if we've reached the recording duration
+                buffer_time = rospy.get_time() - self.unfiltered_recording_start_time
+                
+                if buffer_time >= self.record_duration:
+                    self.save_unfiltered_audio()
+                    
         except Exception as e:
             rospy.logerr(f"Error in unfiltered audio callback: {e}")
     
+    def direction_callback(self, msg):
+        """
+        Process incoming direction data from soundDetection/direction.
+        
+        Args:
+            msg (Float32): The direction angle in degrees
+        """
+        with self.direction_lock:
+            current_time = time.time() - self.last_plot_time
+            self.direction_data.append(msg.data)
+            self.direction_timestamps.append(current_time)
+    
+    def plot_callback(self, event):
+        """
+        Periodically called to generate plots from the collected data.
+        
+        Args:
+            event (rospy.timer.TimerEvent): Timer event object
+        """
+        if not self.generate_plots:
+            return
+            
+        try:
+            # Plot audio signals
+            self.plot_audio_signals()
+            
+            # Plot direction data
+            self.plot_direction_data()
+            
+            # Reset direction data
+            with self.direction_lock:
+                self.direction_data = []
+                self.direction_timestamps = []
+                self.last_plot_time = time.time()
+                
+        except Exception as e:
+            rospy.logerr(f"Error in plot_callback: {e}")
+    
+    def plot_audio_signals(self):
+        """
+        Plot the filtered and unfiltered audio signals.
+        """
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        
+        # Create a copy of the plot buffers to avoid threading issues
+        with self.filtered_lock:
+            filtered_data = self.filtered_plot_buffer.copy()
+            filtered_index = self.filtered_plot_index
+            # Reset plot index if buffer was filled
+            if filtered_index >= self.plot_buffer_size:
+                self.filtered_plot_index = 0
+                
+        with self.unfiltered_lock:
+            unfiltered_data = self.unfiltered_plot_buffer.copy()
+            unfiltered_index = self.unfiltered_plot_index
+            # Reset plot index if buffer was filled
+            if unfiltered_index >= self.plot_buffer_size:
+                self.unfiltered_plot_index = 0
+        
+        # Check if we have enough data to plot
+        if filtered_index < self.plot_buffer_size * 0.5 and unfiltered_index < self.plot_buffer_size * 0.5:
+            if self.verbose_mode:
+                rospy.loginfo("Not enough data to plot audio signals yet")
+            return
+        
+        plt.figure(figsize=(12, 8))
+        
+        # Plot both signals if available
+        t = np.linspace(0, self.plot_interval, self.plot_buffer_size, endpoint=False)
+        
+        plt.subplot(2, 1, 1)
+        if unfiltered_index >= self.plot_buffer_size * 0.5:
+            plt.plot(t, unfiltered_data, label='Unfiltered Signal')
+            plt.title('Unfiltered Audio Signal')
+        else:
+            plt.title('Unfiltered Audio Signal (Insufficient Data)')
+        plt.xlabel('Time (s)')
+        plt.ylabel('Amplitude')
+        plt.grid(True)
+        
+        plt.subplot(2, 1, 2)
+        if filtered_index >= self.plot_buffer_size * 0.5:
+            plt.plot(t, filtered_data, label='Filtered Signal', color='orange')
+            plt.title('Filtered Audio Signal')
+        else:
+            plt.title('Filtered Audio Signal (Insufficient Data)')
+        plt.xlabel('Time (s)')
+        plt.ylabel('Amplitude')
+        plt.grid(True)
+        
+        plt.tight_layout()
+        
+        # Save the plot
+        plot_path = os.path.join(self.save_dir, f'audio_signals_{timestamp}.png')
+        plt.savefig(plot_path, dpi=self.plot_dpi)
+        plt.close()
+        
+        rospy.loginfo(f"Audio signals plot saved to: {plot_path}")
+    
+    def plot_direction_data(self):
+        """
+        Plot the sound direction data over time.
+        """
+        with self.direction_lock:
+            # Check if we have direction data to plot
+            if not self.direction_data:
+                if self.verbose_mode:
+                    rospy.loginfo("No direction data to plot")
+                return
+            
+            # Limit the number of data points if there are too many
+            if len(self.direction_data) > self.max_direction_points:
+                # Take evenly spaced samples
+                indices = np.linspace(0, len(self.direction_data)-1, self.max_direction_points, dtype=int)
+                direction_data = [self.direction_data[i] for i in indices]
+                timestamp_data = [self.direction_timestamps[i] for i in indices]
+            else:
+                direction_data = self.direction_data
+                timestamp_data = self.direction_timestamps
+            
+            # Make a copy of the data
+            directions = np.array(direction_data)
+            timestamps = np.array(timestamp_data)
+        
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        
+        plt.figure(figsize=(10, 6))
+        plt.plot(timestamps, directions, 'bo-', markersize=4)
+        plt.title('Sound Direction Over Time')
+        plt.xlabel('Time (s)')
+        plt.ylabel('Direction Angle (degrees)')
+        plt.grid(True)
+        plt.ylim(-self.direction_plot_ylimit, self.direction_plot_ylimit)  # Range from config
+        
+        # Add horizontal lines at 0, -45, and 45 degrees
+        plt.axhline(y=0, color='r', linestyle='-', alpha=0.3)
+        plt.axhline(y=-45, color='g', linestyle='--', alpha=0.3)
+        plt.axhline(y=45, color='g', linestyle='--', alpha=0.3)
+        
+        plt.tight_layout()
+        
+        # Save the plot
+        plot_path = os.path.join(self.save_dir, f'direction_data_{timestamp}.png')
+        plt.savefig(plot_path)
+        plt.close()
+        
+        rospy.loginfo(f"Direction data plot saved to: {plot_path}")
+    
     def save_filtered_audio(self):
-        """Save the current filtered audio buffer as a WAV file"""
+        """Save the current filtered audio buffer as a WAV file."""
         if not self.filtered_audio_buffer:
             rospy.logwarn("Cannot save empty filtered audio buffer")
             return
@@ -176,7 +455,7 @@ class SoundDetectionTest:
             rospy.logerr(f"Error saving filtered audio: {e}")
     
     def save_unfiltered_audio(self):
-        """Save the current unfiltered audio buffer as a mono WAV file"""
+        """Save the current unfiltered audio buffer as a mono WAV file."""
         if not self.unfiltered_audio_buffer:
             rospy.logwarn("Cannot save empty unfiltered audio buffer")
             return
@@ -205,38 +484,23 @@ class SoundDetectionTest:
         except Exception as e:
             rospy.logerr(f"Error saving unfiltered audio: {e}")
     
-    def save_raw_audio(self, audio_data_int16):
-        """Optional method to save int16 audio data directly without conversion to float"""
-        try:
-            # Generate filename with timestamp
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    def shutdown_hook(self):
+        """
+        Clean up resources when the node is shutting down.
+        """
+        rospy.loginfo("SoundDetectionTest: Shutting down")
+        
+        # Save any remaining audio data
+        if self.is_recording_filtered and self.filtered_audio_buffer:
+            self.save_filtered_audio()
             
-            # Save as WAV
-            wav_filepath = os.path.join(self.save_dir, f"raw_{timestamp}.wav")
+        if self.is_recording_unfiltered and self.unfiltered_audio_buffer:
+            self.save_unfiltered_audio()
             
-            # Save as WAV file (mono, int16)
-            sf.write(wav_filepath, audio_data_int16, self.sample_rate, format='WAV', subtype='PCM_16')
-            
-            # Log success
-            duration = len(audio_data_int16) / self.sample_rate  # Duration in seconds
-            rospy.loginfo(f"Saved {duration:.2f}s RAW int16 audio to {wav_filepath}")
-            
-        except Exception as e:
-            rospy.logerr(f"Error saving raw audio: {e}")
-            
-    def convert_float_to_int16(self, float_data):
-        """Convert float audio in [-1, 1] range to int16"""
-        # Ensure the data is within valid range
-        float_data = np.clip(float_data, -1.0, 1.0)
-        # Convert to int16
-        return (float_data * 32767).astype(np.int16)
-
-if __name__ == "__main__":
-    # Initialize the ROS node
-    rospy.init_node('sound_detection_test', anonymous=True)
-    
-    # Create and initialize the SoundDetectionTest instance
-    test_node = SoundDetectionTest()
-    
-    # Keep the node running
-    rospy.spin()
+        # Generate final plots if needed
+        if self.generate_plots:
+            try:
+                self.plot_audio_signals()
+                self.plot_direction_data()
+            except Exception as e:
+                rospy.logerr(f"Error generating final plots: {e}")

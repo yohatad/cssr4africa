@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<launch>
+    <!-- Start the sound detection test node -->
+    <node pkg="unit_test" type="sound_detection_test_application.py" name="soundDetectionTest" output="screen" />
+    
+    <!-- Start the main sound detection node -->
+    <node pkg="cssr_system" type="sound_detection_application.py" name="soundDetection" output="screen" />
+</launch>

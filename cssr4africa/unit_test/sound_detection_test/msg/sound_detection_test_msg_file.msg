@@ -1,5 +1,3 @@
-# AudioCustomMsg.msg
-int16[] rearLeft
-int16[] rearRight
-int16[] frontLeft
-int16[] frontRight
+# msg_file.msg
+float32 angle
+float32[] signal
