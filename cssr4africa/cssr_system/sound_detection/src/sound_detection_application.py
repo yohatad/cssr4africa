@@ -111,7 +111,7 @@ def main():
         # Unit test mode - load test configuration
         # Create a filtered config without the excluded keys (if needed)
         filtered_config = {k: v for k, v in config.items() 
-                        if k not in ["verboseMode"]}
+                        if k not in ["verboseMode", "generatePlot", "plotInterval"]}
         
         # Set the filtered parameters to the parameter server
         for key, value in filtered_config.items():
@@ -122,7 +122,7 @@ def main():
         
         # Filter and set only specific parameters from the test config
         for key, value in config_test.items():
-            if key in ["verboseMode"]:
+            if key in ["verboseMode", "generatePlot", "plotInterval"]:
                 rospy.set_param('/soundDetection_config/' + key, value)
     
     # Create an instance of sound detection node

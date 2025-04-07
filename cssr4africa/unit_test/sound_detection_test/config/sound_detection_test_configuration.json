@@ -2,7 +2,7 @@
     "sampleRate": 48000,
     "recordFiltered": true,
     "recordUnfiltered": true,
-    "generatePlots": true,
+    "generatePlot": true, 
     "recordDuration": 10,
     "plotInterval": 10,
     "plotDpi": 150,
