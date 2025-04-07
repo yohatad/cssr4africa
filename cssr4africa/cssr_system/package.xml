@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>sound_detection</name>
+  <name>cssr_system</name>
   <version>0.0.0</version>
-  <description>Sound Detection and Localization</description>
+  <description>CSSR System</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->

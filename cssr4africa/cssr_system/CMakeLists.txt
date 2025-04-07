@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(sound_detection)
+project(cssr_system)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -10,11 +10,12 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
 )
 
-# Add message files
 add_message_files(
+  DIRECTORY
+  sound_detection/msg
   FILES
-  msg_file.msg
-  sound_detection.msg
+  microphone_msg_file.msg
+  sound_detection_msg_file.msg
 )
 
 ## Generate added messages and services with any dependencies listed here

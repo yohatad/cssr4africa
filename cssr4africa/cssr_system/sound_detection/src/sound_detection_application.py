@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
 """
-sound_localization_application.py Application code to run the sound detection and localization algorithm.
+sound_detection_application.py Application code to run the sound detection and localization algorithm.
 
 Author: Yohannes Tadesse Haile
-Date: March 15, 2025
+Date: April 06, 2025
 Version: v1.0
 
 Copyright (C) 2023 CSSR4Africa Consortium
@@ -43,20 +43,24 @@ Parameters:
     Command line arguments: None
 
     Configuration File Parameters:
-        Key                             Value
-        intensity_threshold             [float]     e.g., 3.9e-3
-        vad_aggressiveness              [int]       e.g., 3
-        sample_rate                     [int]       e.g., 48000
-        localization_buffer_size        [int]       e.g., 8192
+        Key                                      Value
+        sampleRate                               [int]       e.g., 48000
+        intensityThreshold                       [float]     e.g., 3.9e-3
+        vadAggressiveness                        [int]       e.g., 3
+        distanceBetweenEars                      [float]     e.g., 0.07
+        localizationBufferSize                   [int]       e.g., 8192
+        lowcutFrequency                          [float]     e.g., 300.0
+        highcutFrequency                         [float]     e.g., 3400.0
+        verboseMode                              [bool]      e.g., true
 
 Subscribed Topics:
-    Topic Name                              Message Type
-    /naoqi_driver/audio                     sound_detection/sound_detection
+    Topic Name                                   Message Type
+    /naoqi_driver/audio                          sound_detection/sound_detection
 
 Published Topics:
-    Topic Name                              Message Type
-    /soundDetection/signal                   std_msgs/Float32MultiArray
-    /soundDetection/direction                std_msgs/Float32
+    Topic Name                                   Message Type
+    /soundDetection/signal                       std_msgs/Float32MultiArray
+    /soundDetection/direction                    std_msgs/Float32
 
 Input Data Files:
     - pepper_topics.dat: Data file containing topic names for the robot's audio sources.
@@ -68,13 +72,7 @@ Configuration File:
     sound_detection_configuration.json
 
 Example of instantiation of the module:
-    rosrun sound_detection sound_localization_application.py
-
-Author: Yohannes Tadesse Haile
-Email: yohanneh@andrew.cmu.edu
-Date: March 15, 2025
-Version: v1.0
-
+    rosrun cssr_system sound_detection_application.py
 """
 
 import rospy
@@ -88,24 +86,49 @@ def main():
     # Construct the copyright message
     copyright_message = (
         f"{node_name}  {software_version}\n"
-        "This project is funded by the African Engineering and Technology Network (Afretec)\n"
-        "Inclusive Digital Transformation Research Grant Programme.\n"
-        "Website: www.cssr4africa.org\n"
-        "This program comes with ABSOLUTELY NO WARRANTY."
+        "\t\t\t    This project is funded by the African Engineering and Technology Network (Afretec)\n"
+        "\t\t\t    Inclusive Digital Transformation Research Grant Programme.\n"
+        "\t\t\t    Website: www.cssr4africa.org\n"
+        "\t\t\t    This program comes with ABSOLUTELY NO WARRANTY."
     )
     
     # Initialize the ROS node.
-    rospy.init_node('sound_detection_node', anonymous=True)
+    rospy.init_node('soundDetection', anonymous=True)
 
     # Print the messages using ROS logging
     rospy.loginfo(copyright_message)
     rospy.loginfo(f"{node_name}: startup.")
     
+    # Read the configuration file
+    config = SoundDetectionNode.read_json_file('cssr_system')
+    
+    unit_test = rospy.get_param('/soundDetection/unit_test', default=False)
+    
+    if not unit_test:
+        # Use the standard configuration
+        rospy.set_param('/soundDetection_config', config)
+    else:
+        # Unit test mode - load test configuration
+        # Create a filtered config without the excluded keys (if needed)
+        filtered_config = {k: v for k, v in config.items() 
+                        if k not in ["verboseMode"]}
+        
+        # Set the filtered parameters to the parameter server
+        for key, value in filtered_config.items():
+            rospy.set_param('/soundDetection_config/' + key, value)
 
-    # Create an instance of your node.
+        # Set specific parameters from the test config
+        config_test = SoundDetectionNode.read_json_file('unit_test')
+        
+        # Filter and set only specific parameters from the test config
+        for key, value in config_test.items():
+            if key in ["verboseMode"]:
+                rospy.set_param('/soundDetection_config/' + key, value)
+    
+    # Create an instance of sound detection node
     node = SoundDetectionNode()
         
-    # Run the node.
+    # Run the node
     node.spin()
 
 if __name__ == '__main__':

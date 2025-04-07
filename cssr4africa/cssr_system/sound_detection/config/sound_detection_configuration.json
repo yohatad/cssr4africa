@@ -1,3 +1,13 @@
 {
-"intensity_threshold": 3.9e-3
+    "sampleRate": 48000,
+    "intensityThreshold": 3.9e-3,
+    "vadAggressiveness": 3,
+    "distanceBetweenEars": 0.07,
+    "localizationBufferSize": 8192,
+    "lowcutFrequency": 300.0,
+    "highcutFrequency": 3400.0,
+    "fftSize": 1024,
+    "hopLength": 512,
+    "noiseFrames": 5,
+    "verboseMode": true
 }
