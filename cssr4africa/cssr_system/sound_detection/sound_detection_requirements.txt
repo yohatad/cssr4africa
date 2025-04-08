@@ -1,0 +1,6 @@
+scipy 
+soundfile 
+webrtcvad 
+pyYaml 
+rospkg 
+rospy

@@ -6,8 +6,10 @@
     "localizationBufferSize": 8192,
     "lowcutFrequency": 300.0,
     "highcutFrequency": 3400.0,
+    "noiseReductionAlpha": 0.0,
+    "spectralFloorCoeff": 0.0,
+    "noiseFrames": 5,
     "fftSize": 1024,
     "hopLength": 512,
-    "noiseFrames": 5,
     "verboseMode": true
 }

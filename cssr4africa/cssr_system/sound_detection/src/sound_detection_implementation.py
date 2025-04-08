@@ -245,42 +245,28 @@ class SoundDetectionNode:
         noise_frames = noise_frames or self.config.get('noiseFrames', 5)
         n_fft = n_fft or self.config.get('fftSize', 1024)
         hop_length = hop_length or self.config.get('hopLength', 512)
-        """
-        Apply spectral subtraction to reduce noise in the signal.
-        
-        Args:
-            noisy_signal (np.ndarray): Input signal with noise
-            fs (int): Sampling frequency
-            noise_frames (int): Number of frames to use for noise estimation
-            n_fft (int): FFT size
-            hop_length (int): Hop length between frames
-            
-        Returns:
-            np.ndarray: Processed signal with reduced noise
-        """
-        # Compute Short-Time Fourier Transform (STFT)
-        f, t, Zxx = signal.stft(noisy_signal, fs=fs, nperseg=n_fft, noverlap=n_fft-hop_length)
-        
-        # Get magnitude and phase
+        alpha = self.config.get('noiseReductionAlpha', 1.0)  # Less than 1.0 = conservative
+        floor_coeff = self.config.get('spectralFloorCoeff', 0.01)  # e.g., 1% of noise
+
+        # STFT
+        f, t, Zxx = signal.stft(noisy_signal, fs=fs, nperseg=n_fft, noverlap=n_fft - hop_length)
         magnitude = np.abs(Zxx)
         phase = np.angle(Zxx)
-        
-        # Estimate noise spectrum from the first few frames
+
+        # Noise estimate from early frames
         noise_estimate = np.mean(magnitude[:, :noise_frames], axis=1, keepdims=True)
-        
-        # Subtract noise estimate from the magnitude spectrum
-        magnitude_clean = magnitude - noise_estimate
-        
-        # Apply half-wave rectification (set negative values to zero)
-        magnitude_clean[magnitude_clean < 0] = 0
-        
-        # Reconstruct the signal
+
+        # Subtract and apply flooring
+        magnitude_clean = magnitude - alpha * noise_estimate
+        spectral_floor = floor_coeff * noise_estimate
+        magnitude_clean = np.maximum(magnitude_clean, spectral_floor)
+
+        # Reconstruct signal
         Zxx_clean = magnitude_clean * np.exp(1j * phase)
-        
-        # Inverse STFT to get back to the time domain
-        _, recovered_signal = signal.istft(Zxx_clean, fs=fs, nperseg=n_fft, noverlap=n_fft-hop_length)
-        
+        _, recovered_signal = signal.istft(Zxx_clean, fs=fs, nperseg=n_fft, noverlap=n_fft - hop_length)
+
         return recovered_signal
+
 
     def apply_bandpass_and_spectral_subtraction(self, data, fs):
         """
@@ -606,6 +592,4 @@ class SoundDetectionNode:
         """
         Main processing loop for the node.
         """
-        if self.verbose_mode:
-            rospy.loginfo("SoundDetectionNode: Running...")
         rospy.spin()

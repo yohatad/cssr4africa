@@ -1,40 +1,130 @@
-# Sound Detection and Localization
+<div align="center">
+<h1> Sound Detection and Localization </h1>
+</div>
 
-<img src="../../CSSR4AfricaLogo.svg" alt="CSSR4Africa Logo" style="width:50%; height:auto;">
+<div align="center">
+  <img src="CSSR4AfricaLogo.svg" alt="CSSR4Africa Logo" style="width:50%; height:auto;">
+</div>
 
-The **Sound Detection and Localization package** is a ROS package designed to detect conspicuous sounds, specifically human voices, and determine their direction of arrival in real-time by processing audio signals from the robot's microphones. The package calculates the azimuth angle of arrival, representing the sound's direction on the horizontal plane relative to the robot's Cartesian head frame. It publishes this angle to the **/soundDetection/direction** topic, allowing the robot to direct its gaze toward the detected sound source. Additionally, the captured audio signal is published to the **/soundDetection/signal** topic, from onset to offset of the detected sound. In verbose mode, the module provides diagnostic output to the terminal for enhanced debugging. This package enables the robot to localize and respond to human voices, filtering out ambient noise and reverberation to maintain precise and responsive auditory localization in real-time
+The **Sound Detection and Localization** package is a ROS package designed to detect conspicuous sounds, specifically human voices, and determine their direction of arrival in real-time by processing audio signals from the robot's microphones. The package calculates the azimuth angle of arrival, representing the sound's direction on the horizontal plane relative to the robot's Cartesian head frame. It publishes this angle to the **/soundDetection/direction** topic, allowing the robot to direct its gaze toward the detected sound source. Additionally, the captured audio signal is published to the **/soundDetection/signal** topic, from onset to offset of the detected sound. In verbose mode, the module provides diagnostic output to the terminal for debugging. This package enables the robot to localize and respond to human voices, filtering out ambient noise and reverberation to maintain precise and responsive auditory localization in real-time.
 
-## Documentation
-The main documentation for this deliverable is found in [D4.3.1 Sound detection and Localization](https://cssr4africa.github.io/deliverables/CSSR4Africa_Deliverable_D4.3.1.pdf) that provides more details.
+# 📄 Documentation
+The main documentation for this deliverable is found in [D4.2.3 Sound Detection and Localization](https://cssr4africa.github.io/deliverables/CSSR4Africa_Deliverable_D4.2.3.pdf) that provides more details.
 
-## Installation 
-To install the sound detection and localization package, install the following packages.
-First create a virtual environment and install the required packages. You need to configure the right GPU driver to use torch with CUDA support.
+# 🛠️ Installation 
 
+Install the required software components to instantiate and set up the development environment for controlling the Pepper robot. Use the [CSSR4Africa Software Installation Manual](https://cssr4africa.github.io/deliverables/CSSR4Africa_Deliverable_D3.3.pdf).
+
+## Installation on Ubuntu (x86-based Systems)
+
+1. Prerequisites  
+Make sure you are running Ubuntu 20.04. You'll need to set up a Python virtual environment for the sound detection module.
+
+2. Install Python Virtual Environment
 ```sh
-cd $HOME
-sudo apt install python3.8-venv
-python3.8 -m venv testdsound
-source testdsound/bin/activate
-pip install torch==1.13.1+cu117 torchvision==0.14.1+cu117 torchaudio==0.13.1 --extra-index-url https://download.pytorch.org/whl/cu117
-pip install scipy soundfile webrtcvad pyYaml onnxruntime rospkg rospy
+# Update system packages
+sudo apt update && sudo apt upgrade -y
+
+# Install Python virtual environment tools
+sudo apt install python3.8-venv -y
+
+# Create a virtual environment
+cd $HOME/workspace/pepper_rob_ws
+python3.8 -m venv cssr4africa_sound_detection_env
+
+# Activate the virtual environment
+source cssr4africa_sound_detection_env/bin/activate
+
+# Upgrade pip in the virtual environment
+pip install --upgrade pip
+
+# Install required packages
+pip install -r ~/workspace/pepper_rob_ws/src/cssr4africa/cssr_system/sound_detection/sound_detection_requirements.txt
 ```
 
-## Download the model
-You need to download the [NSNet](https://drive.google.com/file/d/1G8OPmx8RlrEbagMmK0-OG023XqB45ta_/view?usp=sharing). Put them in the models folder of the sound detection package. 
+# 🔧 Configuration Parameters
+The following table provides the key-value pairs used in the configuration file:
 
-Use the launch file of the pepper_interface_package and set the right network_interface. 
-1. roslaunch pepper_interface_tests sensorTestLaunchRobot.launch network_interface:=wlp0s20f3
+| Parameter                   | Description                                              | Range/Values            | Default Value |
+|-----------------------------|----------------------------------------------------------|-------------------------|---------------|
+| `sampleRate`                | Audio sampling rate in Hz                                | Positive integer        | `48000`       |
+| `intensityThreshold`        | Minimum intensity threshold for audio processing         | Positive float          | `3.9e-3`      |
+| `vadAggressiveness`         | Voice Activity Detection aggressiveness level            | `[0-3]`                 | `3`           |
+| `distanceBetweenEars`       | Distance between microphones in meters                   | Positive float          | `0.07`        |
+| `localizationBufferSize`    | Size of audio buffer for localization                    | Positive integer        | `8192`        |
+| `lowcutFrequency`           | Low cutoff frequency for bandpass filter in Hz           | Positive float          | `300.0`       |
+| `highcutFrequency`          | High cutoff frequency for bandpass filter in Hz          | Positive float          | `3400.0`      |
+| `noiseReductionAlpha`       | Coefficient for noise reduction strength                 | `[0.0-1.0]`             | `0.0`         |
+| `spectralFloorCoeff`        | Spectral floor coefficient for noise suppression         | `[0.0-1.0]`             | `0.0`         |
+| `fftSize`                   | Size of FFT window for spectral subtraction              | Positive integer        | `1024`        |
+| `hopLength`                 | Hop length between frames for spectral subtraction       | Positive integer        | `512`         |
+| `noiseFrames`               | Number of frames used for noise estimation               | Positive integer        | `5`           |
+| `verboseMode`               | Enable detailed logging and diagnostic information       | `True`, `False`         | `True`        |
 
-2. Then run the sound detection and localization.
-    ```sh
-    rosrun sound_detection sound_detection_application.py
-    ```
+> **Note:**  
+> Enabling **`verboseMode`** (`True`) will provide detailed diagnostic output to the terminal.
 
-## Output
-The node publishes the sound signal in the **soundDetection/signal** and the angle of the direction of the sound in the **soundDetection/direction**.
+# 🚀 Running the node
+**Run the `soundDetection` from the `cssr_system` package:**
 
-## License
+Source the workspace in the first terminal:
+```bash
+cd $HOME/workspace/pepper_rob_ws && source devel/setup.bash
+```
+
+Follow below steps, run in different terminals.
+
+1️⃣ Launch the robot:
+```bash
+roslaunch cssr_system sound_detection_launch_robot.launch robot_ip:=<robot_ip> roscore_ip:=<roscore_ip> network_interface:=<network_interface>
+```
+
+2️⃣ Run the Sound Detection and Localization:
+
+In a new terminal, activate the Python environment:
+```bash
+# Activate the python environment
+source ~/workspace/pepper_rob_ws/cssr4africa_sound_detection_env/bin/activate
+```
+
+```bash
+# Command to make application executable
+chmod +x ~/workspace/pepper_rob_ws/src/cssr4africa/cssr_system/sound_detection/src/sound_detection_application.py
+```
+
+```bash
+# Run the sound_detection node
+rosrun cssr_system sound_detection_application.py
+```
+
+# 🖥️ Output
+The node publishes two types of data:
+
+1. **Processed Audio Signal**  
+   Topic: `/soundDetection/signal`  
+   Type: `std_msgs/Float32MultiArray`  
+   Description: Contains the processed audio signal with noise reduction and filtering applied.
+
+2. **Sound Direction Angle**  
+   Topic: `/soundDetection/direction`  
+   Type: `std_msgs/Float32`  
+   Description: Contains the azimuth angle (in degrees) of the detected sound source relative to the robot's head frame.
+
+You can verify the publication status using the following commands:
+```bash
+rostopic echo /soundDetection/signal
+rostopic echo /soundDetection/direction
+```
+# 💡 Support
+
+For issues or questions:
+- Create an issue on GitHub
+- Contact: <a href="mailto:dvernon@andrew.cmu.edu">dvernon@andrew.cmu.edu</a>, <a href="mailto:yohanneh@andrew.cmu.edu">yohanneh@andrew.cmu.edu</a><br>
+- Visit: <a href="http://www.cssr4africa.org">www.cssr4africa.org</a>
+
+# 📜License
 Copyright (C) 2023 CSSR4Africa Consortium  
 Funded by African Engineering and Technology Network (Afretec)  
 Inclusive Digital Transformation Research Grant Programme
+
+2025-04-06
