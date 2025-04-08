@@ -1,5 +1,4 @@
 {
-    "sampleRate": 48000,
     "recordFiltered": true,
     "recordUnfiltered": true,
     "generatePlot": true, 

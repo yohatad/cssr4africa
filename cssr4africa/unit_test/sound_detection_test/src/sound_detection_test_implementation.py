@@ -54,8 +54,8 @@ class SoundDetectionTest:
             raise RuntimeError("Configuration file could not be loaded.")
         
         # Set up configuration parameters with defaults
+        self.sample_rate = 48000
         self.save_dir = self.unit_test_package_path + '/sound_detection_test/data/'
-        self.sample_rate = self.config.get("sampleRate", 48000)
         self.record_filtered = self.config.get("recordFiltered", True)
         self.record_unfiltered = self.config.get("recordUnfiltered", True)
         self.generate_plots = self.config.get("generatePlots", True)

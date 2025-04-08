@@ -47,7 +47,7 @@ class SoundDetectionNode:
         self.config = rospy.get_param('/soundDetection_config', {})
         
         # Set parameters from config
-        self.frequency_sample = self.config.get('sampleRate', 48000)
+        self.frequency_sample = 48000
         self.speed_of_sound = 343.0
         self.distance_between_ears = self.config.get('distanceBetweenEars', 0.07)
         self.intensity_threshold = self.config.get('intensityThreshold', 3.9e-3)

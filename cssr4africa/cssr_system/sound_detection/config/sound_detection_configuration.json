@@ -1,5 +1,4 @@
 {
-    "sampleRate": 48000,
     "intensityThreshold": 3.9e-3,
     "vadAggressiveness": 3,
     "distanceBetweenEars": 0.07,
