@@ -4,3 +4,4 @@ webrtcvad
 pyYaml 
 rospkg 
 rospy
+matplotlib
