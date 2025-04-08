@@ -4,6 +4,7 @@
 **/models/**
 **/*.bag
 **/*.pyc
+**/*cpython*
 __pycache__/
 **/*.png
 **/*.svg
