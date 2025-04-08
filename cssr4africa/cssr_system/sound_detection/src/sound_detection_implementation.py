@@ -245,7 +245,7 @@ class SoundDetectionNode:
         noise_frames = noise_frames or self.config.get('noiseFrames', 5)
         n_fft = n_fft or self.config.get('fftSize', 1024)
         hop_length = hop_length or self.config.get('hopLength', 512)
-        alpha = self.config.get('noiseReductionAlpha', 1.0)  # Less than 1.0 = conservative
+        alpha = self.config.get('noiseReductionAlpha', 0.95)  # Less than 1.0 = conservative
         floor_coeff = self.config.get('spectralFloorCoeff', 0.01)  # e.g., 1% of noise
 
         # STFT
