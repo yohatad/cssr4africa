@@ -53,7 +53,7 @@ pip install --upgrade pip
 pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 
 # Install additional requirements:
-pip install -r person_detection_requirements.txt
+pip install -r  ~/workspace/pepper_rob_ws/src/cssr4africa/cssr_system/sound_detection/person_detection_requirements.txt
 ```
 
 # 🔧 Configuration Parameters
