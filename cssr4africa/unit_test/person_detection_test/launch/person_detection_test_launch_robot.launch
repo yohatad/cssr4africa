@@ -10,10 +10,10 @@
     
     <!-- Set the /faceDetectionTest/camera parameter based on the selected camera -->
     <param name="/personDetection/camera"     value="$(arg camera)" />
-    <param name="/personDetection/unit_test"  value="true" />
+    <param name="/personDetection/unit_tests"  value="true" />
 
     <!-- Compute full path dynamically for rosbag -->
-    <arg name="bag_file_path" default="$(find unit_test)/person_detection_test/data/person_detection_test_input_realsense_$(arg bag_file).bag"/>
+    <arg name="bag_file_path" default="$(find unit_tests)/person_detection_test/data/person_detection_test_input_realsense_$(arg bag_file).bag"/>
 
     <!-- If RealSense is selected, launch both RealSense and naoqi_driver -->
     <group if="$(eval arg('camera') == 'realsense')">
