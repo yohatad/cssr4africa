@@ -39,13 +39,13 @@ Libraries
 
 Parameters
     Launch File Parameters:
-        roslaunch unit_test face_detection_test_launch_robot.launch camera:=realsense
+        roslaunch unit_tests face_detection_test_launch_robot.launch camera:=realsense
             camera: Camera type or video file (realsense or pepper or video)
             bag_file: ROS bag file for testing (singleFace, multipleFaces, faceTracking, mutualGaze, occlusion, lighting)
             pepper_robot_ip: Pepper robot IP address (e.g 172.29.111.230 or 172.29.111.240)
             network_interface: Network interface for Pepper robot connection
 
-        roslaunch unit_test face_detection_test_launch_test_harness.launch
+        roslaunch unit_tests face_detection_test_launch_test_harness.launch
 
     Configuration File Parameters
         Key                             Value
@@ -87,10 +87,10 @@ Configuration File
     face_detection_test_configuration.json
 
 Example of instantiation of the module
-    roslaunch unit_test face_detection_test_launch_robot.launch camera:=video bag_file:=single_face
+    roslaunch unit_tests face_detection_test_launch_robot.launch camera:=video bag_file:=single_face
     
     (In a new terminal)
-    roslaunch unit_test face_detection_test_launch_test_harness.launch
+    roslaunch unit_tests face_detection_test_launch_test_harness.launch
 
 Author: Yohannes Tadesse Haile
 Email: yohanneh@andrew.cmu.edu

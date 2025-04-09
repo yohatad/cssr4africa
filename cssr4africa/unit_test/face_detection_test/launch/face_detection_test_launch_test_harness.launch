@@ -7,7 +7,7 @@
   <param name="startup_delay" value="$(arg startup_delay)" />
   
   <!-- Launch the face detection test node with a slight delay -->
-  <node name="face_detection_test" pkg="unit_test" type="face_detection_test_application.py" 
+  <node name="face_detection_test" pkg="unit_tests" type="face_detection_test_application.py" 
         output="screen" launch-prefix="bash -c 'sleep $(arg startup_delay); $0 $@'">
   </node>
 </launch>

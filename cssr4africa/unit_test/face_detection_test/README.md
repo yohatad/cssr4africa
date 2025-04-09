@@ -70,7 +70,7 @@ The test can be performed on a **physical robot using realsense or pepper camera
 
 ```bash
 # The camera in the launch file could be set as 'pepper', 'realsense' or 'video'
-roslaunch unit_test face_detection_test_launch_robot.launch camera:=<camera> bag_file:=<bag_file> robot_ip:=<robot_ip> network_interface:=<network_interface>
+roslaunch s face_detection_test_launch_robot.launch camera:=<camera> bag_file:=<bag_file> robot_ip:=<robot_ip> network_interface:=<network_interface>
 ```
 
 ### Bag File Options (`bag_file`):
@@ -90,13 +90,13 @@ assess detection performance.
   ```bash
 # Command to make application executable.  
 chmod +x ~/workspace/pepper_rob_ws/src/cssr4africa/cssr_system/face_detection/src/face_detection_application.py
-chmod +x ~/workspace/pepper_rob_ws/src/cssr4africa/unit_test/face_detection_test/src/face_detection_test_application.py
+chmod +x ~/workspace/pepper_rob_ws/src/cssr4africa/unit_tests/face_detection_test/src/face_detection_test_application.py
 ```
 
 4. **Run Face Detection Test Harness**
 ```bash
 # The launch file launches the face_detection_node for the unit test.
-roslaunch unit_test face_detection_test_launch_test_harness.launch
+roslaunch unit_tests face_detection_test_launch_test_harness.launch
 ```
 
 # 🖥️ Output Result
