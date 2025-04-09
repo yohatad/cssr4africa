@@ -11,10 +11,10 @@
 
     <!-- Launch naoqi_driver_node -->
     <node pkg="naoqi_driver" type="naoqi_driver_node" name="$(arg namespace)" required="true"
-            args="--qi-url=tcp://$(arg nao_ip):$(arg nao_port) --roscore_ip=$(arg roscore_ip) --network_interface=$(arg network_interface) --namespace=$(arg namespace)"
+            args="--qi-url=tcp://$(arg robot_ip):$(arg robot_port) --roscore_ip=$(arg roscore_ip) --network_interface=$(arg network_interface) --namespace=$(arg namespace)"
             output="screen" />
 
     <node pkg="naoqi_driver" type="naoqiAudioPublisher.py" name="naoqiAudioPublisher" output="screen"/>
 
-    <node pkg="naoqi_driver" type="run_naoqiAudio.sh" name="naoqiAudio" args="--ip=$(arg nao_ip) --port=$(arg nao_port)"/>
+    <node pkg="naoqi_driver" type="run_naoqiAudio.sh" name="naoqiAudio" args="--ip=$(arg robot_ip) --port=$(arg robot_port)"/>
 </launch>
