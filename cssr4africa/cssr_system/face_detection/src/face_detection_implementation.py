@@ -169,7 +169,7 @@ class FaceDetectionNode:
             package_path = rospack.get_path(package_name)
             
             # Determine the directory and file name based on the package name
-            if package_name == 'unit_test':
+            if package_name == 'unit_tests':
                 directory = 'face_detection_test/config'
                 config_file = 'face_detection_test_configuration.json'
             else:
