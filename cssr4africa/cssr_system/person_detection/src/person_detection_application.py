@@ -117,9 +117,9 @@ def main():
     # Read the configuration file
     config = PersonDetectionNode.read_json_file('cssr_system')
     
-    unit_test = rospy.get_param('/personDetection/unit_test', default=False)
+    unit_tests = rospy.get_param('/personDetection/unit_tests', default=False)
     
-    if not unit_test:
+    if not unit_tests:
         rospy.set_param('/personDetection_config', config)
     else:
         # Create a filtered config without the excluded keys
@@ -133,7 +133,7 @@ def main():
         rospy.set_param('/personDetection_config/' + key, value)
 
         # Set the algorithm, useCompressed, and verboseMode parameters
-        config_test = PersonDetectionNode.read_json_file('unit_test')
+        config_test = PersonDetectionNode.read_json_file('unit_tests')
         
         # Filter and set only the specific parameters from the test config
         for key, value in config_test.items():

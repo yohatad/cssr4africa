@@ -9,7 +9,7 @@
 
     <!-- Set it on Parameter Server which camera I'm using -->
     <param name="/personDetection/camera" value="$(arg camera)"/>
-    <param name="/personDetection/unit_test" value="false"/>
+    <param name="/personDetection/unit_tests" value="false"/>
 
     <!-- Launch Pepper Robot (naoqi_driver) if camera=pepper -->
     <group if="$(eval arg('camera') == 'pepper')">
