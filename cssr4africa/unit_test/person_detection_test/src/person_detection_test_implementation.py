@@ -41,7 +41,7 @@ class PersonDetectionTest:
         
         self.rospack = rospkg.RosPack()
         try:
-            self.unit_test_package_path = self.rospack.get_path('unit_test')
+            self.unit_test_package_path = self.rospack.get_path('unit_tests')
         except rospkg.ResourceNotFound as e:
             rospy.logerr(f"{self.node_name}: ROS package not found: {e}")
             raise RuntimeError(f"Required ROS package not found: {e}")
