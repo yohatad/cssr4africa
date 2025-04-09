@@ -70,7 +70,7 @@ The test can be performed on a **physical robot using realsense or pepper camera
 
 ```bash
 # The camera in the launch file could be set as 'pepper', 'realsense' or 'video'
-roslaunch s face_detection_test_launch_robot.launch camera:=<camera> bag_file:=<bag_file> robot_ip:=<robot_ip> network_interface:=<network_interface>
+roslaunch face_detection_test_launch_robot.launch camera:=<camera> bag_file:=<bag_file> robot_ip:=<robot_ip> network_interface:=<network_interface>
 ```
 
 ### Bag File Options (`bag_file`):
