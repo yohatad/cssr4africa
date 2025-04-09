@@ -39,59 +39,61 @@ class PersonDetectionNode:
         self.depth_image = None
         self.use_compressed = rospy.get_param("/personDetection_config/useCompressed", False)
         self.verbose_mode = rospy.get_param("/personDetection_config/verboseMode", False)
+        self.node_name = rospy.get_name().lstrip('/')
+        self.camera_type = rospy.get_param("/personDetection/camera", "realsense")
     
     def subscribe_topics(self):
-        camera_type = rospy.get_param("/personDetection/camera", "realsense")
-
-        if camera_type == "realsense":
+        if self.camera_type == "realsense":
             self.rgb_topic = self.extract_topics("RealSenseCameraRGB")
             self.depth_topic = self.extract_topics("RealSenseCameraDepth")
-        elif camera_type == "pepper":
+        elif self.camera_type == "pepper":
             self.rgb_topic = self.extract_topics("PepperFrontCamera")
             self.depth_topic = self.extract_topics("PepperDepthCamera")
-        elif camera_type == "video":
+        elif self.camera_type == "video":
             self.rgb_topic = self.extract_topics("RealSenseCameraRGB")
             self.depth_topic = self.extract_topics("RealSenseCameraDepth") 
         else:
-            rospy.logerr("Invalid camera type specified")
+            rospy.logerr(f"{self.node_name}: Invalid camera type specified")
             rospy.signal_shutdown("Invalid camera type")
             return
         
         if not self.rgb_topic or not self.depth_topic:
-            rospy.logerr("Camera topic not found.")
+            rospy.logerr(f"{self.node_name}: Camera topic not found.")
             rospy.signal_shutdown("Camera topic not found")
             return
 
-        if self.use_compressed and camera_type == "realsense":
+        if self.use_compressed and self.camera_type == "realsense":
             color_sub = Subscriber(self.rgb_topic + "/compressed", CompressedImage)
             depth_sub = Subscriber(self.depth_topic + "/compressedDepth", CompressedImage)
-            rospy.loginfo(f"Subscribed to {self.rgb_topic}/compressed")
-            rospy.loginfo(f"Subscribed to {self.depth_topic}/compressedDepth")
+            rospy.loginfo(f"{self.node_name}: Subscribed to {self.rgb_topic}/compressed")
+            rospy.loginfo(f"{self.node_name}: Subscribed to {self.depth_topic}/compressedDepth")
         
-        elif self.use_compressed and camera_type == "pepper":
+        elif self.use_compressed and self.camera_type == "pepper":
             # There is no compressed topic for Pepper cameras
-            rospy.logwarn("Compressed images are not available for Pepper cameras.")
+            rospy.logwarn(f"{self.node_name}: Compressed images are not available for Pepper cameras.")
             color_sub = Subscriber(self.rgb_topic, Image)
             depth_sub = Subscriber(self.depth_topic, Image)
-            rospy.loginfo(f"Subscribed to {self.rgb_topic}")
-            rospy.loginfo(f"Subscribed to {self.depth_topic}")
+            rospy.loginfo(f"{self.node_name}: Subscribed to {self.rgb_topic}")
+            rospy.loginfo(f"{self.node_name}: Subscribed to {self.depth_topic}")
 
-        elif camera_type == "video":
+        elif self.camera_type == "video":
             color_sub = Subscriber(self.rgb_topic + "/compressed", CompressedImage)
             depth_sub = Subscriber(self.depth_topic + "/compressedDepth", CompressedImage)
-            rospy.loginfo(f"Subscribed to {self.rgb_topic}/compressed")
-            rospy.loginfo(f"Subscribed to {self.depth_topic}/compressedDepth")
+            rospy.loginfo(f"{self.node_name}: Subscribed to {self.rgb_topic}/compressed")
+            rospy.loginfo(f"{self.node_name}: Subscribed to {self.depth_topic}/compressedDepth")
 
         else:
             color_sub = Subscriber(self.rgb_topic, Image)
             depth_sub = Subscriber(self.depth_topic, Image)
-            rospy.loginfo(f"Subscribed to {self.rgb_topic}")
-            rospy.loginfo(f"Subscribed to {self.depth_topic}")
+            rospy.loginfo(f"{self.node_name}: Subscribed to {self.rgb_topic}")
+            rospy.loginfo(f"{self.node_name}: Subscribed to {self.depth_topic}")
 
         # ApproximateTimeSynchronizer setup
-        ats = ApproximateTimeSynchronizer(
-            [color_sub, depth_sub], queue_size=10, slop=0.1
-        )
+        if self.camera_type == "pepper":
+            ats = ApproximateTimeSynchronizer([color_sub, depth_sub], queue_size=10, slop=1)
+        else:
+            ats = ApproximateTimeSynchronizer([color_sub, depth_sub], queue_size=10, slop=0.1)
+        
         ats.registerCallback(self.synchronized_callback)
 
     def synchronized_callback(self, color_data, depth_data):
@@ -117,9 +119,9 @@ class PersonDetectionNode:
                         if depth_img is not None:
                             self.depth_image = depth_img
                         else:
-                            rospy.logerr("Failed to decode PNG depth image")
+                            rospy.logerr(f"{self.node_name}: Failed to decode PNG depth image")
                     except Exception as e:
-                        rospy.logerr(f"Depth decoding error: {str(e)}")
+                        rospy.logerr(f"{self.node_name}: Depth decoding error: {str(e)}")
                 else:
                     # Regular compressed image
                     np_arr = np.frombuffer(depth_data.data, np.uint8)
@@ -128,21 +130,21 @@ class PersonDetectionNode:
                 self.depth_image = self.bridge.imgmsg_to_cv2(depth_data, desired_encoding="passthrough")
 
             if self.color_image is None or self.depth_image is None:
-                rospy.logwarn("synchronized_callback: Decoded images are None.")
+                rospy.logwarn(f"{self.node_name}: synchronized_callback: Decoded images are None.")
                 return
 
             # Process synchronized images
             self.process_images()
 
         except CvBridgeError as e:
-            rospy.logerr(f"synchronized_callback CvBridge Error: {str(e)}")
+            rospy.logerr(f"{self.node_name}: synchronized_callback CvBridge Error: {str(e)}")
         except Exception as e:
-            rospy.logerr(f"synchronized_callback Exception: {str(e)}")
+            rospy.logerr(f"{self.node_name}: synchronized_callback Exception: {str(e)}")
 
     def check_camera_resolution(self, color_image, depth_image):
         """Check if the color and depth images have the same resolution."""
         if color_image is None or depth_image is None:
-            rospy.logwarn("check_camera_resolution: One of the images is None")
+            rospy.logwarn(f"{self.node_name}: check_camera_resolution: One of the images is None")
             return False
         rgb_h, rgb_w = color_image.shape[:2]
         depth_h, depth_w = depth_image.shape[:2]
@@ -219,13 +221,13 @@ class PersonDetectionNode:
             self.color_image = self.bridge.imgmsg_to_cv2(data, desired_encoding="bgr8")
             self.process_images()
         except CvBridgeError as e:
-            rospy.logerr("image_callback: CvBridge Error: {}".format(e))
+            rospy.logerr(f"{self.node_name}: image_callback: CvBridge Error: {str(e)}")
     
     def process_images(self):
         """Process both color and depth images when available."""
         if self.color_image is not None and self.depth_image is not None:
             # Check if resolution matches
-            if self.check_camera_resolution(self.color_image, self.depth_image):
+            if self.check_camera_resolution(self.color_image, self.depth_image) or self.camera_type == "pepper":
                 # Process the image with the person detection algorithm
                 frame = self.color_image.copy()
                 boxes, scores, class_ids = self.detect_object(frame) if hasattr(self, 'detect_object') else ([], [], [])
@@ -243,7 +245,7 @@ class PersonDetectionNode:
                 else:
                     self.latest_frame = frame
             else:
-                rospy.logwarn("process_images: Color and depth image resolutions do not match")
+                rospy.logwarn(f"{self.node_name}: process_images: Color and depth image resolutions do not match")
 
     def display_depth_image(self):
         if self.depth_image is not None:
@@ -267,7 +269,7 @@ class PersonDetectionNode:
                 cv2.imshow("Depth Image", depth_colormap)
 
             except Exception as e:
-                rospy.logerr("display_depth_image: Error displaying depth image: {}".format(e))
+                rospy.logerr(f"{self.node_name}: display_depth_image: Error displaying depth image: {str(e)}")
 
     def get_depth_at_centroid(self, centroid_x, centroid_y):
         """Get the depth value at the centroid of a person."""
@@ -278,7 +280,7 @@ class PersonDetectionNode:
         y = int(round(centroid_y))
 
         if x < 0 or x >= width or y < 0 or y >= height:
-            rospy.logwarn(f"Centroid coordinates ({x}, {y}) are out of bounds.")
+            rospy.logwarn(f"{self.node_name}: Centroid coordinates ({x}, {y}) are out of bounds.")
             return None
 
         depth_value = self.depth_image[y, x]
@@ -327,7 +329,7 @@ class PersonDetectionNode:
 
         # If the region is invalid (e.g., zero area), return None
         if x_start >= x_end or y_start >= y_end:
-            rospy.logwarn(f"Invalid region coordinates ({x_start}, {y_start}, {x_end}, {y_end}).")
+            rospy.logwarn(f"{self.node_name}: Invalid region coordinates ({x_start}, {y_start}, {x_end}, {y_end}).")
             return None
 
         # Extract the region of interest
@@ -419,15 +421,14 @@ class YOLOv8(PersonDetectionNode):
         self.timer = rospy.get_time()
         
         if self.verbose_mode:
-            rospy.loginfo("Person Detection YOLOv8 node initialized")
+            rospy.loginfo(f"{self.node_name}: Person Detection YOLOv8 node initialized")
         
         self.subscribe_topics()
         
         # Check camera resolution if both images are available
         if self.depth_image is not None and self.color_image is not None:
-            if not self.check_camera_resolution(self.color_image, self.depth_image):
-                rospy.logerr("Color camera and depth camera have different resolutions.")
-                rospy.signal_shutdown("Resolution mismatch")
+            if not self.check_camera_resolution(self.color_image, self.depth_image) or self.camera_type != "pepper":
+                rospy.logerr(f"{self.node_name}: Color camera and depth camera have different resolutions.")
 
     def _init_model(self):
         """Loads the ONNX model and prepares the runtime session."""
@@ -442,22 +443,22 @@ class YOLOv8(PersonDetectionNode):
 
             active_providers = self.session.get_providers()
             if self.verbose_mode:
-                rospy.loginfo(f"Active providers: {active_providers}")
+                rospy.loginfo(f"{self.node_name}: Active providers: {active_providers}")
             if "CUDAExecutionProvider" not in active_providers:
-                rospy.logwarn("CUDAExecutionProvider is not available. Running on CPU may slow down inference.")
+                rospy.logwarn(f"{self.node_name}: CUDAExecutionProvider is not available. Running on CPU may slow down inference.")
             else:
                 if self.verbose_mode:
-                    rospy.loginfo("CUDAExecutionProvider is active. Running on GPU for faster inference.")
+                    rospy.loginfo(f"{self.node_name}: CUDAExecutionProvider is active. Running on GPU for faster inference.")
 
             input_shape = self.session.get_inputs()[0].shape  # [N, C, H, W]
             self.input_height, self.input_width = input_shape[2], input_shape[3]
 
             if self.verbose_mode:
-                rospy.loginfo(f"ONNX model loaded successfully.")
+                rospy.loginfo(f"{self.node_name}: ONNX model loaded successfully.")
             
             return True
         except Exception as e:
-            rospy.logerr(f"Failed to initialize ONNX model: {e}")
+            rospy.logerr(f"{self.node_name}: Failed to initialize ONNX model: {e}")
             return False
 
     def detect_object(self, image):
@@ -619,7 +620,7 @@ class YOLOv8(PersonDetectionNode):
         while not rospy.is_shutdown():
             # Print message every 10 seconds
             if rospy.get_time() - self.timer > 10:
-                rospy.loginfo("person_detection: running.")
+                rospy.loginfo(f"{self.node_name}: running.")
                 self.timer = rospy.get_time()
                 
             if self.latest_frame is not None and self.verbose_mode:
@@ -629,7 +630,7 @@ class YOLOv8(PersonDetectionNode):
                 self.display_depth_image()
 
             if cv2.waitKey(1) & 0xFF == ord('q'):
-                rospy.signal_shutdown("User requested shutdown")
+                rospy.signal_shutdown(f"{self.node_name}: User requested shutdown")
 
             rate.sleep()
         cv2.destroyAllWindows()

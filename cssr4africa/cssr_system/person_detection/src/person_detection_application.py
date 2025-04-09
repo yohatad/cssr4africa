@@ -108,7 +108,7 @@ def main():
         "\t\t\t    This program comes with ABSOLUTELY NO WARRANTY."
     )
     
-    rospy.init_node(node_name, anonymous=True)
+    rospy.init_node(node_name)
     
     # Print the messages using ROS logging
     rospy.loginfo(copyright_message)
