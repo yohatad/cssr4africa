@@ -27,7 +27,7 @@ import colorsys
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 from message_filters import ApproximateTimeSynchronizer, Subscriber
-from unit_test.msg import face_detection_test_msg_file
+from unit_tests.msg import face_detection_test_msg_file
 
 class FaceDetectionTest:
     def __init__(self):
@@ -41,7 +41,7 @@ class FaceDetectionTest:
         
         self.rospack = rospkg.RosPack()
         try:
-            self.unit_test_package_path = self.rospack.get_path('unit_test')
+            self.unit_test_package_path = self.rospack.get_path('unit_tests')
         except rospkg.ResourceNotFound as e:
             rospy.logerr(f"{self.node_name}: ROS package not found: {e}")
             raise RuntimeError(f"Required ROS package not found: {e}")
