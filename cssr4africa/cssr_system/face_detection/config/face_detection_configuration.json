@@ -1,6 +1,6 @@
 {
     "algorithm": "sixdrep",
-    "useCompressed": true,
+    "useCompressed": false,
     "mpFacedetConfidence": 0.5,
     "mpHeadposeAngle": 8,
     "centroidMaxDistance": 100,

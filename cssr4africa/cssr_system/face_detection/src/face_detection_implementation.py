@@ -41,17 +41,17 @@ class FaceDetectionNode:
         self.depth_image = None  # Initialize depth_image
         self.color_image = None  # Initialize color_image
         self.use_compressed = rospy.get_param('/faceDetection_config/useCompressed', False)  # Parameter to choose compressed or raw images
+        self.camera_type = rospy.get_param('/faceDetection/camera', default="realsense")  # Default camera type
 
     def subscribe_topics(self):
-        camera_type = rospy.get_param('/faceDetection/camera', default="realsense")
         
-        if camera_type == "realsense":
+        if self.camera_type == "realsense":
             self.rgb_topic = self.extract_topics("RealSenseCameraRGB")
             self.depth_topic = self.extract_topics("RealSenseCameraDepth")
-        elif camera_type == "pepper":
+        elif self.camera_type == "pepper":
             self.rgb_topic = self.extract_topics("PepperFrontCamera")
             self.depth_topic = self.extract_topics("PepperDepthCamera")
-        elif camera_type == "video":
+        elif self.camera_type == "video":
             self.rgb_topic = self.extract_topics("RealSenseCameraRGB")
             self.depth_topic = self.extract_topics("RealSenseCameraDepth") 
         else:
@@ -64,12 +64,12 @@ class FaceDetectionNode:
             rospy.signal_shutdown("Camera topic not found")
             return
 
-        if self.use_compressed and camera_type == "realsense":
+        if self.use_compressed and self.camera_type == "realsense":
             color_sub = Subscriber(self.rgb_topic + "/compressed", CompressedImage)
             depth_sub = Subscriber(self.depth_topic + "/compressedDepth", CompressedImage)
             rospy.loginfo(f"Subscribed to {self.rgb_topic}/compressed")
             rospy.loginfo(f"Subscribed to {self.depth_topic}/compressedDepth")
-        elif self.use_compressed and camera_type == "pepper":
+        elif self.use_compressed and self.camera_type == "pepper":
             # There is no compressed topic for Pepper cameras
             rospy.logwarn("Compressed images are not available for Pepper cameras.")
             color_sub = Subscriber(self.rgb_topic, Image)
@@ -77,7 +77,7 @@ class FaceDetectionNode:
             rospy.loginfo(f"Subscribed to {self.rgb_topic}")
             rospy.loginfo(f"Subscribed to {self.depth_topic}")
 
-        elif camera_type == "video":
+        elif self.camera_type == "video":
             color_sub = Subscriber(self.rgb_topic + "/compressed", CompressedImage)
             depth_sub = Subscriber(self.depth_topic + "/compressedDepth", CompressedImage)
             rospy.loginfo(f"Subscribed to {self.rgb_topic}/compressed")
@@ -90,9 +90,11 @@ class FaceDetectionNode:
             rospy.loginfo(f"Subscribed to {self.depth_topic}")
 
         # ApproximateTimeSynchronizer setup
-        ats = ApproximateTimeSynchronizer(
-            [color_sub, depth_sub], queue_size=10, slop=0.1
-        )
+        if self.camera_type == "pepper":
+            ats= ApproximateTimeSynchronizer([color_sub, depth_sub], queue_size=10, slop=1)
+        else:
+            ats = ApproximateTimeSynchronizer([color_sub, depth_sub], queue_size=10, slop=0.1)  
+        
         ats.registerCallback(self.synchronized_callback)
 
     def synchronized_callback(self, color_data, depth_data):
@@ -218,9 +220,9 @@ class FaceDetectionNode:
             rospy.logwarn("process_images: Missing images.")
             return
 
-        if not self.check_camera_resolution(self.color_image, self.depth_image):
+        if not self.check_camera_resolution(self.color_image, self.depth_image) and self.camera_type != "pepper":
             rospy.logwarn("process_images: Color and depth image resolutions do not match.")
-            return
+            pass
 
         if hasattr(self, 'face_mesh'):  # MediaPipe implementation
             rgb_frame = cv2.cvtColor(self.color_image, cv2.COLOR_BGR2RGB)
@@ -384,11 +386,10 @@ class MediaPipe(FaceDetectionNode):
 
         # check if the depth camera and color camera have the same resolution.
         if self.depth_image is not None:
-            if not self.check_camera_resolution(self.color_image, self.depth_image):
+            if not self.check_camera_resolution(self.color_image, self.depth_image) and self.camera_type != "pepper":
                 rospy.logerr("Color camera and depth camera have different resolutions.")
                 rospy.signal_shutdown("Resolution mismatch")
         
-
     def spin(self):
         """Main loop to display processed frames and depth images."""
         rate = rospy.Rate(30)  # Adjust the rate as needed
@@ -650,7 +651,7 @@ class SixDrepNet(FaceDetectionNode):
 
         # check if the depth camera and color camera have the same resolution.
         if self.depth_image is not None:
-            if not self.check_camera_resolution(self.color_image, self.depth_image):
+            if not self.check_camera_resolution(self.color_image, self.depth_image) and self.camera_type != "pepper":
                 rospy.logerr("Color camera and depth camera have different resolutions.")
                 rospy.signal_shutdown("Resolution mismatch")
     
