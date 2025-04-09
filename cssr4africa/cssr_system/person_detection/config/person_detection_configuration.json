@@ -1,5 +1,5 @@
 {
-    "useCompressed": true,
+    "useCompressed": false,
     "confidenceThreshold": 0.8,
     "sortMaxDisappeared": 30,
     "sortMinHits": 20,
