@@ -40,7 +40,7 @@ Libraries
 
 Parameters
     Launch File Parameters:
-        roslaunch unit_test sound_detection_test_launch.launch
+        roslaunch unit_tests sound_detection_test_launch.launch
             robot_ip: Pepper robot IP address (e.g 172.29.111.230 or 172.29.111.240)
 
     Configuration File Parameters
@@ -79,7 +79,7 @@ Configuration File
     sound_detection_test_configuration.json
 
 Example of instantiation of the module
-    roslaunch unit_test sound_detection_test_launch.launch
+    roslaunch unit_tests sound_detection_test_launch.launch
 """
 
 import rospy
@@ -107,7 +107,7 @@ def main():
     rospy.loginfo(f"{node_name}: startup.")
     
     # Set the unit test flag to true for the main node to recognize
-    rospy.set_param('/soundDetection/unit_test', True)
+    rospy.set_param('/soundDetection/unit_tests', True)
 
     # Create the test instance
     # The configuration file is read inside the SoundDetectionTest class

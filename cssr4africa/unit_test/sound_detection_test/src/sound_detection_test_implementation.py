@@ -26,7 +26,7 @@ import matplotlib
 matplotlib.use('Agg')  # Use non-interactive backend
 import matplotlib.pyplot as plt
 from std_msgs.msg import Float32MultiArray, Float32
-from sound_detection.msg import sound_detection
+from unit_tests.msg import sound_detection_test_msg_file
 from datetime import datetime
 from threading import Lock
 
@@ -42,7 +42,7 @@ class SoundDetectionTest:
         """
         self.rospack = rospkg.RosPack()
         try:
-            self.unit_test_package_path = self.rospack.get_path('unit_test')
+            self.unit_test_package_path = self.rospack.get_path('unit_tests')
         except rospkg.ResourceNotFound as e:
             rospy.logerr(f"ROS package not found: {e}")
             raise RuntimeError(f"Required ROS package not found: {e}")
@@ -115,7 +115,7 @@ class SoundDetectionTest:
         
         # Subscribe to the original microphone topic for unfiltered audio
         if self.record_unfiltered and self.microphone_topic:
-            self.unfiltered_sub = rospy.Subscriber(self.microphone_topic, sound_detection, self.unfiltered_audio_callback)
+            self.unfiltered_sub = rospy.Subscriber(self.microphone_topic, sound_detection_test_msg_file, self.unfiltered_audio_callback)
             rospy.loginfo(f"Subscribed to unfiltered audio: {self.microphone_topic}")
         
         # Subscribe to the direction topic
@@ -219,10 +219,10 @@ class SoundDetectionTest:
         """
         Process incoming unfiltered audio data from the original microphone topic.
         
-        The data is in sound_detection message type with frontLeft and frontRight arrays.
+        The data is in sound_detection_test_msg_file message type with frontLeft and frontRight arrays.
         
         Args:
-            msg (sound_detection): The audio data message
+            msg (sound_detection_test_msg_file): The audio data message
         """
         if not self.record_unfiltered:
             return

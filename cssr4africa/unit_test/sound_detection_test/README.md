@@ -67,13 +67,13 @@ The test can be performed on a **physical robot using its microphones** or using
 4. **Launch the Physical Robot**
    ```bash
    # Launch the robot with the appropriate IP and network interface
-   roslaunch unit_test sound_detection_test_launch.launch robot_ip:=<robot_ip> network_interface:=<network_interface>
+   roslaunch unit_tests sound_detection_test_launch.launch robot_ip:=<robot_ip> network_interface:=<network_interface>
    ```
 
    To use pre-recorded audio instead:
    ```bash
    # Use a pre-recorded audio file
-   roslaunch unit_test sound_detection_test_launch.launch use_recorded_audio:=true audio_file:=<audio_file>
+   roslaunch unit_tests sound_detection_test_launch.launch use_recorded_audio:=true audio_file:=<audio_file>
    ```
 
    ### Audio File Options (`audio_file`):
@@ -90,13 +90,13 @@ The test can be performed on a **physical robot using its microphones** or using
    ```bash
    # Command to make application executable  
    chmod +x ~/workspace/pepper_rob_ws/src/cssr4africa/cssr_system/sound_detection/src/sound_detection_application.py
-   chmod +x ~/workspace/pepper_rob_ws/src/cssr4africa/unit_test/sound_detection_test/src/sound_detection_test_application.py
+   chmod +x ~/workspace/pepper_rob_ws/src/cssr4africa/unit_tests/sound_detection_test/src/sound_detection_test_application.py
    ```
 
 5. **Run Sound Detection Test Harness**
    ```bash
    # The launch file launches the sound_detection node for the unit test
-   roslaunch unit_test sound_detection_test_launch_test_harness.launch
+   roslaunch unit_tests sound_detection_test_launch_test_harness.launch
    ```
 
 # 🖥️ Output Result

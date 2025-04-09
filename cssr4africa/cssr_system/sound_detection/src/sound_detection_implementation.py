@@ -27,7 +27,7 @@ import matplotlib
 matplotlib.use('Agg')  # Use non-interactive backend
 import matplotlib.pyplot as plt
 from datetime import datetime
-from sound_detection.msg import sound_detection
+from cssr_system.msg import sound_detection_msg_file
 from threading import Lock
 from std_msgs.msg import Float32MultiArray
 from scipy import signal
@@ -109,7 +109,7 @@ class SoundDetectionNode:
         self.last_status_time = rospy.get_time()
 
         # Set up ROS subscribers and publishers
-        self.audio_sub = rospy.Subscriber(microphone_topic, sound_detection, self.audio_callback)
+        self.audio_sub = rospy.Subscriber(microphone_topic, sound_detection_msg_file, self.audio_callback)
         self.signal_pub = rospy.Publisher('/soundDetection/signal', std_msgs.msg.Float32MultiArray, queue_size=10)
         self.direction_pub = rospy.Publisher('/soundDetection/direction', std_msgs.msg.Float32, queue_size=10)
 
@@ -304,7 +304,7 @@ class SoundDetectionNode:
         Process incoming audio data from the microphone.
         
         Args:
-            msg (sound_detection): The audio data message
+            msg (sound_detection_msg_file): The audio data message
         """
         try:
             # Print a status message every 10 seconds
@@ -395,7 +395,7 @@ class SoundDetectionNode:
         Extract and normalize audio data from the message.
         
         Args:
-            msg (sound_detection): The audio data message
+            msg (sound_detection_msg_file): The audio data message
             
         Returns:
             tuple: (left_channel, right_channel) as normalized float32 arrays
