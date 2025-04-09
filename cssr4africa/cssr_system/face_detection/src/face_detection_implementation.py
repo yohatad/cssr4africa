@@ -42,7 +42,8 @@ class FaceDetectionNode:
         self.color_image = None  # Initialize color_image
         self.use_compressed = rospy.get_param('/faceDetection_config/useCompressed', False)  # Parameter to choose compressed or raw images
         self.camera_type = rospy.get_param('/faceDetection/camera', default="realsense")  # Default camera type
-        self.node_name = rospy.get_name()
+        self.node_name = rospy.get_name().lstrip('/')
+        self.timer = rospy.get_time()
 
     def subscribe_topics(self):
         
@@ -379,9 +380,6 @@ class MediaPipe(FaceDetectionNode):
         self.latest_frame = None
 
         self.verbose_mode = rospy.get_param("/faceDetection_config/verboseMode", False)
-
-        # Timer for printing message every 5 seconds
-        self.timer = rospy.get_time()
         
         # Subscribe to the image topic
         self.subscribe_topics()
@@ -597,9 +595,6 @@ class SixDrepNet(FaceDetectionNode):
         
         self.latest_frame = None
         
-        # Timer for printing message every 5 seconds
-        self.timer = rospy.get_time()
-
         # Initialize YOLOONNX model early and check success
         try:
             self.yolo_model = YOLOONNX(model_path=yolo_model_path, class_score_th = rospy.get_param("/faceDetection_config/sixdrepnetConfidence", 0.65))
@@ -780,6 +775,10 @@ class SixDrepNet(FaceDetectionNode):
         """Main loop to display processed frames and depth images."""
         rate = rospy.Rate(30)  # Adjust the rate as needed
         while not rospy.is_shutdown():
+            if rospy.get_time() - self.timer > 10:
+                rospy.loginfo(f"{self.node_name}: running.")
+                self.timer = rospy.get_time()
+
             if self.latest_frame is not None:
                 if self.verbose_mode:
                     # Display the processed frame
