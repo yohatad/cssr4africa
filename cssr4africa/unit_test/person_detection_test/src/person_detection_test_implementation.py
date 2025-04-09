@@ -27,7 +27,7 @@ import colorsys
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 from message_filters import ApproximateTimeSynchronizer, Subscriber
-from unit_test.msg import person_detection_test_msg_file
+from unit_tests.msg import person_detection_test_msg_file
 
 class PersonDetectionTest:
     def __init__(self):
