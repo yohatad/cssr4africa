@@ -36,17 +36,20 @@ class PersonDetectionTest:
         Sets up configuration, subscribes to camera topics, and prepares for video/image capture.
         Also configures the person_detection node and subscribes to its outputs.
         """
+        # Set node name for consistent logging
+        self.node_name = rospy.get_name().lstrip('/')
+        
         self.rospack = rospkg.RosPack()
         try:
             self.unit_test_package_path = self.rospack.get_path('unit_test')
         except rospkg.ResourceNotFound as e:
-            rospy.logerr(f"ROS package not found: {e}")
+            rospy.logerr(f"{self.node_name}: ROS package not found: {e}")
             raise RuntimeError(f"Required ROS package not found: {e}")
 
         # Read the configuration file
         self.config = self.read_json_file()
         if not self.config:
-            rospy.logerr("Failed to load configuration. Exiting.")
+            rospy.logerr(f"{self.node_name}: Failed to load configuration. Exiting.")
             raise RuntimeError("Configuration file could not be loaded.")
         
         self.camera = rospy.get_param('personDetection/camera', default='video')
@@ -99,14 +102,14 @@ class PersonDetectionTest:
             
             elif self.camera == "video":
                 # Don't do anything for video camera
-                rospy.loginfo("No recording for recorded video.")
+                rospy.loginfo(f"{self.node_name}: No recording for recorded video.")
             
             else:
-                rospy.logerr(f"Unsupported camera type: {self.camera}.")
+                rospy.logerr(f"{self.node_name}: Unsupported camera type: {self.camera}.")
                 raise ValueError(f"Unsupported camera type: {self.camera}")
         else:
             # Only subscribe to person detection data, not camera feeds
-            rospy.loginfo("Camera subscription disabled - not recording or visualizing")
+            rospy.loginfo(f"{self.node_name}: Camera subscription disabled - not recording or visualizing")
                 
         # Subscribe to person detection data
         self.person_data_sub = rospy.Subscriber(
@@ -120,7 +123,7 @@ class PersonDetectionTest:
         if self.config.get("recordingDelay", 0) > 0:
             delay = self.config.get("recordingDelay", 5)  # Default 5 second delay
             if self.verbose_mode:
-                rospy.loginfo(f"Will start recording after {delay} seconds delay")
+                rospy.loginfo(f"{self.node_name}: Will start recording after {delay} seconds delay")
             rospy.Timer(rospy.Duration(delay), self.start_recording_callback, oneshot=True)
             self.recording_enabled = False
         else:
@@ -138,7 +141,7 @@ class PersonDetectionTest:
         """
         self.recording_enabled = True
         if self.verbose_mode:
-            rospy.loginfo("Recording delay complete - starting to record")
+            rospy.loginfo(f"{self.node_name}: Recording delay complete - starting to record")
 
     def person_data_callback(self, msg):
         """
@@ -178,7 +181,7 @@ class PersonDetectionTest:
             config_path = os.path.join(self.unit_test_package_path, 'person_detection_test/data', 'pepper_topics.dat')
 
             if not os.path.exists(config_path):
-                rospy.logerr(f"extract_topics: Data file not found at {config_path}")
+                rospy.logerr(f"{self.node_name}: extract_topics: Data file not found at {config_path}")
                 return None
                 
             with open(config_path, 'r') as file:
@@ -191,14 +194,14 @@ class PersonDetectionTest:
                         if key.lower() == image_topic.lower():
                             return value
                     except ValueError:
-                        rospy.logwarn(f"Invalid line format in topics file: {line}")
+                        rospy.logwarn(f"{self.node_name}: Invalid line format in topics file: {line}")
                         continue
                         
-            rospy.logwarn(f"Topic '{image_topic}' not found in config file")
+            rospy.logwarn(f"{self.node_name}: Topic '{image_topic}' not found in config file")
             return None
             
         except Exception as e:
-            rospy.logerr(f"Error in extract_topics: {e}")
+            rospy.logerr(f"{self.node_name}: Error in extract_topics: {e}")
             return None
 
     def read_json_file(self):
@@ -211,7 +214,7 @@ class PersonDetectionTest:
         try:
             config_path = os.path.join(self.unit_test_package_path, 'person_detection_test/config', 'person_detection_test_configuration.json')
             if not os.path.exists(config_path):
-                rospy.logerr(f"read_json_file: Configuration file not found at {config_path}")
+                rospy.logerr(f"{self.node_name}: read_json_file: Configuration file not found at {config_path}")
                 return None
                 
             with open(config_path, 'r') as file:
@@ -219,10 +222,10 @@ class PersonDetectionTest:
                 return config
                 
         except json.JSONDecodeError as e:
-            rospy.logerr(f"read_json_file: Error decoding JSON file: {e}")
+            rospy.logerr(f"{self.node_name}: read_json_file: Error decoding JSON file: {e}")
             return None
         except Exception as e:
-            rospy.logerr(f"read_json_file: Unexpected error: {e}")
+            rospy.logerr(f"{self.node_name}: read_json_file: Unexpected error: {e}")
             return None
 
     def subscribe_camera_topics(self):
@@ -237,16 +240,16 @@ class PersonDetectionTest:
             self.rgb_topic = self.extract_topics("PepperFrontCamera")
             self.depth_topic = self.extract_topics("PepperDepthCamera")
         else:
-            rospy.logerr(f"subscribe_camera_topics: Invalid camera type: {self.camera}")
+            rospy.logerr(f"{self.node_name}: subscribe_camera_topics: Invalid camera type: {self.camera}")
             return
 
         if not self.rgb_topic or not self.depth_topic:
-            rospy.logerr("subscribe_camera_topics: Camera topic(s) not found.")
+            rospy.logerr(f"{self.node_name}: subscribe_camera_topics: Camera topic(s) not found.")
             rospy.signal_shutdown("subscribe_camera_topics: Camera topic(s) not found")
             return
 
-        rospy.loginfo(f"Subscribed to {self.rgb_topic}")
-        rospy.loginfo(f"Subscribed to {self.depth_topic}")
+        rospy.loginfo(f"{self.node_name}: Subscribed to {self.rgb_topic}")
+        rospy.loginfo(f"{self.node_name}: Subscribed to {self.depth_topic}")
         
         self.setup_synchronized_subscribers()
             
@@ -260,15 +263,19 @@ class PersonDetectionTest:
         # Create an approximate time synchronizer
         # queue_size: how many sets of messages to store
         # slop: how close in time the messages need to be (in seconds)
-        sync = ApproximateTimeSynchronizer([rgb_sub, depth_sub], queue_size=10, slop=0.1)
+        if self.camera == "pepper":
+            # For Pepper, use a larger slop value to account for latency
+            sync = ApproximateTimeSynchronizer([rgb_sub, depth_sub], queue_size=10, slop=1)
+        else:
+            sync = ApproximateTimeSynchronizer([rgb_sub, depth_sub], queue_size=10, slop=0.1)
         sync.registerCallback(self.synchronized_callback)
 
         # Print message every 10 seconds
         if rospy.get_time() - self.timer > 10:
-            rospy.loginfo("person_detection_test: running.")
+            rospy.loginfo(f"{self.node_name}: running.")
             self.timer = rospy.get_time()
         
-        rospy.loginfo("Set up synchronized RGB and depth image subscribers")
+        rospy.loginfo(f"{self.node_name}: Set up synchronized RGB and depth image subscribers")
     
     def synchronized_callback(self, rgb_msg, depth_msg):
         """
@@ -299,7 +306,7 @@ class PersonDetectionTest:
             self.process_depth_frame(cv_depth)
             
         except Exception as e:
-            rospy.logerr(f"Error in synchronized_callback: {e}")
+            rospy.logerr(f"{self.node_name}: Error in synchronized_callback: {e}")
 
     def image_callback(self, msg):
         """
@@ -326,7 +333,7 @@ class PersonDetectionTest:
             self.process_rgb_frame(cv_image)
             
         except Exception as e:
-            rospy.logerr(f"Error in image_callback: {e}")
+            rospy.logerr(f"{self.node_name}: Error in image_callback: {e}")
 
     def depth_callback(self, msg):
         """
@@ -353,7 +360,7 @@ class PersonDetectionTest:
             self.process_depth_frame(cv_depth)
             
         except Exception as e:
-            rospy.logerr(f"Error in depth_callback: {e}")
+            rospy.logerr(f"{self.node_name}: Error in depth_callback: {e}")
             
     def initialize_video_writers(self, rgb_shape, depth_shape):
         """
@@ -605,13 +612,13 @@ class PersonDetectionTest:
                     
                 video_writer.release()
                 if self.verbose_mode:
-                    rospy.loginfo(f"RGB video saved at: {video_path}")
+                    rospy.loginfo(f"{self.node_name}: RGB video saved at: {video_path}")
                 self.rgb_frames = []
             elif self.rgb_writer is not None:
                 # If we were writing directly, just close the writer
                 self.rgb_writer.release()
                 if self.verbose_mode:
-                    rospy.loginfo("RGB video recording completed")
+                    rospy.loginfo(f"{self.node_name}: RGB video recording completed")
                 self.rgb_writer = None
                 
         # Store a reference to allow depth processing to complete
@@ -644,13 +651,13 @@ class PersonDetectionTest:
                     
                 video_writer.release()
                 if self.verbose_mode:
-                    rospy.loginfo(f"Depth video saved at: {video_path}")
+                    rospy.loginfo(f"{self.node_name}: Depth video saved at: {video_path}")
                 self.depth_frames = []
             elif self.depth_writer is not None:
                 # If we were writing directly, just close the writer
                 self.depth_writer.release()
                 if self.verbose_mode:
-                    rospy.loginfo("Depth video recording completed")
+                    rospy.loginfo(f"{self.node_name}: Depth video recording completed")
                 self.depth_writer = None
 
         # Store a reference to allow RGB processing to complete
@@ -671,7 +678,7 @@ class PersonDetectionTest:
         """
         try:
             if image is None:
-                rospy.logwarn("No image to save.")
+                rospy.logwarn(f"{self.node_name}: No image to save.")
                 return
 
             # Ensure directory exists
@@ -686,15 +693,15 @@ class PersonDetectionTest:
                 cv2.imwrite(output_path, image)
                 cv2.imwrite(vis_path, depth_vis)
                 if self.verbose_mode:
-                    rospy.loginfo(f"Depth image saved at: {output_path} (raw) and {vis_path} (visualization)")
+                    rospy.loginfo(f"{self.node_name}: Depth image saved at: {output_path} (raw) and {vis_path} (visualization)")
                 return
             else:
                 cv2.imwrite(output_path, image)
 
             if self.verbose_mode:    
-                rospy.loginfo(f"Image saved successfully at: {output_path}")
+                rospy.loginfo(f"{self.node_name}: Image saved successfully at: {output_path}")
         except Exception as e:
-            rospy.logerr(f"Failed to save image: {e}")
+            rospy.logerr(f"{self.node_name}: Failed to save image: {e}")
             
     def shutdown_hook(self):
         """
@@ -704,12 +711,12 @@ class PersonDetectionTest:
         if hasattr(self, 'rgb_writer') and self.rgb_writer is not None:
             self.rgb_writer.release()
             if self.verbose_mode:
-                rospy.loginfo("RGB video writer closed on shutdown")
+                rospy.loginfo(f"{self.node_name}: RGB video writer closed on shutdown")
             
         if hasattr(self, 'depth_writer') and self.depth_writer is not None:
             self.depth_writer.release()
             if self.verbose_mode:
-                rospy.loginfo("Depth video writer closed on shutdown")
+                rospy.loginfo(f"{self.node_name}: Depth video writer closed on shutdown")
             
        # Unsubscribe from topics - safely check if attributes exist first
         for attr in ['image_sub', 'depth_sub', 'face_data_sub']:
@@ -717,4 +724,4 @@ class PersonDetectionTest:
                 getattr(self, attr).unregister()
             
         if self.verbose_mode:
-            rospy.loginfo("PersonDetectionTest shutdown complete")  
+            rospy.loginfo(f"{self.node_name}: PersonDetectionTest shutdown complete")
