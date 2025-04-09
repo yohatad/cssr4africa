@@ -26,7 +26,7 @@ import matplotlib
 matplotlib.use('Agg')  # Use non-interactive backend
 import matplotlib.pyplot as plt
 from std_msgs.msg import Float32MultiArray, Float32
-from unit_tests.msg import sound_detection_test_msg_file
+from unit_tests.msg import microphone_msg_file
 from datetime import datetime
 from threading import Lock
 
@@ -115,7 +115,7 @@ class SoundDetectionTest:
         
         # Subscribe to the original microphone topic for unfiltered audio
         if self.record_unfiltered and self.microphone_topic:
-            self.unfiltered_sub = rospy.Subscriber(self.microphone_topic, sound_detection_test_msg_file, self.unfiltered_audio_callback)
+            self.unfiltered_sub = rospy.Subscriber(self.microphone_topic, microphone_msg_file, self.unfiltered_audio_callback)
             rospy.loginfo(f"Subscribed to unfiltered audio: {self.microphone_topic}")
         
         # Subscribe to the direction topic
@@ -219,10 +219,10 @@ class SoundDetectionTest:
         """
         Process incoming unfiltered audio data from the original microphone topic.
         
-        The data is in sound_detection_test_msg_file message type with frontLeft and frontRight arrays.
+        The data is in microphone_msg_file message type with frontLeft and frontRight arrays.
         
         Args:
-            msg (sound_detection_test_msg_file): The audio data message
+            msg (microphone_msg_file): The audio data message
         """
         if not self.record_unfiltered:
             return
