@@ -75,13 +75,13 @@ class SoundDetectionNode:
             # Get the save directory
             rospack = rospkg.RosPack()
             try:
-                pkg_path = rospack.get_path('unit_test')
+                pkg_path = rospack.get_path('unit_tests')
                 self.plot_save_dir = os.path.join(pkg_path, 'sound_detection_test/data')
                 # Create directory if it doesn't exist
                 if not os.path.exists(self.plot_save_dir):
                     os.makedirs(self.plot_save_dir)
             except rospkg.ResourceNotFound:
-                rospy.logerr("Package 'unit_test' not found.")
+                rospy.logerr("Package 'unit_tests' not found.")
                 raise
             except Exception as e:
                 rospy.logerr(f"Error creating plot save directory: {e}")
@@ -132,7 +132,7 @@ class SoundDetectionNode:
             package_path = rospack.get_path(package_name)
             
             # Determine the directory and file name based on the package name
-            if package_name == 'unit_test':
+            if package_name == 'unit_tests':
                 directory = 'sound_detection_test/config'
                 config_file = 'sound_detection_test_configuration.json'
             else:

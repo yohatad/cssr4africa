@@ -102,23 +102,23 @@ def main():
     # Read the configuration file
     config = SoundDetectionNode.read_json_file('cssr_system')
     
-    unit_test = rospy.get_param('/soundDetection/unit_test', default=False)
+    unit_tests = rospy.get_param('/soundDetection/unit_tests', default=False)
     
-    if not unit_test:
+    if not unit_tests:
         # Use the standard configuration
         rospy.set_param('/soundDetection_config', config)
     else:
         # Unit test mode - load test configuration
         # Create a filtered config without the excluded keys (if needed)
         filtered_config = {k: v for k, v in config.items() 
-                        if k not in ["verboseMode", "generatePlot", "plotInterval"]}
+                        if k not in ["verboseMode"]}
         
         # Set the filtered parameters to the parameter server
         for key, value in filtered_config.items():
             rospy.set_param('/soundDetection_config/' + key, value)
 
         # Set specific parameters from the test config
-        config_test = SoundDetectionNode.read_json_file('unit_test')
+        config_test = SoundDetectionNode.read_json_file('unit_tests')
         
         # Filter and set only specific parameters from the test config
         for key, value in config_test.items():
