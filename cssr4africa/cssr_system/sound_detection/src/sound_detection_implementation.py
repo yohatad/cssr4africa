@@ -2,7 +2,7 @@
 sound_detection_implementation.py Implementation code for running the sound detection and localization algorithm
 
 Author: Yohannes Tadesse Haile
-Date: April 06, 2025
+Date: April 10, 2025
 Version: v1.0
 
 Copyright (C) 2023 CSSR4Africa Consortium
@@ -31,12 +31,15 @@ from cssr_system.msg import microphone_msg_file
 from threading import Lock
 from std_msgs.msg import Float32MultiArray
 from scipy import signal
+from collections import deque
 
 class SoundDetectionNode:
     """
     SoundDetectionNode processes audio data from a microphone topic, applies VAD to determine if speech is present,
     applies bandpass filtering and spectral subtraction on the left channel, and localizes the sound source by computing
     the interaural time difference (ITD) via GCC-PHAT.
+    
+    Modified to publish complete utterances on the original '/soundDetection/signal' topic.
     """
     def __init__(self):
         """
@@ -44,7 +47,7 @@ class SoundDetectionNode:
         Sets up ROS subscribers, publishers, and loads configuration parameters.
         """
         # Set node name for consistent logging
-        self.node_name = "soundDetection"
+        self.node_name = "sound_detection"
         
         # Get configuration parameters from the ROS parameter server
         self.config = rospy.get_param('/soundDetection_config', {})
@@ -55,6 +58,23 @@ class SoundDetectionNode:
         self.distance_between_ears = self.config.get('distanceBetweenEars', 0.07)
         self.intensity_threshold = self.config.get('intensityThreshold', 3.9e-3)
         self.verbose_mode = self.config.get('verboseMode', False)
+        
+        # Utterance detection parameters
+        self.utterance_buffer_size = self.config.get('utteranceBufferSize', 48000 * 5)  # Default: 5 seconds buffer
+        self.speech_timeout = self.config.get('speechTimeout', 1.0)  # Time (seconds) of silence to end an utterance
+        self.pre_speech_buffer = self.config.get('preSpeechBuffer', 0.5)  # Time (seconds) to include before speech starts
+        self.min_utterance_length = self.config.get('minUtteranceLength', 0.5)  # Minimum utterance duration in seconds
+        
+        # Utterance state variables
+        self.in_utterance = False
+        self.last_speech_time = None
+        self.utterance_audio_buffer = deque(maxlen=int(self.utterance_buffer_size))
+        self.utterance_lock = Lock()
+        
+        # Sample calculations
+        self.speech_timeout_samples = int(self.speech_timeout * self.frequency_sample)
+        self.pre_speech_samples = int(self.pre_speech_buffer * self.frequency_sample)
+        self.min_utterance_samples = int(self.min_utterance_length * self.frequency_sample)
         
         self.enable_plot = rospy.get_param('/soundDetection_config/generatePlot', False)
         
@@ -115,9 +135,10 @@ class SoundDetectionNode:
         self.audio_sub = rospy.Subscriber(microphone_topic, microphone_msg_file, self.audio_callback)
         self.signal_pub = rospy.Publisher('/soundDetection/signal', std_msgs.msg.Float32MultiArray, queue_size=10)
         self.direction_pub = rospy.Publisher('/soundDetection/direction', std_msgs.msg.Float32, queue_size=10)
-
+        
         if self.verbose_mode:
-            rospy.loginfo(f"{self.node_name}: Sound detection node initialized.")
+            rospy.loginfo(f"{self.node_name}: Sound detection node initialized with utterance mode.")
+            rospy.loginfo(f"{self.node_name}: Utterance timeout: {self.speech_timeout}s, Pre-speech buffer: {self.pre_speech_buffer}s")
 
     @staticmethod
     def read_json_file(package_name):
@@ -257,7 +278,11 @@ class SoundDetectionNode:
         phase = np.angle(Zxx)
 
         # Noise estimate from early frames
-        noise_estimate = np.mean(magnitude[:, :noise_frames], axis=1, keepdims=True)
+        if len(magnitude[0]) > noise_frames:
+            noise_estimate = np.mean(magnitude[:, :noise_frames], axis=1, keepdims=True)
+        else:
+            # Handle case where there aren't enough frames
+            noise_estimate = np.mean(magnitude, axis=1, keepdims=True)
 
         # Subtract and apply flooring
         magnitude_clean = magnitude - alpha * noise_estimate
@@ -300,11 +325,11 @@ class SoundDetectionNode:
         # Apply bandpass filter
         filtered_signal = signal.lfilter(b, a, data)
         
-        # # Apply spectral subtraction to the filtered signal
+        # Apply spectral subtraction to the filtered signal
         processed_signal = self.spectral_subtraction(filtered_signal, fs)
 
         # Normalize the processed signal to a target RMS level
-        processed_signal = self.normalize_rms(filtered_signal, target_rms=0.1)
+        processed_signal = self.normalize_rms(processed_signal, target_rms=0.1)
 
         # Apply noise gate to the processed signal
         processed_signal = self.apply_noise_gate(processed_signal, threshold=0.005)
@@ -356,19 +381,27 @@ class SoundDetectionNode:
                 
             # Process audio data
             sigIn_frontLeft, sigIn_frontRight = self.process_audio_data(msg)
+            
+            # Store audio in the utterance buffer
+            with self.utterance_lock:
+                for sample in sigIn_frontLeft:
+                    self.utterance_audio_buffer.append(sample)
 
             # Check intensity threshold
             if not self.is_intense_enough(sigIn_frontLeft):
+                # Still maintain utterance state
+                self.handle_utterance_state(False)
                 return
 
-            # MODIFIED: Perform VAD check early in the pipeline
-            # Check for voice activity in the left channel
-            self.speech_detected = self.voice_detected(sigIn_frontLeft)
+            # Perform VAD check to determine if speech is present
+            is_speech = self.voice_detected(sigIn_frontLeft)
             
-            # If no speech detected, we can skip further processing
-            if not self.speech_detected:
-                return
-
+            # Keep track of speech state for utterance detection
+            self.handle_utterance_state(is_speech)
+            
+            # Update local speech detection flag
+            self.speech_detected = is_speech
+            
             # Update plotting buffers if plotting is enabled
             if self.enable_plot:
                 with self.plot_lock:
@@ -392,42 +425,8 @@ class SoundDetectionNode:
 
             # Localization processing
             if self.accumulated_samples >= self.localization_buffer_size:
-                # Apply filtering and processing
-                processed_signal = self.apply_bandpass_and_spectral_subtraction(
-                    self.frontleft_buffer, self.frequency_sample)
-                
-                # Update processed signal plot buffer if plotting is enabled
-                if self.enable_plot:
-                    with self.plot_lock:
-                        # Add processed signal to plot buffer
-                        data_length = len(processed_signal)
-                        if self.processed_buffer_index + data_length <= self.plot_buffer_size:
-                            self.processed_plot_buffer[self.processed_buffer_index:self.processed_buffer_index + data_length] = processed_signal
-                            self.processed_buffer_index += data_length
-                        else:
-                            # Buffer is full or wrapping around
-                            remaining = self.plot_buffer_size - self.processed_buffer_index
-                            if remaining > 0:
-                                self.processed_plot_buffer[self.processed_buffer_index:] = processed_signal[:remaining]
-                            self.processed_buffer_index = min(data_length - remaining, self.plot_buffer_size)
-                            if self.processed_buffer_index > 0:
-                                self.processed_plot_buffer[:self.processed_buffer_index] = processed_signal[remaining:remaining + self.processed_buffer_index]
-                    
-                    # Check if it's time to generate a plot
-                    current_time = rospy.get_time()
-                    if current_time - self.last_plot_time >= self.plot_interval:
-                        if self.raw_buffer_index >= self.plot_buffer_size * 0.5 and self.processed_buffer_index >= self.plot_buffer_size * 0.5:
-                            self.plot_audio_signals(self.raw_plot_buffer, self.processed_plot_buffer)
-                            # Reset buffer indices after plotting
-                            self.raw_buffer_index = 0
-                            self.processed_buffer_index = 0
-                            self.last_plot_time = current_time
-                
-                # Publish the processed signal
-                self.publish_signal(processed_signal)
-                
-                # Check if voice is detected and perform localization
-                if self.voice_detected(self.frontleft_buffer):
+                # Only perform localization if we're currently in an utterance
+                if self.in_utterance:
                     self.localize(self.frontleft_buffer, self.frontright_buffer)
                 
                 # Reset buffers for next batch
@@ -436,8 +435,84 @@ class SoundDetectionNode:
                     self.frontright_buffer = np.zeros(self.localization_buffer_size, dtype=np.float32)
                     self.accumulated_samples = 0
 
+                # We don't publish processed signal samples here anymore
+                # Instead, we'll publish complete utterances when detected
+                
+                # Plot the audio if enabled
+                if self.enable_plot:
+                    current_time = rospy.get_time()
+                    if current_time - self.last_plot_time >= self.plot_interval:
+                        if self.raw_buffer_index >= self.plot_buffer_size * 0.5 and self.processed_buffer_index >= self.plot_buffer_size * 0.5:
+                            self.plot_audio_signals(self.raw_plot_buffer, self.processed_plot_buffer)
+                            # Reset buffer indices after plotting
+                            self.raw_buffer_index = 0
+                            self.processed_buffer_index = 0
+                            self.last_plot_time = current_time
+
         except Exception as e:
             rospy.logerr(f"{self.node_name}: Error in audio_callback: {e}")
+
+    def handle_utterance_state(self, is_speech):
+        """
+        Manage the utterance state based on current speech detection.
+        This handles the state machine for detecting complete utterances.
+        
+        Args:
+            is_speech (bool): True if speech is currently detected
+        """
+        current_time = rospy.get_time()
+        
+        if is_speech:
+            # Speech detected
+            if not self.in_utterance:
+                # Start of a new utterance
+                self.in_utterance = True
+                if self.verbose_mode:
+                    rospy.loginfo(f"{self.node_name}: Utterance started")
+            
+            # Update the last speech time regardless
+            self.last_speech_time = current_time
+            
+        elif self.in_utterance:
+            # We were in an utterance, check if it's time to end it
+            if self.last_speech_time is not None and (current_time - self.last_speech_time) > self.speech_timeout:
+                # End of utterance detected
+                if self.verbose_mode:
+                    rospy.loginfo(f"{self.node_name}: Utterance ended (timeout: {current_time - self.last_speech_time:.2f}s)")
+                
+                # Process and publish the complete utterance
+                self.process_complete_utterance()
+                
+                # Reset utterance state
+                self.in_utterance = False
+                self.last_speech_time = None
+
+    def process_complete_utterance(self):
+        """
+        Process and publish a complete utterance from the buffer.
+        This is called when an utterance is detected as complete.
+        """
+        with self.utterance_lock:
+            # Convert buffer to numpy array
+            if len(self.utterance_audio_buffer) < self.min_utterance_samples:
+                if self.verbose_mode:
+                    rospy.loginfo(f"{self.node_name}: Utterance too short, discarding ({len(self.utterance_audio_buffer)/self.frequency_sample:.2f}s)")
+                return
+                
+            utterance_data = np.array(list(self.utterance_audio_buffer), dtype=np.float32)
+            
+            # Apply processing to the entire utterance
+            processed_utterance = self.apply_bandpass_and_spectral_subtraction(utterance_data, self.frequency_sample)
+            
+            # Publish the processed utterance to the original signal topic
+            self.publish_signal(processed_utterance)
+            
+            # Clear the buffer
+            self.utterance_audio_buffer.clear()
+            
+            if self.verbose_mode:
+                duration = len(processed_utterance) / self.frequency_sample
+                rospy.loginfo(f"{self.node_name}: Published complete utterance ({duration:.2f}s) to /soundDetection/signal")
 
     def process_audio_data(self, msg):
         """
