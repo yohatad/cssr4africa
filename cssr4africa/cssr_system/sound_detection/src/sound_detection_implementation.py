@@ -43,6 +43,9 @@ class SoundDetectionNode:
         Initialize the SoundDetectionNode.
         Sets up ROS subscribers, publishers, and loads configuration parameters.
         """
+        # Set node name for consistent logging
+        self.node_name = "soundDetection"
+        
         # Get configuration parameters from the ROS parameter server
         self.config = rospy.get_param('/soundDetection_config', {})
         
@@ -81,14 +84,14 @@ class SoundDetectionNode:
                 if not os.path.exists(self.plot_save_dir):
                     os.makedirs(self.plot_save_dir)
             except rospkg.ResourceNotFound:
-                rospy.logerr("Package 'unit_tests' not found.")
+                rospy.logerr(f"{self.node_name}: Package 'unit_tests' not found.")
                 raise
             except Exception as e:
-                rospy.logerr(f"Error creating plot save directory: {e}")
+                rospy.logerr(f"{self.node_name}: Error creating plot save directory: {e}")
                 raise
                 
             if self.verbose_mode:
-                rospy.loginfo(f"Sound detection plotting enabled, saving to {self.plot_save_dir}")
+                rospy.loginfo(f"{self.node_name}: Sound detection plotting enabled, saving to {self.plot_save_dir}")
 
         # Initialize VAD with configurable aggressiveness mode
         self.vad_aggressiveness = self.config.get('vadAggressiveness', 3)
@@ -99,7 +102,7 @@ class SoundDetectionNode:
         # Retrieve the microphone topic from the configuration file
         microphone_topic = self.extract_topics('Microphone')
         if not microphone_topic:
-            rospy.logerr("Microphone topic not found in topic file.")
+            rospy.logerr(f"{self.node_name}: Microphone topic not found in topic file.")
             raise ValueError("Missing microphone topic configuration.")
 
         # Initialize thread lock for shared resources
@@ -114,7 +117,7 @@ class SoundDetectionNode:
         self.direction_pub = rospy.Publisher('/soundDetection/direction', std_msgs.msg.Float32, queue_size=10)
 
         if self.verbose_mode:
-            rospy.loginfo("Sound detection node initialized.")
+            rospy.loginfo(f"{self.node_name}: Sound detection node initialized.")
 
     @staticmethod
     def read_json_file(package_name):
@@ -233,20 +236,20 @@ class SoundDetectionNode:
         plt.figtext(0.5, 0.01, info_text, ha='center', fontsize=9)
         
         # Save the plot
-        plot_path = os.path.join(self.plot_save_dir, f'sound_comparison_{timestamp}.png')
+        plot_path = os.path.join(self.plot_save_dir, f'sound_detection_test_output_sound_comparison_{timestamp}.png')
         plt.savefig(plot_path, dpi=150)
         plt.close()
         
         if self.verbose_mode:
-            rospy.loginfo(f"Audio comparison plot saved to: {plot_path}")
+            rospy.loginfo(f"{self.node_name}: Audio comparison plot saved to: {plot_path}")
 
     def spectral_subtraction(self, noisy_signal, fs, noise_frames=None, n_fft=None, hop_length=None):
         # Get values from config or use defaults
-        noise_frames = noise_frames or self.config.get('noiseFrames', 5)
+        noise_frames = noise_frames or self.config.get('noiseFrames', 15)
         n_fft = n_fft or self.config.get('fftSize', 1024)
         hop_length = hop_length or self.config.get('hopLength', 512)
-        alpha = self.config.get('noiseReductionAlpha', 0.95)  # Less than 1.0 = conservative
-        floor_coeff = self.config.get('spectralFloorCoeff', 0.01)  # e.g., 1% of noise
+        alpha = self.config.get('noiseReductionAlpha', 1.0)  # Less than 1.0 = conservative
+        floor_coeff = self.config.get('spectralFloorCoeff', 0.005)  # e.g., 1% of noise
 
         # STFT
         f, t, Zxx = signal.stft(noisy_signal, fs=fs, nperseg=n_fft, noverlap=n_fft - hop_length)
@@ -266,7 +269,10 @@ class SoundDetectionNode:
         _, recovered_signal = signal.istft(Zxx_clean, fs=fs, nperseg=n_fft, noverlap=n_fft - hop_length)
 
         return recovered_signal
-
+    
+    def normalize_rms(self, signal, target_rms=0.1):
+        rms = np.sqrt(np.mean(signal ** 2))
+        return signal * (target_rms / (rms + 1e-6)) if rms > 0 else signal
 
     def apply_bandpass_and_spectral_subtraction(self, data, fs):
         """
@@ -282,22 +288,57 @@ class SoundDetectionNode:
         # Bandpass filter parameters
         lowcut = self.config.get('lowcutFrequency', 300.0)  # Hz
         highcut = self.config.get('highcutFrequency', 3400.0)  # Hz
-        
+
         # Normalize frequencies by Nyquist frequency
         nyq = 0.5 * fs
         low = lowcut / nyq
         high = highcut / nyq
         
         # Design bandpass filter
-        b, a = signal.butter(N=6, Wn=[low, high], btype='bandpass')
+        b, a = signal.butter(N=2, Wn=[low, high], btype='bandpass')
         
         # Apply bandpass filter
         filtered_signal = signal.lfilter(b, a, data)
         
-        # Apply spectral subtraction to the filtered signal
+        # # Apply spectral subtraction to the filtered signal
         processed_signal = self.spectral_subtraction(filtered_signal, fs)
+
+        # Normalize the processed signal to a target RMS level
+        processed_signal = self.normalize_rms(filtered_signal, target_rms=0.1)
+
+        # Apply noise gate to the processed signal
+        processed_signal = self.apply_noise_gate(processed_signal, threshold=0.005)
         
         return processed_signal
+    
+    def apply_noise_gate(self, signal, threshold=0.02):
+        return np.where(np.abs(signal) < threshold, 0.0, signal)
+
+    def voice_detected(self, audio_frame):
+        """
+        Use Voice Activity Detection (VAD) to determine if voice is present.
+        
+        Args:
+            audio_frame (np.ndarray): Audio frame to analyze
+            
+        Returns:
+            bool: True if voice is detected, False otherwise
+        """
+        try:
+            # Process the audio in VAD frame-sized chunks
+            for start in range(0, len(audio_frame) - self.vad_frame_size + 1, self.vad_frame_size):
+                frame = audio_frame[start:start + self.vad_frame_size]
+                
+                # Convert to int16 bytes for WebRTC VAD
+                frame_bytes = (frame * 32767).astype(np.int16).tobytes()
+                
+                # Check if this frame contains speech
+                if self.vad.is_speech(frame_bytes, self.frequency_sample):
+                    return True
+            return False
+        except Exception as e:
+            rospy.logwarn(f"{self.node_name}: Error in VAD processing: {e}")
+            return False
 
     def audio_callback(self, msg):
         """
@@ -310,7 +351,7 @@ class SoundDetectionNode:
             # Print a status message every 10 seconds
             current_time = rospy.get_time()
             if current_time - self.last_status_time >= 10:
-                rospy.loginfo("soundDetection: running.")
+                rospy.loginfo(f"{self.node_name}: running.")
                 self.last_status_time = current_time
                 
             # Process audio data
@@ -388,7 +429,7 @@ class SoundDetectionNode:
                     self.accumulated_samples = 0
 
         except Exception as e:
-            rospy.logerr(f"Error in audio_callback: {e}")
+            rospy.logerr(f"{self.node_name}: Error in audio_callback: {e}")
 
     def process_audio_data(self, msg):
         """
@@ -406,7 +447,7 @@ class SoundDetectionNode:
             sigIn_frontRight = np.array(msg.frontRight, dtype=np.float32) / 32767.0
             return sigIn_frontLeft, sigIn_frontRight
         except Exception as e:
-            rospy.logerr(f"Error processing audio data: {e}")
+            rospy.logerr(f"{self.node_name}: Error processing audio data: {e}")
             return (np.zeros(self.localization_buffer_size, dtype=np.float32),
                     np.zeros(self.localization_buffer_size, dtype=np.float32))
 
@@ -492,7 +533,7 @@ class SoundDetectionNode:
             # Publish the calculated angle
             self.publish_angle(angle)
         except Exception as e:
-            rospy.logwarn(f"Error in localization: {e}")
+            rospy.logwarn(f"{self.node_name}: Error in localization: {e}")
 
     def gcc_phat(self, sig, ref_sig, fs, max_tau=None, interp=16):
         """
@@ -539,7 +580,7 @@ class SoundDetectionNode:
             # Convert shift to time
             return shift / float(fs)
         except Exception as e:
-            rospy.logerr(f"Error in GCC-PHAT: {e}")
+            rospy.logerr(f"{self.node_name}: Error in GCC-PHAT: {e}")
             return 0
 
     def calculate_angle(self, itd):
@@ -563,7 +604,7 @@ class SoundDetectionNode:
             angle = math.asin(z) * (180.0 / math.pi)
             return angle
         except ValueError as e:
-            rospy.logwarn(f"Invalid ITD for angle calculation: {e}")
+            rospy.logwarn(f"{self.node_name}: Invalid ITD for angle calculation: {e}")
             return 0.0
 
     def publish_angle(self, angle):

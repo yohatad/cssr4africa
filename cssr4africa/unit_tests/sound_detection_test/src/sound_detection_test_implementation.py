@@ -40,17 +40,20 @@ class SoundDetectionTest:
         Initialize the SoundDetectionTest class.
         Sets up configuration, ROS subscribers, and data structures for audio analysis.
         """
+        # Set node name for consistent logging
+        self.node_name = "soundDetectionTest"
+        
         self.rospack = rospkg.RosPack()
         try:
             self.unit_test_package_path = self.rospack.get_path('unit_tests')
         except rospkg.ResourceNotFound as e:
-            rospy.logerr(f"ROS package not found: {e}")
+            rospy.logerr(f"{self.node_name}: ROS package not found: {e}")
             raise RuntimeError(f"Required ROS package not found: {e}")
 
         # Read configuration
         self.config = self.read_json_file()
         if not self.config:
-            rospy.logerr("Failed to load configuration. Exiting.")
+            rospy.logerr(f"{self.node_name}: Failed to load configuration. Exiting.")
             raise RuntimeError("Configuration file could not be loaded.")
         
         # Set up configuration parameters with defaults
@@ -69,7 +72,7 @@ class SoundDetectionTest:
         # Create save directory if it doesn't exist
         if not os.path.exists(self.save_dir):
             os.makedirs(self.save_dir)
-            rospy.loginfo(f"Created directory for audio recordings: {self.save_dir}")
+            rospy.loginfo(f"{self.node_name}: Created directory for audio recordings: {self.save_dir}")
 
 
         # Timer for periodic status message
@@ -105,29 +108,29 @@ class SoundDetectionTest:
         # Get the original microphone topic from the config
         self.microphone_topic = self.extract_topics('Microphone')
         if not self.microphone_topic:
-            rospy.logwarn("Microphone topic not found. Will only record filtered audio.")
+            rospy.logwarn(f"{self.node_name}: Microphone topic not found. Will only record filtered audio.")
             self.record_unfiltered = False
         
         # Subscribe to the filtered audio signal topic
         if self.record_filtered:
             self.filtered_sub = rospy.Subscriber("soundDetection/signal", Float32MultiArray, self.filtered_audio_callback)
-            rospy.loginfo("Subscribed to filtered audio: soundDetection/signal")
+            rospy.loginfo(f"{self.node_name}: Subscribed to filtered audio: soundDetection/signal")
         
         # Subscribe to the original microphone topic for unfiltered audio
         if self.record_unfiltered and self.microphone_topic:
             self.unfiltered_sub = rospy.Subscriber(self.microphone_topic, microphone_test_msg_file, self.unfiltered_audio_callback)
-            rospy.loginfo(f"Subscribed to unfiltered audio: {self.microphone_topic}")
+            rospy.loginfo(f"{self.node_name}: Subscribed to unfiltered audio: {self.microphone_topic}")
         
         # Subscribe to the direction topic
         self.direction_sub = rospy.Subscriber("soundDetection/direction", Float32, self.direction_callback)
-        rospy.loginfo("Subscribed to direction data: soundDetection/direction")
+        rospy.loginfo(f"{self.node_name}: Subscribed to direction data: soundDetection/direction")
         
         # Set a timer to periodically generate plots if enabled
         if self.generate_plots:
             rospy.Timer(rospy.Duration(self.plot_interval), self.plot_callback)
         
-        rospy.loginfo("SoundDetectionTest: Initialized successfully")
-        rospy.loginfo(f"Recording will automatically stop after {self.record_duration} seconds")
+        rospy.loginfo(f"{self.node_name}: Initialized successfully")
+        rospy.loginfo(f"{self.node_name}: Recording will automatically stop after {self.record_duration} seconds")
         
         # Register shutdown hook
         rospy.on_shutdown(self.shutdown_hook)
@@ -142,7 +145,7 @@ class SoundDetectionTest:
         try:
             config_path = os.path.join(self.unit_test_package_path, 'sound_detection_test/config', 'sound_detection_test_configuration.json')
             if not os.path.exists(config_path):
-                rospy.logerr(f"read_json_file: Configuration file not found at {config_path}")
+                rospy.logerr(f"{self.node_name}: read_json_file: Configuration file not found at {config_path}")
                 return None
                 
             with open(config_path, 'r') as file:
@@ -150,10 +153,10 @@ class SoundDetectionTest:
                 return config
                 
         except json.JSONDecodeError as e:
-            rospy.logerr(f"read_json_file: Error decoding JSON file: {e}")
+            rospy.logerr(f"{self.node_name}: read_json_file: Error decoding JSON file: {e}")
             return None
         except Exception as e:
-            rospy.logerr(f"read_json_file: Unexpected error: {e}")
+            rospy.logerr(f"{self.node_name}: read_json_file: Unexpected error: {e}")
             return None
 
     def extract_topics(self, topic_key):
@@ -178,9 +181,9 @@ class SoundDetectionTest:
                         if key.lower() == topic_key.lower():
                             return value
             else:
-                rospy.logerr(f"Topics data file not found at {config_path}")
+                rospy.logerr(f"{self.node_name}: Topics data file not found at {config_path}")
         except rospkg.ResourceNotFound as e:
-            rospy.logerr(f"ROS package not found: {e}")
+            rospy.logerr(f"{self.node_name}: ROS package not found: {e}")
         return None
     
     def filtered_audio_callback(self, msg):
@@ -207,7 +210,7 @@ class SoundDetectionTest:
                 self.is_recording_filtered = True
                 self.filtered_recording_start_time = rospy.get_time()
                 self.filtered_audio_buffer = audio_data.tolist()
-                rospy.loginfo("Started new FILTERED audio recording")
+                rospy.loginfo(f"{self.node_name}: Started new FILTERED audio recording")
             
             # Check if we've reached the recording duration
             buffer_time = rospy.get_time() - self.filtered_recording_start_time
@@ -230,7 +233,7 @@ class SoundDetectionTest:
         try:
             # Print a status messave every 10 seconds
             if rospy.get_time() - self.status_timer > 10:
-                rospy.loginfo("soundDetectionTest: running")
+                rospy.loginfo(f"{self.node_name}: running")
                 self.status_timer = rospy.get_time()
 
             # Extract only the left channel data from int16 array and normalize to float
@@ -246,7 +249,7 @@ class SoundDetectionTest:
                     self.is_recording_unfiltered = True
                     self.unfiltered_recording_start_time = rospy.get_time()
                     self.unfiltered_audio_buffer = audio_data.tolist()
-                    rospy.loginfo("Started new UNFILTERED audio recording")
+                    rospy.loginfo(f"{self.node_name}: Started new UNFILTERED audio recording")
                 
                 # Check if we've reached the recording duration
                 buffer_time = rospy.get_time() - self.unfiltered_recording_start_time
@@ -255,7 +258,7 @@ class SoundDetectionTest:
                     self.save_unfiltered_audio()
                     
         except Exception as e:
-            rospy.logerr(f"Error in unfiltered audio callback: {e}")
+            rospy.logerr(f"{self.node_name}: Error in unfiltered audio callback: {e}")
     
     def direction_callback(self, msg):
         """
@@ -290,7 +293,7 @@ class SoundDetectionTest:
                 self.last_plot_time = time.time()
                 
         except Exception as e:
-            rospy.logerr(f"Error in plot_callback: {e}")
+            rospy.logerr(f"{self.node_name}: Error in plot_callback: {e}")
     
     
     def plot_direction_data(self):
@@ -301,7 +304,7 @@ class SoundDetectionTest:
             # Check if we have direction data to plot
             if not self.direction_data:
                 if self.verbose_mode:
-                    rospy.loginfo("No direction data to plot")
+                    rospy.loginfo(f"{self.node_name}: No direction data to plot")
                 return
             
             # Limit the number of data points if there are too many
@@ -336,17 +339,17 @@ class SoundDetectionTest:
         plt.tight_layout()
         
         # Save the plot
-        plot_path = os.path.join(self.save_dir, f'direction_data_{timestamp}.png')
+        plot_path = os.path.join(self.save_dir, f'sound_detection_test_direction_data_{timestamp}.png')
         plt.savefig(plot_path)
         plt.close()
         
         if self.verbose_mode:
-            rospy.loginfo(f"Direction data plot saved to: {plot_path}")
+            rospy.loginfo(f"{self.node_name}: Direction data plot saved to: {plot_path}")
     
     def save_filtered_audio(self):
         """Save the current filtered audio buffer as a WAV file."""
         if not self.filtered_audio_buffer:
-            rospy.logwarn("Cannot save empty filtered audio buffer")
+            rospy.logwarn(f"{self.node_name}: Cannot save empty filtered audio buffer")
             return
         
         try:
@@ -354,7 +357,7 @@ class SoundDetectionTest:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             
             # Save as WAV file
-            wav_filepath = os.path.join(self.save_dir, f"filtered_{timestamp}.wav")
+            wav_filepath = os.path.join(self.save_dir, f"sound_detection_test_filtered_{timestamp}.wav")
             
             # Convert audio buffer to numpy array
             audio_np = np.array(self.filtered_audio_buffer, dtype=np.float32)
@@ -365,19 +368,19 @@ class SoundDetectionTest:
             # Log success
             duration = len(audio_np) / self.sample_rate  # Duration in seconds
             if self.verbose_mode:
-                rospy.loginfo(f"Saved {duration:.2f}s FILTERED audio to {wav_filepath}")
+                rospy.loginfo(f"{self.node_name}: Saved {duration:.2f}s FILTERED audio to {wav_filepath}")
             
             # Reset state for next recording
             self.filtered_audio_buffer = []
             self.is_recording_filtered = False
             
         except Exception as e:
-            rospy.logerr(f"Error saving filtered audio: {e}")
+            rospy.logerr(f"{self.node_name}: Error saving filtered audio: {e}")
     
     def save_unfiltered_audio(self):
         """Save the current unfiltered audio buffer as a mono WAV file."""
         if not self.unfiltered_audio_buffer:
-            rospy.logwarn("Cannot save empty unfiltered audio buffer")
+            rospy.logwarn(f"{self.node_name}: Cannot save empty unfiltered audio buffer")
             return
             
         try:
@@ -385,7 +388,7 @@ class SoundDetectionTest:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             
             # Save as WAV file
-            wav_filepath = os.path.join(self.save_dir, f"unfiltered_{timestamp}.wav")
+            wav_filepath = os.path.join(self.save_dir, f"sound_detection_test_unfiltered_{timestamp}.wav")
             
             # Convert audio buffer to numpy array
             audio_np = np.array(self.unfiltered_audio_buffer, dtype=np.float32)
@@ -396,19 +399,18 @@ class SoundDetectionTest:
             # Log success
             duration = len(audio_np) / self.sample_rate  # Duration in seconds
             if self.verbose_mode:
-                rospy.loginfo(f"Saved {duration:.2f}s UNFILTERED mono audio to {wav_filepath}")
+                rospy.loginfo(f"{self.node_name}: Saved {duration:.2f}s UNFILTERED mono audio to {wav_filepath}")
             
             # Reset state for next recording
             self.unfiltered_audio_buffer = []
             self.is_recording_unfiltered = False
             
         except Exception as e:
-            rospy.logerr(f"Error saving unfiltered audio: {e}")
+            rospy.logerr(f"{self.node_name}: Error saving unfiltered audio: {e}")
     
     def shutdown_hook(self):
         """
         Clean up resources when the node is shutting down.
         """
         if self.verbose_mode:
-            rospy.loginfo("SoundDetectionTest: Shutting down")
-        
+            rospy.loginfo(f"{self.node_name}: Shutting down")
