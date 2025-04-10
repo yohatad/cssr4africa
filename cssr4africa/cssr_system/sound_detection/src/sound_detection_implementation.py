@@ -24,7 +24,6 @@ import webrtcvad
 import rospkg
 import numpy as np
 import matplotlib
-import random
 matplotlib.use('Agg')  # Use non-interactive backend
 import matplotlib.pyplot as plt
 from datetime import datetime
@@ -96,9 +95,6 @@ class SoundDetectionNode:
         self.vad = webrtcvad.Vad(self.vad_aggressiveness)
         self.vad_frame_duration = 0.02  # 20 ms (WebRTC VAD requires specific frame durations)
         self.vad_frame_size = int(self.frequency_sample * self.vad_frame_duration)
-        
-        # Add a flag to track if speech is detected
-        self.speech_detected = False
 
         # Retrieve the microphone topic from the configuration file
         microphone_topic = self.extract_topics('Microphone')
@@ -116,9 +112,6 @@ class SoundDetectionNode:
         self.audio_sub = rospy.Subscriber(microphone_topic, microphone_msg_file, self.audio_callback)
         self.signal_pub = rospy.Publisher('/soundDetection/signal', std_msgs.msg.Float32MultiArray, queue_size=10)
         self.direction_pub = rospy.Publisher('/soundDetection/direction', std_msgs.msg.Float32, queue_size=10)
-        
-        # Add a publisher for voice activity status if needed
-        self.vad_pub = rospy.Publisher('/soundDetection/voice_activity', std_msgs.msg.Bool, queue_size=10)
 
         if self.verbose_mode:
             rospy.loginfo("Sound detection node initialized.")
@@ -236,8 +229,7 @@ class SoundDetectionNode:
         
         # Add info text
         info_text = f"Raw buffer fill: {self.raw_buffer_index/self.plot_buffer_size*100:.1f}%, " \
-                    f"Processed buffer fill: {self.processed_buffer_index/self.plot_buffer_size*100:.1f}%, " \
-                    f"Speech detected: {self.speech_detected}"
+                    f"Processed buffer fill: {self.processed_buffer_index/self.plot_buffer_size*100:.1f}%"
         plt.figtext(0.5, 0.01, info_text, ha='center', fontsize=9)
         
         # Save the plot
@@ -307,32 +299,6 @@ class SoundDetectionNode:
         
         return processed_signal
 
-    def voice_detected(self, audio_frame):
-        """
-        Use Voice Activity Detection (VAD) to determine if voice is present.
-        
-        Args:
-            audio_frame (np.ndarray): Audio frame to analyze
-            
-        Returns:
-            bool: True if voice is detected, False otherwise
-        """
-        try:
-            # Process the audio in VAD frame-sized chunks
-            for start in range(0, len(audio_frame) - self.vad_frame_size + 1, self.vad_frame_size):
-                frame = audio_frame[start:start + self.vad_frame_size]
-                
-                # Convert to int16 bytes for WebRTC VAD
-                frame_bytes = (frame * 32767).astype(np.int16).tobytes()
-                
-                # Check if this frame contains speech
-                if self.vad.is_speech(frame_bytes, self.frequency_sample):
-                    return True
-            return False
-        except Exception as e:
-            rospy.logwarn(f"Error in VAD processing: {e}")
-            return False
-
     def audio_callback(self, msg):
         """
         Process incoming audio data from the microphone.
@@ -352,19 +318,6 @@ class SoundDetectionNode:
 
             # Check intensity threshold
             if not self.is_intense_enough(sigIn_frontLeft):
-                return
-
-            # MODIFIED: Perform VAD check early in the pipeline
-            # Check for voice activity in the left channel
-            self.speech_detected = self.voice_detected(sigIn_frontLeft)
-            
-            # Publish voice activity status
-            vad_msg = std_msgs.msg.Bool()
-            vad_msg.data = self.speech_detected
-            self.vad_pub.publish(vad_msg)
-            
-            # If no speech detected, we can skip further processing
-            if not self.speech_detected:
                 return
 
             # Update plotting buffers if plotting is enabled
@@ -424,8 +377,9 @@ class SoundDetectionNode:
                 # Publish the processed signal
                 self.publish_signal(processed_signal)
                 
-                # Since we've already detected speech, perform localization
-                self.localize(self.frontleft_buffer, self.frontright_buffer)
+                # Check if voice is detected and perform localization
+                if self.voice_detected(self.frontleft_buffer):
+                    self.localize(self.frontleft_buffer, self.frontright_buffer)
                 
                 # Reset buffers for next batch
                 with self.lock:
@@ -493,6 +447,32 @@ class SoundDetectionNode:
                 self.frontleft_buffer[self.accumulated_samples:] = sigIn_frontLeft[:remaining]
                 self.frontright_buffer[self.accumulated_samples:] = sigIn_frontRight[:remaining]
                 self.accumulated_samples = self.localization_buffer_size
+
+    def voice_detected(self, audio_frame):
+        """
+        Use Voice Activity Detection (VAD) to determine if voice is present.
+        
+        Args:
+            audio_frame (np.ndarray): Audio frame to analyze
+            
+        Returns:
+            bool: True if voice is detected, False otherwise
+        """
+        try:
+            # Process the audio in VAD frame-sized chunks
+            for start in range(0, len(audio_frame) - self.vad_frame_size + 1, self.vad_frame_size):
+                frame = audio_frame[start:start + self.vad_frame_size]
+                
+                # Convert to int16 bytes for WebRTC VAD
+                frame_bytes = (frame * 32767).astype(np.int16).tobytes()
+                
+                # Check if this frame contains speech
+                if self.vad.is_speech(frame_bytes, self.frequency_sample):
+                    return True
+            return False
+        except Exception as e:
+            rospy.logwarn(f"Error in VAD processing: {e}")
+            return False
 
     def localize(self, sigIn_frontLeft, sigIn_frontRight):
         """
