@@ -361,6 +361,14 @@ class SoundDetectionNode:
             if not self.is_intense_enough(sigIn_frontLeft):
                 return
 
+            # MODIFIED: Perform VAD check early in the pipeline
+            # Check for voice activity in the left channel
+            self.speech_detected = self.voice_detected(sigIn_frontLeft)
+            
+            # If no speech detected, we can skip further processing
+            if not self.speech_detected:
+                return
+
             # Update plotting buffers if plotting is enabled
             if self.enable_plot:
                 with self.plot_lock:
