@@ -61,12 +61,12 @@ class SoundDetectionNode:
         self.verbose_mode = self.config.get('verboseMode', False)
         
         # Utterance detection parameters
-        self.speech_timeout = self.config.get('speechTimeout', 1.0)  # Time (seconds) of silence to end an utterance
-        self.min_utterance_length = self.config.get('minUtteranceLength', 0.05)  # Minimum utterance duration in seconds
+        self.speech_timeout = self.config.get('speechTimeout', 1.0)                 # Time (seconds) of silence to end an utterance
+        self.min_utterance_length = self.config.get('minUtteranceLength', 0.05)     # Minimum utterance duration in seconds
         
         # Parameters for sentence separation
         self.sentence_pause_threshold = self.config.get('sentencePauseThreshold', 0.5)  # Time (seconds) of silence to separate sentences
-        self.max_continuous_speech = self.config.get('maxContinuousSpeech', 10.0)  # Max time (seconds) before forced separation
+        self.max_continuous_speech = self.config.get('maxContinuousSpeech', 10.0)       # Max time (seconds) before forced separation
         self.max_continuous_samples = int(self.max_continuous_speech * self.frequency_sample)
         self.continuous_speech_count = 0  # Counter for continuous speech
         
@@ -430,7 +430,6 @@ class SoundDetectionNode:
                 # Return early if we're just collecting post-speech samples
                 return
             
-
             # Check intensity threshold
             if not self.is_intense_enough(sigIn_frontLeft):
                 # Still maintain utterance state
@@ -439,8 +438,6 @@ class SoundDetectionNode:
 
             # Perform VAD check to determine if speech is present
             is_speech = self.voice_detected(sigIn_frontLeft)
-        
-            print(f"utterance buffer length: {len(self.utterance_audio_buffer)}")
             
             # If this is the start of speech, include pre-buffer content
             if is_speech and not self.in_utterance:
@@ -456,7 +453,6 @@ class SoundDetectionNode:
             
             # Keep track of speech state for utterance detection
             self.handle_utterance_state(is_speech)
-            
             
             # Update plotting buffers if plotting is enabled
             if self.enable_plot:

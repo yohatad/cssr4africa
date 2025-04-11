@@ -6,7 +6,7 @@
     <arg name="robot_port"          default="9559" doc="Port for the robot connection" />
     <arg name="network_interface"   default="wlp0s20f3" doc="Network interface to use" />
     <arg name="namespace"           default="naoqi_driver" doc="Namespace for the naoqi driver" />
-    <arg name="audio_file"          default="normal" doc="Choose which audio file to play (e.g., 'normal' for normal speech)" />
+    <arg name="audio_file"          default="latest_audio" doc="Choose which audio file to play (e.g., 'normal' for normal speech)" />
     <arg name="use_recorded_audio"  default="true" doc="Set to true to use pre-recorded audio instead of live microphone" />
     
     <!-- Set parameters for sound detection test -->
