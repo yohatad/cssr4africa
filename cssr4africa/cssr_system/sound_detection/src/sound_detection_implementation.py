@@ -31,7 +31,7 @@ from cssr_system.msg import microphone_msg_file
 from threading import Lock
 from std_msgs.msg import Float32MultiArray
 from scipy import signal
-from collections import deque
+from threading import RLock
 
 class SoundDetectionNode:
     """
@@ -39,7 +39,8 @@ class SoundDetectionNode:
     applies bandpass filtering and spectral subtraction on the left channel, and localizes the sound source by computing
     the interaural time difference (ITD) via GCC-PHAT.
     
-    Modified to publish complete utterances on the original '/soundDetection/signal' topic.
+    Modified to publish speech segments based on natural pauses and handle long utterances,
+    with extended buffering before and after speech is detected.
     """
     def __init__(self):
         """
@@ -60,20 +61,33 @@ class SoundDetectionNode:
         self.verbose_mode = self.config.get('verboseMode', False)
         
         # Utterance detection parameters
-        self.utterance_buffer_size = self.config.get('utteranceBufferSize', 48000 * 5)  # Default: 5 seconds buffer
         self.speech_timeout = self.config.get('speechTimeout', 1.0)  # Time (seconds) of silence to end an utterance
-        self.pre_speech_buffer = self.config.get('preSpeechBuffer', 0.5)  # Time (seconds) to include before speech starts
-        self.min_utterance_length = self.config.get('minUtteranceLength', 0.5)  # Minimum utterance duration in seconds
+        self.min_utterance_length = self.config.get('minUtteranceLength', 0.05)  # Minimum utterance duration in seconds
+        
+        # Parameters for sentence separation
+        self.sentence_pause_threshold = self.config.get('sentencePauseThreshold', 0.5)  # Time (seconds) of silence to separate sentences
+        self.max_continuous_speech = self.config.get('maxContinuousSpeech', 10.0)  # Max time (seconds) before forced separation
+        self.max_continuous_samples = int(self.max_continuous_speech * self.frequency_sample)
+        self.continuous_speech_count = 0  # Counter for continuous speech
+        
+        # Pre-buffer to store audio before speech is detected
+        self.pre_buffer_duration = self.config.get('preBufferDuration', 0.3)  # Duration to keep before speech in seconds
+        self.pre_buffer_size = int(self.pre_buffer_duration * self.frequency_sample)
+        self.pre_speech_buffer = []  # Buffer to store audio before speech is detected
+
+        # Post-buffer to include audio after speech ends
+        self.post_buffer_duration = self.config.get('postBufferDuration', 0.2)  # Duration to keep after speech in seconds
+        self.post_buffer_size = int(self.post_buffer_duration * self.frequency_sample)
+        self.post_speech_collection = False  # Flag to indicate post-speech collection
+        self.post_speech_samples = 0  # Counter for post-speech samples
         
         # Utterance state variables
         self.in_utterance = False
         self.last_speech_time = None
-        self.utterance_audio_buffer = deque(maxlen=int(self.utterance_buffer_size))
-        self.utterance_lock = Lock()
+        self.utterance_audio_buffer = []  # Use a regular list instead of deque with maxlen
+        self.utterance_lock = RLock()
         
         # Sample calculations
-        self.speech_timeout_samples = int(self.speech_timeout * self.frequency_sample)
-        self.pre_speech_samples = int(self.pre_speech_buffer * self.frequency_sample)
         self.min_utterance_samples = int(self.min_utterance_length * self.frequency_sample)
         
         self.enable_plot = rospy.get_param('/soundDetection_config/generatePlot', False)
@@ -137,8 +151,10 @@ class SoundDetectionNode:
         self.direction_pub = rospy.Publisher('/soundDetection/direction', std_msgs.msg.Float32, queue_size=10)
         
         if self.verbose_mode:
-            rospy.loginfo(f"{self.node_name}: Sound detection node initialized with utterance mode.")
-            rospy.loginfo(f"{self.node_name}: Utterance timeout: {self.speech_timeout}s, Pre-speech buffer: {self.pre_speech_buffer}s")
+            rospy.loginfo(f"{self.node_name}: Sound detection node initialized with extended buffering.")
+            rospy.loginfo(f"{self.node_name}: Utterance timeout: {self.speech_timeout}s, Sentence pause: {self.sentence_pause_threshold}s")
+            rospy.loginfo(f"{self.node_name}: Pre-buffer: {self.pre_buffer_duration}s, Post-buffer: {self.post_buffer_duration}s")
+            rospy.loginfo(f"{self.node_name}: Max continuous speech: {self.max_continuous_speech}s")
 
     @staticmethod
     def read_json_file(package_name):
@@ -381,11 +397,39 @@ class SoundDetectionNode:
                 
             # Process audio data
             sigIn_frontLeft, sigIn_frontRight = self.process_audio_data(msg)
+
+            # Always maintain a pre-speech buffer, regardless of speech state
+            self.pre_speech_buffer.extend(sigIn_frontLeft)
+            if len(self.pre_speech_buffer) > self.pre_buffer_size:
+                # Keep only the most recent samples in the pre-buffer
+                self.pre_speech_buffer = self.pre_speech_buffer[-self.pre_buffer_size:]
             
-            # Store audio in the utterance buffer
-            with self.utterance_lock:
-                for sample in sigIn_frontLeft:
-                    self.utterance_audio_buffer.append(sample)
+            # If we're in post-speech collection mode, add samples to the main buffer
+            if self.post_speech_collection:
+                with self.utterance_lock:
+                    self.utterance_audio_buffer.extend(sigIn_frontLeft)
+                    self.post_speech_samples += len(sigIn_frontLeft)
+                    
+                    # Check if we've collected enough post-speech samples
+                    if self.post_speech_samples >= self.post_buffer_size:
+                        if self.verbose_mode:
+                            rospy.loginfo(f"{self.node_name}: Post-speech collection complete")
+                        # Process the complete utterance with post-speech samples
+                        self.process_complete_utterance()
+                        # Reset post-speech collection
+                        self.post_speech_collection = False
+                        self.post_speech_samples = 0
+                        # Reset utterance buffer
+                        self.utterance_audio_buffer = []
+                        self.in_utterance = False
+                    
+                # Update localization buffers
+                with self.lock:
+                    self.update_buffers(sigIn_frontLeft, sigIn_frontRight)
+                    
+                # Return early if we're just collecting post-speech samples
+                return
+            
 
             # Check intensity threshold
             if not self.is_intense_enough(sigIn_frontLeft):
@@ -395,12 +439,24 @@ class SoundDetectionNode:
 
             # Perform VAD check to determine if speech is present
             is_speech = self.voice_detected(sigIn_frontLeft)
+        
+            print(f"utterance buffer length: {len(self.utterance_audio_buffer)}")
+            
+            # If this is the start of speech, include pre-buffer content
+            if is_speech and not self.in_utterance:
+                with self.utterance_lock:
+                    # Add pre-speech buffer content to the beginning of the utterance buffer
+                    self.utterance_audio_buffer = list(self.pre_speech_buffer)
+                    # Then add the current frame
+                    self.utterance_audio_buffer.extend(sigIn_frontLeft)
+            elif is_speech or self.in_utterance:
+                # Add to utterance buffer if speech is detected or we're in an utterance
+                with self.utterance_lock:
+                    self.utterance_audio_buffer.extend(sigIn_frontLeft)
             
             # Keep track of speech state for utterance detection
             self.handle_utterance_state(is_speech)
             
-            # Update local speech detection flag
-            self.speech_detected = is_speech
             
             # Update plotting buffers if plotting is enabled
             if self.enable_plot:
@@ -455,7 +511,7 @@ class SoundDetectionNode:
     def handle_utterance_state(self, is_speech):
         """
         Manage the utterance state based on current speech detection.
-        This handles the state machine for detecting complete utterances.
+        This handles the state machine for detecting complete utterances and sentences.
         
         Args:
             is_speech (bool): True if speech is currently detected
@@ -467,30 +523,51 @@ class SoundDetectionNode:
             if not self.in_utterance:
                 # Start of a new utterance
                 self.in_utterance = True
+                self.continuous_speech_count = 0
                 if self.verbose_mode:
                     rospy.loginfo(f"{self.node_name}: Utterance started")
+            else:
+                # Already in utterance, check if we need to force-segment due to length
+                self.continuous_speech_count += len(self.utterance_audio_buffer)
+                if self.continuous_speech_count >= self.max_continuous_samples:
+                    if self.verbose_mode:
+                        rospy.loginfo(f"{self.node_name}: Force-segmenting long continuous speech ({self.continuous_speech_count/self.frequency_sample:.2f}s)")
+                    # Process and publish the current segment
+                    self.process_complete_utterance()
+                    # Reset continuous speech counter but keep in_utterance state
+                    self.continuous_speech_count = 0
+                    # Clear buffer but maintain utterance state
+                    self.utterance_audio_buffer = []
             
             # Update the last speech time regardless
             self.last_speech_time = current_time
             
         elif self.in_utterance:
-            # We were in an utterance, check if it's time to end it
-            if self.last_speech_time is not None and (current_time - self.last_speech_time) > self.speech_timeout:
-                # End of utterance detected
-                if self.verbose_mode:
-                    rospy.loginfo(f"{self.node_name}: Utterance ended (timeout: {current_time - self.last_speech_time:.2f}s)")
+            # We were in an utterance, check if we need to end or segment it
+            speech_gap = current_time - self.last_speech_time if self.last_speech_time else 0
+            
+            if speech_gap > self.speech_timeout:
+                # End of utterance detected, but start post-speech collection
+                if not self.post_speech_collection:
+                    if self.verbose_mode:
+                        rospy.loginfo(f"{self.node_name}: Speech gap detected ({speech_gap:.2f}s), collecting post-speech samples")
+                    # Start post-speech collection
+                    self.post_speech_collection = True
+                    self.post_speech_samples = 0
                 
-                # Process and publish the complete utterance
-                self.process_complete_utterance()
-                
-                # Reset utterance state
-                self.in_utterance = False
-                self.last_speech_time = None
+            elif speech_gap > self.sentence_pause_threshold:
+                # Sentence pause detected, segment the current utterance but include post-buffer
+                if not self.post_speech_collection:
+                    if self.verbose_mode:
+                        rospy.loginfo(f"{self.node_name}: Sentence pause detected ({speech_gap:.2f}s), collecting post-speech samples")
+                    # Start post-speech collection
+                    self.post_speech_collection = True
+                    self.post_speech_samples = 0
 
     def process_complete_utterance(self):
         """
         Process and publish a complete utterance from the buffer.
-        This is called when an utterance is detected as complete.
+        This is called when an utterance is detected as complete or when a sentence boundary is detected.
         """
         with self.utterance_lock:
             # Convert buffer to numpy array
@@ -499,20 +576,17 @@ class SoundDetectionNode:
                     rospy.loginfo(f"{self.node_name}: Utterance too short, discarding ({len(self.utterance_audio_buffer)/self.frequency_sample:.2f}s)")
                 return
                 
-            utterance_data = np.array(list(self.utterance_audio_buffer), dtype=np.float32)
+            utterance_data = np.array(self.utterance_audio_buffer, dtype=np.float32)
             
             # Apply processing to the entire utterance
             processed_utterance = self.apply_bandpass_and_spectral_subtraction(utterance_data, self.frequency_sample)
-            
+
             # Publish the processed utterance to the original signal topic
             self.publish_signal(processed_utterance)
             
-            # Clear the buffer
-            self.utterance_audio_buffer.clear()
-            
             if self.verbose_mode:
                 duration = len(processed_utterance) / self.frequency_sample
-                rospy.loginfo(f"{self.node_name}: Published complete utterance ({duration:.2f}s) to /soundDetection/signal")
+                rospy.loginfo(f"{self.node_name}: Published speech segment ({duration:.2f}s) to /soundDetection/signal")
 
     def process_audio_data(self, msg):
         """
@@ -571,32 +645,6 @@ class SoundDetectionNode:
                 self.frontleft_buffer[self.accumulated_samples:] = sigIn_frontLeft[:remaining]
                 self.frontright_buffer[self.accumulated_samples:] = sigIn_frontRight[:remaining]
                 self.accumulated_samples = self.localization_buffer_size
-
-    def voice_detected(self, audio_frame):
-        """
-        Use Voice Activity Detection (VAD) to determine if voice is present.
-        
-        Args:
-            audio_frame (np.ndarray): Audio frame to analyze
-            
-        Returns:
-            bool: True if voice is detected, False otherwise
-        """
-        try:
-            # Process the audio in VAD frame-sized chunks
-            for start in range(0, len(audio_frame) - self.vad_frame_size + 1, self.vad_frame_size):
-                frame = audio_frame[start:start + self.vad_frame_size]
-                
-                # Convert to int16 bytes for WebRTC VAD
-                frame_bytes = (frame * 32767).astype(np.int16).tobytes()
-                
-                # Check if this frame contains speech
-                if self.vad.is_speech(frame_bytes, self.frequency_sample):
-                    return True
-            return False
-        except Exception as e:
-            rospy.logwarn(f"Error in VAD processing: {e}")
-            return False
 
     def localize(self, sigIn_frontLeft, sigIn_frontRight):
         """
