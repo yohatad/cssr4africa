@@ -30,13 +30,14 @@ from datetime import datetime
 from cssr_system.msg import microphone_msg_file
 from threading import Lock
 from std_msgs.msg import Float32MultiArray
-from scipy import signal
 from threading import RLock
+# Import noisereduce library for noise reduction
+import noisereduce as nr
 
 class SoundDetectionNode:
     """
-    SoundDetectionNode processes audio data from a microphone topic, applies VAD to determine if speech is present,
-    applies bandpass filtering and spectral subtraction on the left channel, and localizes the sound source by computing
+    SoundDetectionNode processes audio data from a microphone topic, applies noise reduction using the noisereduce library,
+    applies VAD to determine if speech is present, and localizes the sound source by computing
     the interaural time difference (ITD) via GCC-PHAT.
     
     Modified to publish speech segments based on natural pauses and handle long utterances,
@@ -48,10 +49,12 @@ class SoundDetectionNode:
         Sets up ROS subscribers, publishers, and loads configuration parameters.
         """
         # Set node name for consistent logging
-        self.node_name = "sound_detection"
+        self.node_name = "soundDetection"
         
         # Get configuration parameters from the ROS parameter server
         self.config = rospy.get_param('/soundDetection_config', {})
+
+        self.noise_profile = np.load('/home/yoha/workspace/pepper_rob_ws/src/cssr4africa/cssr_system/sound_detection/data/noise_profile.npy')
         
         # Set parameters from config
         self.frequency_sample = 48000
@@ -97,6 +100,13 @@ class SoundDetectionNode:
         self.frontleft_buffer = np.zeros(self.localization_buffer_size, dtype=np.float32)
         self.frontright_buffer = np.zeros(self.localization_buffer_size, dtype=np.float32)
         self.accumulated_samples = 0
+
+        # Noise reduction parameters
+        self.noise_reduction_enabled = self.config.get('noiseReductionEnabled', True)
+        # Store a buffer of noise samples for the noise profile (assume first few frames are noise)
+        self.noise_buffer_size = self.config.get('noiseBufferSize', 3)  # Number of frames to use for noise profile
+        self.noise_buffer = []
+        self.noise_buffer_filled = False
 
         if self.enable_plot:
             # Set up plotting parameters
@@ -151,7 +161,7 @@ class SoundDetectionNode:
         self.direction_pub = rospy.Publisher('/soundDetection/direction', std_msgs.msg.Float32, queue_size=10)
         
         if self.verbose_mode:
-            rospy.loginfo(f"{self.node_name}: Sound detection node initialized with extended buffering.")
+            rospy.loginfo(f"{self.node_name}: Sound detection node initialized with noise reduction and extended buffering.")
             rospy.loginfo(f"{self.node_name}: Utterance timeout: {self.speech_timeout}s, Sentence pause: {self.sentence_pause_threshold}s")
             rospy.loginfo(f"{self.node_name}: Pre-buffer: {self.pre_buffer_duration}s, Post-buffer: {self.post_buffer_duration}s")
             rospy.loginfo(f"{self.node_name}: Max continuous speech: {self.max_continuous_speech}s")
@@ -258,7 +268,7 @@ class SoundDetectionNode:
         
         # Plot both signals
         plt.plot(time_axis, raw_norm, label='Raw Signal', color='blue', alpha=0.7)
-        plt.plot(time_axis, processed_norm, label='Processed Signal', color='orange', alpha=0.7)
+        plt.plot(time_axis, processed_norm, label='Processed Signal (Noise Reduced)', color='orange', alpha=0.7)
         
         # Add title and labels
         plt.title('Audio Signal Comparison (Normalized)')
@@ -280,80 +290,50 @@ class SoundDetectionNode:
         if self.verbose_mode:
             rospy.loginfo(f"{self.node_name}: Audio comparison plot saved to: {plot_path}")
 
-    def spectral_subtraction(self, noisy_signal, fs, noise_frames=None, n_fft=None, hop_length=None):
-        # Get values from config or use defaults
-        noise_frames = noise_frames or self.config.get('noiseFrames', 15)
-        n_fft = n_fft or self.config.get('fftSize', 1024)
-        hop_length = hop_length or self.config.get('hopLength', 512)
-        alpha = self.config.get('noiseReductionAlpha', 1.0)  # Less than 1.0 = conservative
-        floor_coeff = self.config.get('spectralFloorCoeff', 0.005)  # e.g., 1% of noise
-
-        # STFT
-        f, t, Zxx = signal.stft(noisy_signal, fs=fs, nperseg=n_fft, noverlap=n_fft - hop_length)
-        magnitude = np.abs(Zxx)
-        phase = np.angle(Zxx)
-
-        # Noise estimate from early frames
-        if len(magnitude[0]) > noise_frames:
-            noise_estimate = np.mean(magnitude[:, :noise_frames], axis=1, keepdims=True)
-        else:
-            # Handle case where there aren't enough frames
-            noise_estimate = np.mean(magnitude, axis=1, keepdims=True)
-
-        # Subtract and apply flooring
-        magnitude_clean = magnitude - alpha * noise_estimate
-        spectral_floor = floor_coeff * noise_estimate
-        magnitude_clean = np.maximum(magnitude_clean, spectral_floor)
-
-        # Reconstruct signal
-        Zxx_clean = magnitude_clean * np.exp(1j * phase)
-        _, recovered_signal = signal.istft(Zxx_clean, fs=fs, nperseg=n_fft, noverlap=n_fft - hop_length)
-
-        return recovered_signal
-    
-    def normalize_rms(self, signal, target_rms=0.1):
-        rms = np.sqrt(np.mean(signal ** 2))
-        return signal * (target_rms / (rms + 1e-6)) if rms > 0 else signal
-
-    def apply_bandpass_and_spectral_subtraction(self, data, fs):
+    def apply_noise_reduction(self, audio_data, noise_profile=None):
         """
-        Apply bandpass filtering followed by spectral subtraction.
+        Apply noise reduction to the audio signal using the preloaded noise profile.
+
+        Args:
+            audio_data (np.ndarray): The audio signal to process
+
+        Returns:
+            np.ndarray: The noise-reduced audio signal
+        """
+        try:
+            if self.noise_profile is None:
+                if self.verbose_mode:
+                    rospy.logwarn(f"{self.node_name}: Noise profile not set. Returning original audio.")
+                return audio_data
+
+            # Apply noise reduction using the provided noise profile
+            reduced_noise = nr.reduce_noise(
+                y=audio_data,
+                y_noise=self.noise_profile,
+                sr=self.frequency_sample,
+                stationary=True,  # good for real-time, non-drifting noise
+                prop_decrease=0.2
+            )
+
+            return reduced_noise
+
+        except Exception as e:
+            rospy.logerr(f"{self.node_name}: Noise reduction error: {e}")
+            return audio_data  # Fallback to unprocessed audio
+
+    def normalize_rms(self, signal, target_rms=0.1):
+        """
+        Normalize the signal to a target RMS level.
         
         Args:
-            data (np.ndarray): Input audio data
-            fs (int): Sampling frequency
+            signal (np.ndarray): Input audio signal
+            target_rms (float): Target RMS value
             
         Returns:
-            np.ndarray: Processed signal with bandpass filtering and spectral subtraction
+            np.ndarray: The normalized signal
         """
-        # Bandpass filter parameters
-        lowcut = self.config.get('lowcutFrequency', 300.0)  # Hz
-        highcut = self.config.get('highcutFrequency', 3400.0)  # Hz
-
-        # Normalize frequencies by Nyquist frequency
-        nyq = 0.5 * fs
-        low = lowcut / nyq
-        high = highcut / nyq
-        
-        # Design bandpass filter
-        b, a = signal.butter(N=2, Wn=[low, high], btype='bandpass')
-        
-        # Apply bandpass filter
-        filtered_signal = signal.lfilter(b, a, data)
-        
-        # Apply spectral subtraction to the filtered signal
-        processed_signal = self.spectral_subtraction(filtered_signal, fs)
-
-        # Normalize the processed signal to a target RMS level
-        processed_signal = self.normalize_rms(processed_signal, target_rms=0.1)
-
-        # Apply noise gate to the processed signal
-        processed_signal = self.apply_noise_gate(processed_signal, threshold=0.005)
-        
-        return processed_signal
-    
-    def apply_noise_gate(self, signal, threshold=0.02):
-        return np.where(np.abs(signal) < threshold, 0.0, signal)
+        rms = np.sqrt(np.mean(signal ** 2))
+        return signal * (target_rms / (rms + 1e-6)) if rms > 0 else signal
 
     def voice_detected(self, audio_frame):
         """
@@ -395,11 +375,15 @@ class SoundDetectionNode:
                 rospy.loginfo(f"{self.node_name}: running.")
                 self.last_status_time = current_time
                 
-            # Process audio data
+            # Process audio data to extract channels
             sigIn_frontLeft, sigIn_frontRight = self.process_audio_data(msg)
-
-            # Always maintain a pre-speech buffer, regardless of speech state
-            self.pre_speech_buffer.extend(sigIn_frontLeft)
+            
+            # Apply noise reduction before VAD - this is the key change
+            reduced_frontLeft = self.apply_noise_reduction(sigIn_frontLeft, self.noise_profile)
+            # reduced_frontLeft = sigIn_frontLeft
+            
+            # Always maintain a pre-speech buffer of the noise-reduced signal
+            self.pre_speech_buffer.extend(reduced_frontLeft)
             if len(self.pre_speech_buffer) > self.pre_buffer_size:
                 # Keep only the most recent samples in the pre-buffer
                 self.pre_speech_buffer = self.pre_speech_buffer[-self.pre_buffer_size:]
@@ -407,8 +391,8 @@ class SoundDetectionNode:
             # If we're in post-speech collection mode, add samples to the main buffer
             if self.post_speech_collection:
                 with self.utterance_lock:
-                    self.utterance_audio_buffer.extend(sigIn_frontLeft)
-                    self.post_speech_samples += len(sigIn_frontLeft)
+                    self.utterance_audio_buffer.extend(reduced_frontLeft)
+                    self.post_speech_samples += len(reduced_frontLeft)
                     
                     # Check if we've collected enough post-speech samples
                     if self.post_speech_samples >= self.post_buffer_size:
@@ -423,21 +407,21 @@ class SoundDetectionNode:
                         self.utterance_audio_buffer = []
                         self.in_utterance = False
                     
-                # Update localization buffers
+                # Update localization buffers - use original signals for localization
                 with self.lock:
                     self.update_buffers(sigIn_frontLeft, sigIn_frontRight)
                     
                 # Return early if we're just collecting post-speech samples
                 return
             
-            # Check intensity threshold
-            if not self.is_intense_enough(sigIn_frontLeft):
+            # Check intensity threshold on the noise-reduced signal
+            if not self.is_intense_enough(reduced_frontLeft):
                 # Still maintain utterance state
                 self.handle_utterance_state(False)
                 return
 
-            # Perform VAD check to determine if speech is present
-            is_speech = self.voice_detected(sigIn_frontLeft)
+            # Perform VAD check on the noise-reduced signal to determine if speech is present
+            is_speech = self.voice_detected(reduced_frontLeft)
             
             # If this is the start of speech, include pre-buffer content
             if is_speech and not self.in_utterance:
@@ -445,11 +429,11 @@ class SoundDetectionNode:
                     # Add pre-speech buffer content to the beginning of the utterance buffer
                     self.utterance_audio_buffer = list(self.pre_speech_buffer)
                     # Then add the current frame
-                    self.utterance_audio_buffer.extend(sigIn_frontLeft)
+                    self.utterance_audio_buffer.extend(reduced_frontLeft)
             elif is_speech or self.in_utterance:
                 # Add to utterance buffer if speech is detected or we're in an utterance
                 with self.utterance_lock:
-                    self.utterance_audio_buffer.extend(sigIn_frontLeft)
+                    self.utterance_audio_buffer.extend(reduced_frontLeft)
             
             # Keep track of speech state for utterance detection
             self.handle_utterance_state(is_speech)
@@ -470,8 +454,21 @@ class SoundDetectionNode:
                         self.raw_buffer_index = min(data_length - remaining, self.plot_buffer_size)
                         if self.raw_buffer_index > 0:
                             self.raw_plot_buffer[:self.raw_buffer_index] = sigIn_frontLeft[remaining:remaining + self.raw_buffer_index]
+                    
+                    # Add processed signal to plot buffer
+                    if self.processed_buffer_index + data_length <= self.plot_buffer_size:
+                        self.processed_plot_buffer[self.processed_buffer_index:self.processed_buffer_index + data_length] = reduced_frontLeft
+                        self.processed_buffer_index += data_length
+                    else:
+                        # Buffer is full or wrapping around
+                        remaining = self.plot_buffer_size - self.processed_buffer_index
+                        if remaining > 0:
+                            self.processed_plot_buffer[self.processed_buffer_index:] = reduced_frontLeft[:remaining]
+                        self.processed_buffer_index = min(data_length - remaining, self.plot_buffer_size)
+                        if self.processed_buffer_index > 0:
+                            self.processed_plot_buffer[:self.processed_buffer_index] = reduced_frontLeft[remaining:remaining + self.processed_buffer_index]
 
-            # Update localization buffers
+            # Update localization buffers - use original signals for localization
             with self.lock:
                 self.update_buffers(sigIn_frontLeft, sigIn_frontRight)
 
@@ -486,9 +483,6 @@ class SoundDetectionNode:
                     self.frontleft_buffer = np.zeros(self.localization_buffer_size, dtype=np.float32)
                     self.frontright_buffer = np.zeros(self.localization_buffer_size, dtype=np.float32)
                     self.accumulated_samples = 0
-
-                # We don't publish processed signal samples here anymore
-                # Instead, we'll publish complete utterances when detected
                 
                 # Plot the audio if enabled
                 if self.enable_plot:
@@ -574,8 +568,9 @@ class SoundDetectionNode:
                 
             utterance_data = np.array(self.utterance_audio_buffer, dtype=np.float32)
             
-            # Apply processing to the entire utterance
-            processed_utterance = self.apply_bandpass_and_spectral_subtraction(utterance_data, self.frequency_sample)
+            # No additional processing needed as noise reduction has already been applied
+            # Just normalize the levels for consistency
+            processed_utterance = self.normalize_rms(utterance_data, target_rms=0.1)
 
             # Publish the processed utterance to the original signal topic
             self.publish_signal(processed_utterance)
