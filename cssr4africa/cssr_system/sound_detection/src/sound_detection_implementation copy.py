@@ -41,9 +41,7 @@ class ChunkRecorder:
         
         # Context window for processing
         self.context_window = np.zeros(self.context_size, dtype=np.float32)
-        
-        # RMS normalization parameters
-        self.target_rms = 0.2              # Target RMS level (0.2 is a good value for speech)
+
         
         # Get microphone topic - using similar approach as in SoundDetectionNode
         microphone_topic = self.get_microphone_topic()
@@ -56,12 +54,11 @@ class ChunkRecorder:
         rospy.loginfo(f"Chunk Recorder: Using {self.context_duration} second context window")
         rospy.loginfo(f"Chunk Recorder: Processing block size: {self.block_size} samples ({self.block_size/self.frequency_sample:.3f} seconds)")
         rospy.loginfo(f"Chunk Recorder: Total blocks to collect: {self.total_blocks}")
-        rospy.loginfo(f"Chunk Recorder: Using RMS normalization with target level: {self.target_rms}")
         rospy.loginfo(f"Chunk Recorder: Subscribing to topic {microphone_topic}")
         
         # Subscribe to the microphone topic
         self.audio_sub = rospy.Subscriber(microphone_topic, microphone_msg_file, self.audio_callback)
-    
+        
     def get_microphone_topic(self):
         """
         Get the microphone topic from the ROS parameter server or use a fallback method.
@@ -136,57 +133,9 @@ class ChunkRecorder:
         except Exception as e:
             rospy.logerr(f"Error in audio_callback: {e}")
     
-    def calculate_rms(self, signal):
-        """
-        Calculate the Root Mean Square (RMS) of an audio signal.
-        
-        Args:
-            signal (np.ndarray): Audio signal
-            
-        Returns:
-            float: RMS value
-        """
-        # Avoid division by zero or invalid values
-        if len(signal) == 0:
-            return 0.0
-            
-        # Calculate RMS
-        return np.sqrt(np.mean(np.square(signal)))
-    
-    def apply_rms_normalization(self, signal, target_rms=None):
-        """
-        Apply RMS normalization to an audio signal.
-        
-        Args:
-            signal (np.ndarray): Input audio signal
-            target_rms (float, optional): Target RMS level. Defaults to self.target_rms.
-            
-        Returns:
-            np.ndarray: Normalized audio signal
-        """
-        if target_rms is None:
-            target_rms = self.target_rms
-            
-        # Calculate current RMS
-        current_rms = self.calculate_rms(signal)
-        
-        # Skip normalization if RMS is too low (silence)
-        if current_rms < 1e-10:
-            return signal
-            
-        # Calculate gain
-        gain = target_rms / current_rms
-        
-        # Apply gain
-        normalized_signal = signal * gain
-        
-        return normalized_signal
-    
     def process_block(self, current_block):
         """
         Process a single block of audio using the context window and custom noise profile.
-        Only applies noise reduction, but stores the result without normalization.
-        RMS normalization will be applied to the entire recording at once.
         
         Args:
             current_block (np.ndarray): New audio block to process
@@ -197,19 +146,28 @@ class ChunkRecorder:
             self.context_window = np.roll(self.context_window, -block_size_actual)
             self.context_window[-block_size_actual:] = current_block
             
+       
             # Fallback to stationary noise reduction if no profile is available
             reduced_context = nr.reduce_noise(
                 y=self.context_window,
                 sr=self.frequency_sample,
                 stationary=True,
-                prop_decrease=0.9
+                prop_decrease=0.5
             )
         
             # Extract only the most recent block from the processed context
             processed_block = reduced_context[-block_size_actual:]
             
-            # Add to processed buffer without normalization
-            # Normalization will be applied to the entire signal at once in save_audio()
+            # Apply gain
+            gain = 5.5  # You can adjust this value
+            processed_block = processed_block * gain
+            
+            # Prevent clipping
+            max_val = np.max(np.abs(processed_block))
+            if max_val > 1.0:
+                processed_block = processed_block / max_val
+            
+            # Add to processed buffer
             self.processed_buffer.extend(processed_block)
             
         except Exception as e:
@@ -218,28 +176,12 @@ class ChunkRecorder:
     def save_audio(self):
         """
         Save the raw and processed audio to files.
-        Applies RMS normalization to the entire processed audio signal at once.
         """
         try:
             # Convert buffers to numpy arrays
             # Limit to total_samples to ensure consistent file lengths
             raw_audio = np.array(self.raw_buffer[:self.total_samples], dtype=np.float32)
             processed_audio = np.array(self.processed_buffer[:self.total_samples], dtype=np.float32)
-            
-            # Apply RMS normalization to the entire processed audio at once
-            rospy.loginfo("Applying RMS normalization to the entire recording...")
-            current_rms = self.calculate_rms(processed_audio)
-            rospy.loginfo(f"Original RMS level: {current_rms:.6f}")
-            processed_audio = self.apply_rms_normalization(processed_audio)
-            new_rms = self.calculate_rms(processed_audio)
-            rospy.loginfo(f"Normalized RMS level: {new_rms:.6f}")
-            
-            # Prevent clipping on the entire signal
-            max_val = np.max(np.abs(processed_audio))
-            if max_val > 1.0:
-                rospy.loginfo(f"Preventing clipping. Max value was: {max_val:.6f}")
-                processed_audio = processed_audio / max_val
-                rospy.loginfo(f"New max value after scaling: {np.max(np.abs(processed_audio)):.6f}")
             
             # Generate filename with timestamp
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
