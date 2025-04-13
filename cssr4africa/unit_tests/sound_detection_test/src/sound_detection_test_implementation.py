@@ -114,7 +114,7 @@ class SoundDetectionTest:
         
         # Subscribe to the original microphone topic for unfiltered audio
         if self.record_unfiltered and self.microphone_topic:
-            self.unfiltered_sub = rospy.Subscriber(self.microphone_topic, microphone_test_msg_file, self.unfiltered_audio_callback)
+            self.unfiltered_sub = rospy.Subscriber(self.microphone_topic, sound_detection_test_microphone_msg_file, self.unfiltered_audio_callback)
             rospy.loginfo(f"{self.node_name}: Subscribed to unfiltered audio: {self.microphone_topic}")
         
         # Subscribe to the direction topic
