@@ -4,4 +4,5 @@ webrtcvad
 pyYaml 
 rospkg 
 rospy
+noisereduce
 matplotlib
