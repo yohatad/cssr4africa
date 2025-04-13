@@ -2,7 +2,7 @@
 sound_detection_implementation.py Implementation code for running the sound detection and localization algorithm
 
 Author: Yohannes Tadesse Haile
-Date: April 06, 2025
+Date: April 10, 2025
 Version: v1.0
 
 Copyright (C) 2023 CSSR4Africa Consortium
@@ -23,14 +23,11 @@ import std_msgs.msg
 import webrtcvad
 import rospkg
 import numpy as np
-import matplotlib
-matplotlib.use('Agg')  # Use non-interactive backend
-import matplotlib.pyplot as plt
-from datetime import datetime
 from cssr_system.msg import microphone_msg_file
 from threading import Lock
 from std_msgs.msg import Float32MultiArray
 from scipy import signal
+import noisereduce as nr  # Added for noise reduction
 
 class SoundDetectionNode:
     """
@@ -56,48 +53,26 @@ class SoundDetectionNode:
         self.intensity_threshold = self.config.get('intensityThreshold', 3.9e-3)
         self.verbose_mode = self.config.get('verboseMode', False)
         
-        self.enable_plot = rospy.get_param('/soundDetection_config/generatePlot', False)
-        
         # Buffer for localization (2 channels)
         self.localization_buffer_size = self.config.get('localizationBufferSize', 8192)
         self.frontleft_buffer = np.zeros(self.localization_buffer_size, dtype=np.float32)
         self.frontright_buffer = np.zeros(self.localization_buffer_size, dtype=np.float32)
         self.accumulated_samples = 0
 
-        if self.enable_plot:
-            # Set up plotting parameters
-            self.plot_interval = rospy.get_param('/soundDetection_config/plotInterval', 10.0)  # seconds
-            self.last_plot_time = rospy.get_time()
-            self.plot_buffer_size = int(self.frequency_sample * self.plot_interval)
-            self.raw_plot_buffer = np.zeros(self.plot_buffer_size, dtype=np.float32)
-            self.processed_plot_buffer = np.zeros(self.plot_buffer_size, dtype=np.float32)
-            self.raw_buffer_index = 0
-            self.processed_buffer_index = 0
-            self.plot_lock = Lock()
-            
-            # Get the save directory
-            rospack = rospkg.RosPack()
-            try:
-                pkg_path = rospack.get_path('unit_tests')
-                self.plot_save_dir = os.path.join(pkg_path, 'sound_detection_test/data')
-                # Create directory if it doesn't exist
-                if not os.path.exists(self.plot_save_dir):
-                    os.makedirs(self.plot_save_dir)
-            except rospkg.ResourceNotFound:
-                rospy.logerr(f"{self.node_name}: Package 'unit_tests' not found.")
-                raise
-            except Exception as e:
-                rospy.logerr(f"{self.node_name}: Error creating plot save directory: {e}")
-                raise
-                
-            if self.verbose_mode:
-                rospy.loginfo(f"{self.node_name}: Sound detection plotting enabled, saving to {self.plot_save_dir}")
-
         # Initialize VAD with configurable aggressiveness mode
         self.vad_aggressiveness = self.config.get('vadAggressiveness', 3)
         self.vad = webrtcvad.Vad(self.vad_aggressiveness)
         self.vad_frame_duration = 0.02  # 20 ms (WebRTC VAD requires specific frame durations)
         self.vad_frame_size = int(self.frequency_sample * self.vad_frame_duration)
+
+        # Initialize noise reduction parameters
+        self.context_duration = self.config.get('contextDuration', 1.0)  # Context window duration in seconds
+        self.context_size = int(self.frequency_sample * self.context_duration)
+        self.left_context_window = np.zeros(self.context_size, dtype=np.float32)  # Only need left channel context
+        self.use_noise_reduction = self.config.get('useNoiseReduction', True)
+        
+        if self.use_noise_reduction and self.verbose_mode:
+            rospy.loginfo(f"{self.node_name}: Noise reduction enabled for left channel with {self.context_duration}s context window")
 
         # Retrieve the microphone topic from the configuration file
         microphone_topic = self.extract_topics('Microphone')
@@ -192,128 +167,45 @@ class SoundDetectionNode:
             rospy.logerr(f"ROS package 'cssr_system' not found: {e}")
         return None
     
-    def plot_audio_signals(self, raw_data, processed_data):
+    def apply_noise_reduction(self, current_block):
         """
-        Create a plot comparing raw and processed audio signals.
+        Apply noise reduction to an audio block using the rolling context window approach.
+        Only processes the left channel.
         
         Args:
-            raw_data (np.ndarray): Raw input audio data
-            processed_data (np.ndarray): Processed audio data
-        """
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        
-        # Create the figure
-        plt.figure(figsize=(12, 6))
-        
-        # Use the same time axis for both signals
-        time_axis = np.linspace(0, self.plot_interval, self.plot_buffer_size, endpoint=False)
-        
-        # Normalize signals for better comparison
-        if np.max(np.abs(raw_data)) > 0:
-            raw_norm = raw_data / np.max(np.abs(raw_data))
-        else:
-            raw_norm = raw_data
-            
-        if np.max(np.abs(processed_data)) > 0:
-            processed_norm = processed_data / np.max(np.abs(processed_data))
-        else:
-            processed_norm = processed_data
-        
-        # Plot both signals
-        plt.plot(time_axis, raw_norm, label='Raw Signal', color='blue', alpha=0.7)
-        plt.plot(time_axis, processed_norm, label='Processed Signal', color='orange', alpha=0.7)
-        
-        # Add title and labels
-        plt.title('Audio Signal Comparison (Normalized)')
-        plt.xlabel('Time (s)')
-        plt.ylabel('Amplitude (Normalized)')
-        plt.grid(True)
-        plt.legend()
-        
-        # Add info text
-        info_text = f"Raw buffer fill: {self.raw_buffer_index/self.plot_buffer_size*100:.1f}%, " \
-                    f"Processed buffer fill: {self.processed_buffer_index/self.plot_buffer_size*100:.1f}%"
-        plt.figtext(0.5, 0.01, info_text, ha='center', fontsize=9)
-        
-        # Save the plot
-        plot_path = os.path.join(self.plot_save_dir, f'sound_detection_test_output_sound_comparison_{timestamp}.png')
-        plt.savefig(plot_path, dpi=150)
-        plt.close()
-        
-        if self.verbose_mode:
-            rospy.loginfo(f"{self.node_name}: Audio comparison plot saved to: {plot_path}")
-
-    def spectral_subtraction(self, noisy_signal, fs, noise_frames=None, n_fft=None, hop_length=None):
-        # Get values from config or use defaults
-        noise_frames = noise_frames or self.config.get('noiseFrames', 15)
-        n_fft = n_fft or self.config.get('fftSize', 1024)
-        hop_length = hop_length or self.config.get('hopLength', 512)
-        alpha = self.config.get('noiseReductionAlpha', 1.0)  # Less than 1.0 = conservative
-        floor_coeff = self.config.get('spectralFloorCoeff', 0.005)  # e.g., 1% of noise
-
-        # STFT
-        f, t, Zxx = signal.stft(noisy_signal, fs=fs, nperseg=n_fft, noverlap=n_fft - hop_length)
-        magnitude = np.abs(Zxx)
-        phase = np.angle(Zxx)
-
-        # Noise estimate from early frames
-        noise_estimate = np.mean(magnitude[:, :noise_frames], axis=1, keepdims=True)
-
-        # Subtract and apply flooring
-        magnitude_clean = magnitude - alpha * noise_estimate
-        spectral_floor = floor_coeff * noise_estimate
-        magnitude_clean = np.maximum(magnitude_clean, spectral_floor)
-
-        # Reconstruct signal
-        Zxx_clean = magnitude_clean * np.exp(1j * phase)
-        _, recovered_signal = signal.istft(Zxx_clean, fs=fs, nperseg=n_fft, noverlap=n_fft - hop_length)
-
-        return recovered_signal
-    
-    def normalize_rms(self, signal, target_rms=0.1):
-        rms = np.sqrt(np.mean(signal ** 2))
-        return signal * (target_rms / (rms + 1e-6)) if rms > 0 else signal
-
-    def apply_bandpass_and_spectral_subtraction(self, data, fs):
-        """
-        Apply bandpass filtering followed by spectral subtraction.
-        
-        Args:
-            data (np.ndarray): Input audio data
-            fs (int): Sampling frequency
+            current_block (np.ndarray): New audio block to process
+            is_left_channel (bool): Parameter kept for API compatibility but not used
             
         Returns:
-            np.ndarray: Processed signal with bandpass filtering and spectral subtraction
+            np.ndarray: Noise-reduced audio block
         """
-        # Bandpass filter parameters
-        lowcut = self.config.get('lowcutFrequency', 300.0)  # Hz
-        highcut = self.config.get('highcutFrequency', 3400.0)  # Hz
-
-        # Normalize frequencies by Nyquist frequency
-        nyq = 0.5 * fs
-        low = lowcut / nyq
-        high = highcut / nyq
-        
-        # Design bandpass filter
-        b, a = signal.butter(N=2, Wn=[low, high], btype='bandpass')
-        
-        # Apply bandpass filter
-        filtered_signal = signal.lfilter(b, a, data)
-        
-        # # Apply spectral subtraction to the filtered signal
-        processed_signal = self.spectral_subtraction(filtered_signal, fs)
-
-        # Normalize the processed signal to a target RMS level
-        processed_signal = self.normalize_rms(filtered_signal, target_rms=0.1)
-
-        # Apply noise gate to the processed signal
-        processed_signal = self.apply_noise_gate(processed_signal, threshold=0.005)
-        
-        return processed_signal
+        try:
+            # Skip if noise reduction is disabled
+            if not self.use_noise_reduction:
+                return current_block
+                
+            # Update context window: shift old data left and add new block at the end
+            block_size_actual = len(current_block)
+            self.left_context_window = np.roll(self.left_context_window, -block_size_actual)
+            self.left_context_window[-block_size_actual:] = current_block
+            
+            # Apply stationary noise reduction to the context window
+            reduced_context = nr.reduce_noise(
+                y=self.left_context_window,
+                sr=self.frequency_sample,
+                stationary=True,
+                prop_decrease=0.9
+            )
+            
+            # Extract only the most recent block from the processed context
+            processed_block = reduced_context[-block_size_actual:]
+            
+            return processed_block
+            
+        except Exception as e:
+            rospy.logerr(f"{self.node_name}: Error in noise reduction: {e}")
+            return current_block  # Return original block on error
     
-    def apply_noise_gate(self, signal, threshold=0.02):
-        return np.where(np.abs(signal) < threshold, 0.0, signal)
-
     def voice_detected(self, audio_frame):
         """
         Use Voice Activity Detection (VAD) to determine if voice is present.
@@ -360,74 +252,30 @@ class SoundDetectionNode:
             # Check intensity threshold
             if not self.is_intense_enough(sigIn_frontLeft):
                 return
-
-            # MODIFIED: Perform VAD check early in the pipeline
-            # Check for voice activity in the left channel
-            self.speech_detected = self.voice_detected(sigIn_frontLeft)
+                
+            # Apply noise reduction only to the left channel
+            sigIn_frontLeft_clean = self.apply_noise_reduction(sigIn_frontLeft)
             
+            # MODIFIED: Perform VAD check early in the pipeline
+            # Check for voice activity in the left channel (using noise-reduced signal for better detection)
+            self.speech_detected = self.voice_detected(sigIn_frontLeft_clean)
+
             # If no speech detected, we can skip further processing
             if not self.speech_detected:
                 return
+            
+            # Publish the noise-reduced left channel signal
+            self.publish_signal(sigIn_frontLeft_clean)
 
-            # Update plotting buffers if plotting is enabled
-            if self.enable_plot:
-                with self.plot_lock:
-                    # Add raw signal to plot buffer
-                    data_length = len(sigIn_frontLeft)
-                    if self.raw_buffer_index + data_length <= self.plot_buffer_size:
-                        self.raw_plot_buffer[self.raw_buffer_index:self.raw_buffer_index + data_length] = sigIn_frontLeft
-                        self.raw_buffer_index += data_length
-                    else:
-                        # Buffer is full or wrapping around
-                        remaining = self.plot_buffer_size - self.raw_buffer_index
-                        if remaining > 0:
-                            self.raw_plot_buffer[self.raw_buffer_index:] = sigIn_frontLeft[:remaining]
-                        self.raw_buffer_index = min(data_length - remaining, self.plot_buffer_size)
-                        if self.raw_buffer_index > 0:
-                            self.raw_plot_buffer[:self.raw_buffer_index] = sigIn_frontLeft[remaining:remaining + self.raw_buffer_index]
-
-            # Update localization buffers
+            # Update localization buffers with RAW signals (not noise-reduced)
             with self.lock:
                 self.update_buffers(sigIn_frontLeft, sigIn_frontRight)
 
             # Localization processing
             if self.accumulated_samples >= self.localization_buffer_size:
-                # Apply filtering and processing
-                processed_signal = self.apply_bandpass_and_spectral_subtraction(
-                    self.frontleft_buffer, self.frequency_sample)
                 
-                # Update processed signal plot buffer if plotting is enabled
-                if self.enable_plot:
-                    with self.plot_lock:
-                        # Add processed signal to plot buffer
-                        data_length = len(processed_signal)
-                        if self.processed_buffer_index + data_length <= self.plot_buffer_size:
-                            self.processed_plot_buffer[self.processed_buffer_index:self.processed_buffer_index + data_length] = processed_signal
-                            self.processed_buffer_index += data_length
-                        else:
-                            # Buffer is full or wrapping around
-                            remaining = self.plot_buffer_size - self.processed_buffer_index
-                            if remaining > 0:
-                                self.processed_plot_buffer[self.processed_buffer_index:] = processed_signal[:remaining]
-                            self.processed_buffer_index = min(data_length - remaining, self.plot_buffer_size)
-                            if self.processed_buffer_index > 0:
-                                self.processed_plot_buffer[:self.processed_buffer_index] = processed_signal[remaining:remaining + self.processed_buffer_index]
-                    
-                    # Check if it's time to generate a plot
-                    current_time = rospy.get_time()
-                    if current_time - self.last_plot_time >= self.plot_interval:
-                        if self.raw_buffer_index >= self.plot_buffer_size * 0.5 and self.processed_buffer_index >= self.plot_buffer_size * 0.5:
-                            self.plot_audio_signals(self.raw_plot_buffer, self.processed_plot_buffer)
-                            # Reset buffer indices after plotting
-                            self.raw_buffer_index = 0
-                            self.processed_buffer_index = 0
-                            self.last_plot_time = current_time
-                
-                # Publish the processed signal
-                self.publish_signal(processed_signal)
-                
-                # Check if voice is detected and perform localization
-                if self.voice_detected(self.frontleft_buffer):
+                # Check if voice is detected using the noise-reduced left channel for better detection
+                if self.voice_detected(self.apply_noise_reduction(self.frontleft_buffer)):
                     self.localize(self.frontleft_buffer, self.frontright_buffer)
                 
                 # Reset buffers for next batch
@@ -496,32 +344,6 @@ class SoundDetectionNode:
                 self.frontleft_buffer[self.accumulated_samples:] = sigIn_frontLeft[:remaining]
                 self.frontright_buffer[self.accumulated_samples:] = sigIn_frontRight[:remaining]
                 self.accumulated_samples = self.localization_buffer_size
-
-    def voice_detected(self, audio_frame):
-        """
-        Use Voice Activity Detection (VAD) to determine if voice is present.
-        
-        Args:
-            audio_frame (np.ndarray): Audio frame to analyze
-            
-        Returns:
-            bool: True if voice is detected, False otherwise
-        """
-        try:
-            # Process the audio in VAD frame-sized chunks
-            for start in range(0, len(audio_frame) - self.vad_frame_size + 1, self.vad_frame_size):
-                frame = audio_frame[start:start + self.vad_frame_size]
-                
-                # Convert to int16 bytes for WebRTC VAD
-                frame_bytes = (frame * 32767).astype(np.int16).tobytes()
-                
-                # Check if this frame contains speech
-                if self.vad.is_speech(frame_bytes, self.frequency_sample):
-                    return True
-            return False
-        except Exception as e:
-            rospy.logwarn(f"Error in VAD processing: {e}")
-            return False
 
     def localize(self, sigIn_frontLeft, sigIn_frontRight):
         """
