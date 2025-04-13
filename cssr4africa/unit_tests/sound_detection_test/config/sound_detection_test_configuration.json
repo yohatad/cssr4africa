@@ -1,11 +1,9 @@
 {
     "recordFiltered": true,
     "recordUnfiltered": true,
-    "generatePlot": true, 
     "recordDuration": 10,
-    "plotInterval": 10,
-    "plotDpi": 150,
-    "maxDirectionPoints": 100,
-    "directionPlotYlimit": 90,
+    "saveDirectionData": true,
+    "targetRMS": 0.2,
+    "applyNormalization": true,
     "verboseMode": true
 }
