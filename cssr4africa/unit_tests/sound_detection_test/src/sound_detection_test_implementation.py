@@ -105,6 +105,10 @@ class SoundDetectionTest:
         self.direction_data = []
         self.direction_timestamps = []
         self.last_plot_time = time.time()
+
+        # RMS normalization parameters
+        self.target_rms = self.config.get("targetRMS", 0.2)
+        self.apply_normalization = self.config.get("applyNormalization", True)
         
         # Get the original microphone topic from the config
         self.microphone_topic = self.extract_topics('Microphone')
@@ -187,6 +191,44 @@ class SoundDetectionTest:
             rospy.logerr(f"{self.node_name}: ROS package not found: {e}")
         return None
     
+    def normalize_rms(self, audio_data, target_rms=None, min_rms=1e-10):
+        """
+        Apply RMS normalization to audio data.
+        
+        Args:
+            audio_data (np.ndarray): Audio data to normalize
+            target_rms (float): Target RMS value (typically 0.1-0.3)
+            min_rms (float): Minimum RMS value to avoid division by zero
+            
+        Returns:
+            np.ndarray: Normalized audio data
+        """
+        if target_rms is None:
+            target_rms = self.target_rms
+            
+        # Calculate current RMS value
+        rms_current = np.sqrt(np.mean(audio_data**2))
+        
+        # Skip normalization if RMS is too low (silent)
+        if rms_current < min_rms:
+            if self.verbose_mode:
+                rospy.loginfo(f"{self.node_name}: Audio too quiet for normalization (RMS: {rms_current:.6f})")
+            return audio_data
+        
+        # Calculate scaling factor
+        scaling_factor = target_rms / rms_current
+        
+        # Apply normalization
+        normalized_data = audio_data * scaling_factor
+        
+        # Clip to prevent overflow
+        normalized_data = np.clip(normalized_data, -1.0, 1.0)
+        
+        if self.verbose_mode:
+            rospy.loginfo(f"{self.node_name}: Applied RMS normalization - Before RMS: {rms_current:.4f}, After RMS: {target_rms:.4f}, Factor: {scaling_factor:.4f}")
+        
+        return normalized_data
+        
     def filtered_audio_callback(self, msg):
         """
         Process incoming filtered audio data from soundDetection/signal.
@@ -348,7 +390,7 @@ class SoundDetectionTest:
             rospy.loginfo(f"{self.node_name}: Direction data plot saved to: {plot_path}")
     
     def save_filtered_audio(self):
-        """Save the current filtered audio buffer as a WAV file."""
+        """Save the current filtered audio buffer as a WAV file with RMS normalization."""
         if not self.filtered_audio_buffer:
             rospy.logwarn(f"{self.node_name}: Cannot save empty filtered audio buffer")
             return
@@ -363,13 +405,18 @@ class SoundDetectionTest:
             # Convert audio buffer to numpy array
             audio_np = np.array(self.filtered_audio_buffer, dtype=np.float32)
             
+            # Apply RMS normalization if enabled
+            if self.apply_normalization:
+                audio_np = self.normalize_rms(audio_np)
+            
             # Save as WAV file
             sf.write(wav_filepath, audio_np, self.sample_rate, format='WAV')
             
             # Log success
             duration = len(audio_np) / self.sample_rate  # Duration in seconds
             if self.verbose_mode:
-                rospy.loginfo(f"{self.node_name}: Saved {duration:.2f}s FILTERED audio to {wav_filepath}")
+                normalization_status = "normalized " if self.apply_normalization else ""
+                rospy.loginfo(f"{self.node_name}: Saved {duration:.2f}s {normalization_status}FILTERED audio to {wav_filepath}")
             
             # Reset state for next recording
             self.filtered_audio_buffer = []
@@ -379,7 +426,7 @@ class SoundDetectionTest:
             rospy.logerr(f"{self.node_name}: Error saving filtered audio: {e}")
     
     def save_unfiltered_audio(self):
-        """Save the current unfiltered audio buffer as a mono WAV file."""
+        """Save the current unfiltered audio buffer as a mono WAV file with RMS normalization."""
         if not self.unfiltered_audio_buffer:
             rospy.logwarn(f"{self.node_name}: Cannot save empty unfiltered audio buffer")
             return
@@ -394,18 +441,23 @@ class SoundDetectionTest:
             # Convert audio buffer to numpy array
             audio_np = np.array(self.unfiltered_audio_buffer, dtype=np.float32)
             
+            # Apply RMS normalization if enabled
+            if self.apply_normalization:
+                audio_np = self.normalize_rms(audio_np)
+            
             # Save as WAV file (mono)
             sf.write(wav_filepath, audio_np, self.sample_rate, format='WAV')
             
             # Log success
             duration = len(audio_np) / self.sample_rate  # Duration in seconds
             if self.verbose_mode:
-                rospy.loginfo(f"{self.node_name}: Saved {duration:.2f}s UNFILTERED mono audio to {wav_filepath}")
+                normalization_status = "normalized " if self.apply_normalization else ""
+                rospy.loginfo(f"{self.node_name}: Saved {duration:.2f}s {normalization_status}UNFILTERED mono audio to {wav_filepath}")
             
             # Reset state for next recording
             self.unfiltered_audio_buffer = []
             self.is_recording_unfiltered = False
-            
+
         except Exception as e:
             rospy.logerr(f"{self.node_name}: Error saving unfiltered audio: {e}")
     

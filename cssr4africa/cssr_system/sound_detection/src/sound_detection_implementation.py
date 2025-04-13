@@ -69,6 +69,9 @@ class SoundDetectionNode:
         self.vad_frame_duration = 0.02  # 20 ms (WebRTC VAD requires specific frame durations)
         self.vad_frame_size = int(self.frequency_sample * self.vad_frame_duration)
 
+        # Initialize RMS parameters
+        self.target_rms = self.config.get('targetRMS', 0.2)
+
         # Initialize noise reduction parameters
         self.context_duration = self.config.get('contextDuration', 2.0)  # Context window duration in seconds
         self.context_size = int(self.frequency_sample * self.context_duration)
@@ -196,9 +199,48 @@ class SoundDetectionNode:
             rospy.logerr(f"ROS package 'cssr_system' not found: {e}")
         return None
     
+    def normalize_rms(self, audio_data, target_rms=None, min_rms=1e-10):
+        """
+        Apply RMS normalization to audio data.
+        
+        Args:
+            audio_data (np.ndarray): Audio data to normalize
+            target_rms (float): Target RMS value (typically 0.1-0.3)
+            min_rms (float): Minimum RMS value to avoid division by zero
+            
+        Returns:
+            np.ndarray: Normalized audio data
+        """
+        if target_rms is None:
+            target_rms = self.target_rms
+            
+        # Calculate current RMS value
+        rms_current = np.sqrt(np.mean(audio_data**2))
+        
+        # Skip normalization if RMS is too low (silent)
+        if rms_current < min_rms:
+            if self.verbose_mode:
+                rospy.loginfo(f"{self.node_name}: Audio too quiet for normalization (RMS: {rms_current:.6f})")
+            return audio_data
+        
+        # Calculate scaling factor
+        scaling_factor = target_rms / rms_current
+        
+        # Apply normalization
+        normalized_data = audio_data * scaling_factor
+        
+        # Clip to prevent overflow
+        normalized_data = np.clip(normalized_data, -1.0, 1.0)
+        
+        if self.verbose_mode:
+            rospy.loginfo(f"{self.node_name}: Applied RMS normalization - Before RMS: {rms_current:.4f}, After RMS: {target_rms:.4f}, Factor: {scaling_factor:.4f}")
+        
+        return normalized_data
+    
     def save_test_audio(self):
         """
         Save the collected filtered audio samples to a file for unit testing.
+        Applies RMS normalization before saving to ensure consistent volume levels.
         Only called when unit_tests mode is enabled.
         """
         try:
@@ -208,6 +250,9 @@ class SoundDetectionNode:
             # Convert buffer to numpy array
             audio_data = np.array(self.filtered_buffer, dtype=np.float32)
             
+            # Apply RMS normalization
+            audio_data = self.normalize_rms(audio_data)
+            
             # Generate filename with timestamp
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             filename = os.path.join(self.unit_test_path, f"sound_detection_test_noise_filtered_audio_{timestamp}.wav")
@@ -216,7 +261,7 @@ class SoundDetectionNode:
             sf.write(filename, audio_data, self.frequency_sample)
             
             if self.verbose_mode:
-                rospy.loginfo(f"{self.node_name}: Saved filtered audio test file to {filename}")
+                rospy.loginfo(f"{self.node_name}: Saved normalized filtered audio test file to {filename}")
             
             # Reset buffer
             self.filtered_buffer = []
