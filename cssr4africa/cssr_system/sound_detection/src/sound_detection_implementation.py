@@ -23,12 +23,11 @@ import std_msgs.msg
 import webrtcvad
 import rospkg
 import numpy as np
+import noisereduce as nr  # Added for noise reduction
 import soundfile as sf  # Added for saving audio files
-from cssr_system.msg import microphone_msg_file
+from cssr_system.msg import sound_detection_microphone_msg_file
 from threading import Lock
 from std_msgs.msg import Float32MultiArray
-from scipy import signal
-import noisereduce as nr  # Added for noise reduction
 from datetime import datetime
 
 class SoundDetectionNode:
@@ -115,7 +114,7 @@ class SoundDetectionNode:
         self.last_status_time = rospy.get_time()
 
         # Set up ROS subscribers and publishers
-        self.audio_sub = rospy.Subscriber(microphone_topic, microphone_msg_file, self.audio_callback)
+        self.audio_sub = rospy.Subscriber(microphone_topic, sound_detection_microphone_msg_file, self.audio_callback)
         self.signal_pub = rospy.Publisher('/soundDetection/signal', std_msgs.msg.Float32MultiArray, queue_size=10)
         self.direction_pub = rospy.Publisher('/soundDetection/direction', std_msgs.msg.Float32, queue_size=10)
 

@@ -14,8 +14,7 @@ add_message_files(
   DIRECTORY
   sound_detection/msg
   FILES
-  microphone_msg_file.msg
-  sound_detection_msg_file.msg
+  sound_detection_microphone_msg_file.msg
 )
 
 ## Generate added messages and services with any dependencies listed here
