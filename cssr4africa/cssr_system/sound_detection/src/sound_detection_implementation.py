@@ -2,7 +2,7 @@
 sound_detection_implementation.py Implementation code for running the sound detection and localization algorithm
 
 Author: Yohannes Tadesse Haile
-Date: April 10, 2025
+Date: April 13, 2025
 Version: v1.0
 
 Copyright (C) 2023 CSSR4Africa Consortium
@@ -23,11 +23,13 @@ import std_msgs.msg
 import webrtcvad
 import rospkg
 import numpy as np
+import soundfile as sf  # Added for saving audio files
 from cssr_system.msg import microphone_msg_file
 from threading import Lock
 from std_msgs.msg import Float32MultiArray
 from scipy import signal
 import noisereduce as nr  # Added for noise reduction
+from datetime import datetime
 
 class SoundDetectionNode:
     """
@@ -45,6 +47,9 @@ class SoundDetectionNode:
         
         # Get configuration parameters from the ROS parameter server
         self.config = rospy.get_param('/soundDetection_config', {})
+
+        # Get param for unit_tests
+        self.unit_tests = rospy.get_param('/soundDetection/unit_tests', False)
         
         # Set parameters from config
         self.frequency_sample = 48000
@@ -73,6 +78,30 @@ class SoundDetectionNode:
         
         if self.use_noise_reduction and self.verbose_mode:
             rospy.loginfo(f"{self.node_name}: Noise reduction enabled for left channel with {self.context_duration}s context window")
+
+        # Configurable time duration for saving the filtered audio
+        self.save_audio_duration = self.config.get('saveAudioDuration', 10)  # seconds
+
+        # Add audio saving parameters for unit tests
+        if self.unit_tests:
+            self.save_audio = True
+            self.sample_count = 0
+            self.max_samples_to_save = 10 * self.frequency_sample  # 10 seconds of audio
+            self.saved_samples = 0
+            self.filtered_buffer = []
+            
+            # Create the output directory for the test data
+            try:
+                rospack = rospkg.RosPack()
+                self.unit_test_path = os.path.join(rospack.get_path('unit_tests'), 
+                                                'sound_detection_test/data')
+                os.makedirs(self.unit_test_path, exist_ok=True)
+                rospy.loginfo(f"{self.node_name}: Will save filtered audio to {self.unit_test_path}")
+            except Exception as e:
+                rospy.logerr(f"{self.node_name}: Error setting up test directory: {e}")
+                self.save_audio = False
+        else:
+            self.save_audio = False
 
         # Retrieve the microphone topic from the configuration file
         microphone_topic = self.extract_topics('Microphone')
@@ -167,6 +196,34 @@ class SoundDetectionNode:
             rospy.logerr(f"ROS package 'cssr_system' not found: {e}")
         return None
     
+    def save_test_audio(self):
+        """
+        Save the collected filtered audio samples to a file for unit testing.
+        Only called when unit_tests mode is enabled.
+        """
+        try:
+            if not self.save_audio or len(self.filtered_buffer) == 0:
+                return
+                
+            # Convert buffer to numpy array
+            audio_data = np.array(self.filtered_buffer, dtype=np.float32)
+            
+            # Generate filename with timestamp
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = os.path.join(self.unit_test_path, f"filtered_audio_{timestamp}.wav")
+            
+            # Save to WAV file
+            sf.write(filename, audio_data, self.frequency_sample)
+            
+            rospy.loginfo(f"{self.node_name}: Saved filtered audio test file to {filename}")
+            
+            # Reset buffer
+            self.filtered_buffer = []
+            self.saved_samples = 0
+            
+        except Exception as e:
+            rospy.logerr(f"{self.node_name}: Error saving test audio: {e}")
+    
     def apply_noise_reduction(self, current_block):
         """
         Apply noise reduction to an audio block using the rolling context window approach.
@@ -174,7 +231,6 @@ class SoundDetectionNode:
         
         Args:
             current_block (np.ndarray): New audio block to process
-            is_left_channel (bool): Parameter kept for API compatibility but not used
             
         Returns:
             np.ndarray: Noise-reduced audio block
@@ -235,6 +291,7 @@ class SoundDetectionNode:
     def audio_callback(self, msg):
         """
         Process incoming audio data from the microphone.
+        If in unit test mode, collects filtered audio for testing.
         
         Args:
             msg (microphone_msg_file): The audio data message
@@ -259,6 +316,23 @@ class SoundDetectionNode:
             # MODIFIED: Perform VAD check early in the pipeline
             # Check for voice activity in the left channel (using noise-reduced signal for better detection)
             self.speech_detected = self.voice_detected(sigIn_frontLeft_clean)
+
+            # Save filtered audio for unit tests if enabled and speech is detected
+            if self.unit_tests and self.save_audio:
+                # Add the filtered audio to the test buffer
+                if self.saved_samples < self.max_samples_to_save:
+                    self.filtered_buffer.extend(sigIn_frontLeft_clean)
+                    self.saved_samples += len(sigIn_frontLeft_clean)
+                    
+                    # Log progress periodically
+                    if self.saved_samples % (self.frequency_sample) == 0:  # Log every second
+                        seconds = self.saved_samples / self.frequency_sample
+                        total_seconds = self.max_samples_to_save / self.frequency_sample
+                        rospy.loginfo(f"{self.node_name}: Collected {seconds:.1f}/{total_seconds:.1f}s of audio for testing")
+                
+                # If we've collected enough samples, save the file
+                if self.saved_samples >= self.max_samples_to_save:
+                    self.save_test_audio()
 
             # If no speech detected, we can skip further processing
             if not self.speech_detected:
@@ -458,9 +532,20 @@ class SoundDetectionNode:
         signal_msg = Float32MultiArray()
         signal_msg.data = signal_data.tolist()
         self.signal_pub.publish(signal_msg)
+        
+    def on_shutdown(self):
+        """
+        Handle cleanup when the node is shutting down.
+        Saves any remaining test audio.
+        """
+        if self.unit_tests and self.save_audio and len(self.filtered_buffer) > 0:
+            rospy.loginfo(f"{self.node_name}: Saving remaining test audio before shutdown")
+            self.save_test_audio()
 
     def spin(self):
         """
         Main processing loop for the node.
         """
+        # Register shutdown handler
+        rospy.on_shutdown(self.on_shutdown)
         rospy.spin()

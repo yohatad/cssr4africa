@@ -4,7 +4,7 @@
 sound_detection_application.py Application code to run the sound detection and localization algorithm.
 
 Author: Yohannes Tadesse Haile
-Date: April 06, 2025
+Date: April 13, 2025
 Version: v1.0
 
 Copyright (C) 2023 CSSR4Africa Consortium
@@ -106,7 +106,7 @@ def main():
     
     if not unit_tests:
         # Use the standard configuration
-        rospy.set_param('/soundDetection_config', config)
+        rospy.set_param('/soundDetection', config)
     else:
         # Unit test mode - load test configuration
         # Create a filtered config without the excluded keys (if needed)
@@ -115,14 +115,14 @@ def main():
         
         # Set the filtered parameters to the parameter server
         for key, value in filtered_config.items():
-            rospy.set_param('/soundDetection_config/' + key, value)
+            rospy.set_param('/soundDetection/' + key, value)
 
         # Set specific parameters from the test config
         config_test = SoundDetectionNode.read_json_file('unit_tests')
         
         # Filter and set only specific parameters from the test config
         for key, value in config_test.items():
-            if key in ["verboseMode", "generatePlot", "plotInterval"]:
+            if key in ["verboseMode"]:
                 rospy.set_param('/soundDetection_config/' + key, value)
     
     # Create an instance of sound detection node
