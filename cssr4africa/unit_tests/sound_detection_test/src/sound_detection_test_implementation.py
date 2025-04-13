@@ -23,7 +23,7 @@ import json
 import numpy as np
 import soundfile as sf
 from std_msgs.msg import Float32MultiArray, Float32
-from unit_tests.msg import microphone_test_msg_file
+from unit_tests.msg import sound_detection_test_microphone_msg_file
 from datetime import datetime
 from threading import Lock
 
@@ -38,7 +38,7 @@ class SoundDetectionTest:
         Sets up configuration, ROS subscribers, and data structures for audio analysis.
         """
         # Set node name for consistent logging
-        self.node_name = "soundDetectionTest"
+        self.node_name = rospy.get_name().lstrip('/')
         
         self.rospack = rospkg.RosPack()
         try:
