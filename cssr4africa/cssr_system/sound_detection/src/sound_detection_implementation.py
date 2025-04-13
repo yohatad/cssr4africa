@@ -46,7 +46,7 @@ class SoundDetectionNode:
         self.node_name = "soundDetection"
         
         # Get configuration parameters from the ROS parameter server
-        self.config = rospy.get_param('/soundDetection_config', {})
+        self.config = rospy.get_param('/soundDetection', {})
 
         # Get param for unit_tests
         self.unit_tests = rospy.get_param('/soundDetection/unit_tests', False)
@@ -80,7 +80,7 @@ class SoundDetectionNode:
             rospy.loginfo(f"{self.node_name}: Noise reduction enabled for left channel with {self.context_duration}s context window")
 
         # Configurable time duration for saving the filtered audio
-        self.save_audio_duration = self.config.get('saveAudioDuration', 10)  # seconds
+        self.save_audio_duration = self.config.get('recordDuration', 10)  # seconds
 
         # Add audio saving parameters for unit tests
         if self.unit_tests:
@@ -93,8 +93,7 @@ class SoundDetectionNode:
             # Create the output directory for the test data
             try:
                 rospack = rospkg.RosPack()
-                self.unit_test_path = os.path.join(rospack.get_path('unit_tests'), 
-                                                'sound_detection_test/data')
+                self.unit_test_path = os.path.join(rospack.get_path('unit_tests'), 'sound_detection_test/data')
                 os.makedirs(self.unit_test_path, exist_ok=True)
                 rospy.loginfo(f"{self.node_name}: Will save filtered audio to {self.unit_test_path}")
             except Exception as e:
@@ -328,7 +327,8 @@ class SoundDetectionNode:
                     if self.saved_samples % (self.frequency_sample) == 0:  # Log every second
                         seconds = self.saved_samples / self.frequency_sample
                         total_seconds = self.max_samples_to_save / self.frequency_sample
-                        rospy.loginfo(f"{self.node_name}: Collected {seconds:.1f}/{total_seconds:.1f}s of audio for testing")
+                        if self.verbose_mode:
+                            rospy.loginfo(f"{self.node_name}: Collected {seconds:.1f}/{total_seconds:.1f}s of audio for testing")
                 
                 # If we've collected enough samples, save the file
                 if self.saved_samples >= self.max_samples_to_save:
@@ -539,7 +539,8 @@ class SoundDetectionNode:
         Saves any remaining test audio.
         """
         if self.unit_tests and self.save_audio and len(self.filtered_buffer) > 0:
-            rospy.loginfo(f"{self.node_name}: Saving remaining test audio before shutdown")
+            if self.verbose_mode:
+                rospy.loginfo(f"{self.node_name}: Saving remaining test audio before shutdown")
             self.save_test_audio()
 
     def spin(self):

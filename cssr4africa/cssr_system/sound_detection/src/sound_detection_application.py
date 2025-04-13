@@ -122,7 +122,7 @@ def main():
         
         # Filter and set only specific parameters from the test config
         for key, value in config_test.items():
-            if key in ["verboseMode"]:
+            if key in ["verboseMode", "recordDuration"]:
                 rospy.set_param('/soundDetection_config/' + key, value)
     
     # Create an instance of sound detection node
