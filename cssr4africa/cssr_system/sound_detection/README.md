@@ -42,23 +42,17 @@ pip install --upgrade pip
 pip install -r ~/workspace/pepper_rob_ws/src/cssr4africa/cssr_system/sound_detection/sound_detection_requirements.txt
 ```
 
-# 🔧 Configuration Parameters
+# 🔧 Configuration Parameters  
 The following table provides the key-value pairs used in the configuration file:
 
 | Parameter                   | Description                                              | Range/Values            | Default Value |
 |-----------------------------|----------------------------------------------------------|-------------------------|---------------|
-| `sampleRate`                | Audio sampling rate in Hz                                | Positive integer        | `48000`       |
-| `intensityThreshold`        | Minimum intensity threshold for audio processing         | Positive float          | `3.9e-3`      |
-| `vadAggressiveness`         | Voice Activity Detection aggressiveness level            | `[0-3]`                 | `3`           |
+| `intensityThreshold`        | Minimum intensity threshold for audio processing         | Positive float          | `0.0039`      |
 | `distanceBetweenEars`       | Distance between microphones in meters                   | Positive float          | `0.07`        |
 | `localizationBufferSize`    | Size of audio buffer for localization                    | Positive integer        | `8192`        |
-| `lowcutFrequency`           | Low cutoff frequency for bandpass filter in Hz           | Positive float          | `300.0`       |
-| `highcutFrequency`          | High cutoff frequency for bandpass filter in Hz          | Positive float          | `3400.0`      |
-| `noiseReductionAlpha`       | Coefficient for noise reduction strength                 | `[0.0-1.0]`             | `0.0`         |
-| `spectralFloorCoeff`        | Spectral floor coefficient for noise suppression         | `[0.0-1.0]`             | `0.0`         |
-| `fftSize`                   | Size of FFT window for spectral subtraction              | Positive integer        | `1024`        |
-| `hopLength`                 | Hop length between frames for spectral subtraction       | Positive integer        | `512`         |
-| `noiseFrames`               | Number of frames used for noise estimation               | Positive integer        | `5`           |
+| `vadAggressiveness`         | Voice Activity Detection aggressiveness level            | `[0-3]`                 | `1`           |
+| `contextDuration`           | Duration (in seconds) of context window for processing   | Positive float (seconds)| `1.0`         |
+| `useNoiseReduction`         | Enable noise reduction                                   | `True`, `False`         | `True`        |
 | `verboseMode`               | Enable detailed logging and diagnostic information       | `True`, `False`         | `True`        |
 
 > **Note:**  

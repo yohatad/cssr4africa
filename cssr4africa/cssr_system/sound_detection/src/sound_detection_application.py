@@ -18,7 +18,7 @@ This program comes with ABSOLUTELY NO WARRANTY.
 """
 
 """
-sound_detection_application.py   Application code to run the sound detection and localization algorithm.
+sound_detection_application.py Application code to run the sound detection and localization algorithm.
 
 The sound localization algorithm is implemented using a ROS audio topic that can be configured to receive audio from
 a robot or an external microphone. It processes the incoming audio signal to detect sound events and localize the sound
@@ -29,33 +29,35 @@ the algorithm. The algorithm is designed to accumulate fixed-size audio samples 
 buffer until sufficient data is collected for processing.
 
 Libraries:
-    - math: Provides mathematical functions for calculations.
-    - numpy: Used for numerical operations and array manipulations.
-    - rospy: ROS Python library for node initialization and message handling.
-    - rospkg: ROS library for package management and locating configuration files.
-    - os: Interface for operating system functionalities.
-    - json: Handles configuration file reading in JSON format.
-    - webrtcvad: Implements Voice Activity Detection (VAD) for sound segmentation.
-    - std_msgs: Contains standard ROS message types.
-    - threading: Provides thread locking for safe concurrent operations.
+    - math
+    - numpy
+    - rospy
+    - rospkg
+    - os
+    - json
+    - webrtcvad
+    - std_msgs
+    - threading
+    - noisereduce
+    - soundfile
+    - datetime
 
 Parameters:
     Command line arguments: None
 
     Configuration File Parameters:
         Key                                      Value
-        sampleRate                               [int]       e.g., 48000
-        intensityThreshold                       [float]     e.g., 3.9e-3
-        vadAggressiveness                        [int]       e.g., 3
+        intenstiyThreshold                       [float]     e.g., 0.0039
         distanceBetweenEars                      [float]     e.g., 0.07
         localizationBufferSize                   [int]       e.g., 8192
-        lowcutFrequency                          [float]     e.g., 300.0
-        highcutFrequency                         [float]     e.g., 3400.0
+        vadAggressiveness                        [int]       e.g., 1
+        contextDuration                          [float]     e.g., 1.0
+        useNoiseReduction                        [bool]      e.g., true
         verboseMode                              [bool]      e.g., true
-
+        
 Subscribed Topics:
     Topic Name                                   Message Type
-    /naoqi_driver/audio                          sound_detection/sound_detection
+    /naoqi_driver/audio                          sound_detection/sound_detection_microphone_msg_file.msg
 
 Published Topics:
     Topic Name                                   Message Type
@@ -123,7 +125,7 @@ def main():
         # Filter and set only specific parameters from the test config
         for key, value in config_test.items():
             if key in ["verboseMode", "recordDuration"]:
-                rospy.set_param('/soundDetection_config/' + key, value)
+                rospy.set_param('/soundDetection/' + key, value)
     
     # Create an instance of sound detection node
     node = SoundDetectionNode()
