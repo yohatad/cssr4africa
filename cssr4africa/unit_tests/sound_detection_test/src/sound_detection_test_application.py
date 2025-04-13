@@ -4,7 +4,7 @@
 sound_detection_test_application.py Application code to run the Sound Detection and Processing Unit test.
 
 Author: Yohannes Tadesse Haile
-Date: April 10, 2025
+Date: April 06, 2025
 Version: v1.0
 
 Copyright (C) 2023 CSSR4Africa Consortium
