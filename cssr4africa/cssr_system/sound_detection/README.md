@@ -29,7 +29,7 @@ sudo apt update && sudo apt upgrade -y
 sudo apt install python3.8-venv -y
 
 # Create a virtual environment
-cd $HOME/workspace/pepper_rob_ws
+cd $HOME/workspace/pepper_rob_ws/src/cssr4africa_virtual_envs/
 python3.8 -m venv cssr4africa_sound_detection_env
 
 # Activate the virtual environment
