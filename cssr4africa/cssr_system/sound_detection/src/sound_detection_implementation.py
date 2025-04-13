@@ -559,7 +559,7 @@ class SoundDetectionNode:
             return angle
         except ValueError as e:
             rospy.logwarn(f"{self.node_name}: Invalid ITD for angle calculation: {e}")
-            return 0.0
+            return
 
     def publish_angle(self, angle):
         """
