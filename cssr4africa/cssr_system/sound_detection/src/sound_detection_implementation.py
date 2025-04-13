@@ -530,7 +530,7 @@ class SoundDetectionNode:
             return shift / float(fs)
         except Exception as e:
             rospy.logerr(f"{self.node_name}: Error in GCC-PHAT: {e}")
-            return 0
+            return 
 
     def calculate_angle(self, itd):
         """
@@ -551,6 +551,11 @@ class SoundDetectionNode:
             
             # Calculate angle in degrees
             angle = math.asin(z) * (180.0 / math.pi)
+
+            # If the angel is not in [-67 , 67], skip it 
+            if angle < -67 or angle > 67:
+                return
+
             return angle
         except ValueError as e:
             rospy.logwarn(f"{self.node_name}: Invalid ITD for angle calculation: {e}")
@@ -563,6 +568,8 @@ class SoundDetectionNode:
         Args:
             angle (float): Sound source angle in degrees
         """
+        if angle is None:
+            return
         angle_msg = std_msgs.msg.Float32()
         angle_msg.data = angle
         self.direction_pub.publish(angle_msg)
