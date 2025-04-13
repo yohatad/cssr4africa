@@ -6,6 +6,6 @@
     "contextDuration": 1.0,
     "useNoiseReduction": true,
     "stationary": true,
-    "prop_decrease": 0.9,
+    "propDecrease": 0.9,
     "verboseMode": true
 }
