@@ -310,7 +310,10 @@ class SoundDetectionNode:
             # Check intensity threshold
             if not self.is_intense_enough(sigIn_frontLeft):
                 return
-                
+                       
+            # Apply noise reduction only to the left channel
+            sigIn_frontLeft_clean = self.apply_noise_reduction(sigIn_frontLeft)
+            
             # Check for voice activity in the left channel (using noise-reduced signal for better detection)
             self.speech_detected = self.voice_detected(sigIn_frontLeft_clean)
             # Save filtered audio for unit tests if enabled and speech is detected
@@ -326,15 +329,10 @@ class SoundDetectionNode:
                         total_seconds = self.max_samples_to_save / self.frequency_sample
                         if self.verbose_mode:
                             rospy.loginfo(f"{self.node_name}: Collected {seconds:.1f}/{total_seconds:.1f}s of audio for testing")
-
-                
+  
                 # If we've collected enough samples, save the file
                 if self.saved_samples >= self.max_samples_to_save:
                     self.save_test_audio()
-                    
-            # Apply noise reduction only to the left channel
-            sigIn_frontLeft_clean = self.apply_noise_reduction(sigIn_frontLeft)
-            
 
             # If no speech detected, we can skip further processing
             if not self.speech_detected:
