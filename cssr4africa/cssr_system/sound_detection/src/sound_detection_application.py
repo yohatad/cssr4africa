@@ -95,7 +95,7 @@ def main():
     )
     
     # Initialize the ROS node.
-    rospy.init_node('soundDetection', anonymous=True)
+    rospy.init_node('soundDetection')
 
     # Print the messages using ROS logging
     rospy.loginfo(copyright_message)

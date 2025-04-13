@@ -42,7 +42,7 @@ class SoundDetectionNode:
         Sets up ROS subscribers, publishers, and loads configuration parameters.
         """
         # Set node name for consistent logging
-        self.node_name = "soundDetection"
+        self.node_name = rospy.get_name().lstrip('/')
         
         # Get configuration parameters from the ROS parameter server
         self.config = rospy.get_param('/soundDetection', {})
@@ -94,7 +94,8 @@ class SoundDetectionNode:
                 rospack = rospkg.RosPack()
                 self.unit_test_path = os.path.join(rospack.get_path('unit_tests'), 'sound_detection_test/data')
                 os.makedirs(self.unit_test_path, exist_ok=True)
-                rospy.loginfo(f"{self.node_name}: Will save filtered audio to {self.unit_test_path}")
+                if self.verbose_mode:
+                    rospy.loginfo(f"{self.node_name}: Will save filtered audio to {self.unit_test_path}")
             except Exception as e:
                 rospy.logerr(f"{self.node_name}: Error setting up test directory: {e}")
                 self.save_audio = False
@@ -115,6 +116,7 @@ class SoundDetectionNode:
 
         # Set up ROS subscribers and publishers
         self.audio_sub = rospy.Subscriber(microphone_topic, sound_detection_microphone_msg_file, self.audio_callback)
+        rospy.loginfo(f"{self.node_name}: Subscribed to {microphone_topic}")
         self.signal_pub = rospy.Publisher('/soundDetection/signal', std_msgs.msg.Float32MultiArray, queue_size=10)
         self.direction_pub = rospy.Publisher('/soundDetection/direction', std_msgs.msg.Float32, queue_size=10)
 
@@ -208,12 +210,13 @@ class SoundDetectionNode:
             
             # Generate filename with timestamp
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = os.path.join(self.unit_test_path, f"filtered_audio_{timestamp}.wav")
+            filename = os.path.join(self.unit_test_path, f"sound_detection_test_noise_filtered_audio_{timestamp}.wav")
             
             # Save to WAV file
             sf.write(filename, audio_data, self.frequency_sample)
             
-            rospy.loginfo(f"{self.node_name}: Saved filtered audio test file to {filename}")
+            if self.verbose_mode:
+                rospy.loginfo(f"{self.node_name}: Saved filtered audio test file to {filename}")
             
             # Reset buffer
             self.filtered_buffer = []

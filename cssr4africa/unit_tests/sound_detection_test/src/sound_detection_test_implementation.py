@@ -2,7 +2,7 @@
 sound_detection_test_implementation.py Implementation code for running the Sound Detection and Processing unit test.
 
 Author: Yohannes Tadesse Haile
-Date: April 06, 2025
+Date: April 13, 2025
 Version: v1.0
 
 Copyright (C) 2023 CSSR4Africa Consortium
@@ -72,7 +72,8 @@ class SoundDetectionTest:
         # Create save directory if it doesn't exist
         if not os.path.exists(self.save_dir):
             os.makedirs(self.save_dir)
-            rospy.loginfo(f"{self.node_name}: Created directory for audio recordings: {self.save_dir}")
+            if self.verbose_mode:
+                rospy.loginfo(f"{self.node_name}: Created directory for audio recordings: {self.save_dir}")
 
 
         # Timer for periodic status message
