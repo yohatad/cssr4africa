@@ -123,8 +123,6 @@ class SoundDetectionNode:
         self.signal_pub = rospy.Publisher('/soundDetection/signal', std_msgs.msg.Float32MultiArray, queue_size=10)
         self.direction_pub = rospy.Publisher('/soundDetection/direction', std_msgs.msg.Float32, queue_size=10)
 
-        if self.verbose_mode:
-            rospy.loginfo(f"{self.node_name}: Sound detection node initialized.")
 
     @staticmethod
     def read_json_file(package_name):
@@ -393,9 +391,8 @@ class SoundDetectionNode:
             # Localization processing
             if self.accumulated_samples >= self.localization_buffer_size:
                 
-                # Check if voice is detected using the noise-reduced left channel for better detection
-                if self.voice_detected(self.apply_noise_reduction(self.frontleft_buffer)):
-                    self.localize(self.frontleft_buffer, self.frontright_buffer)
+                # Perform localization
+                self.localize(self.frontleft_buffer, self.frontright_buffer)
                 
                 # Reset buffers for next batch
                 with self.lock:
