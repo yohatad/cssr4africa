@@ -273,7 +273,8 @@ class SoundDetectionTest:
                 self.is_recording_filtered = True
                 self.filtered_recording_start_time = rospy.get_time()
                 self.filtered_audio_buffer = audio_data.tolist()
-                rospy.loginfo(f"{self.node_name}: Started new FILTERED audio recording")
+                if self.verbose_mode:
+                    rospy.loginfo(f"{self.node_name}: Started new FILTERED audio recording")
             
             # Check if we've reached the recording duration
             buffer_time = rospy.get_time() - self.filtered_recording_start_time
@@ -358,7 +359,7 @@ class SoundDetectionTest:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             
             # Save as WAV file
-            wav_filepath = os.path.join(self.save_dir, f"sound_detection_test_filtered_{timestamp}.wav")
+            wav_filepath = os.path.join(self.save_dir, f"sound_detection_test_speech_filtered_{timestamp}.wav")
             
             # Convert audio buffer to numpy array
             audio_np = np.array(self.filtered_audio_buffer, dtype=np.float32)

@@ -20,17 +20,16 @@ The following table provides the key-value pairs used in the configuration file:
 
 ## 🔧 Configuration Parameters
 
+The following parameters are used to configure and run the **Sound Detection Test Node**. These settings control how audio is recorded, processed, and logged during operation.
+
 | Parameter               | Description                                      | Possible Values            | Default Value |
 |-------------------------|--------------------------------------------------|----------------------------|---------------|
-| `sampleRate`            | Audio sampling rate in Hz                        | Positive integer           | `48000`       |
 | `recordFiltered`        | Record filtered audio output                     | `true`, `false`            | `true`        |
 | `recordUnfiltered`      | Record unfiltered (raw) audio input              | `true`, `false`            | `true`        |
-| `generatePlot`          | Generate comparison plots of signals             | `true`, `false`            | `true`        |
 | `recordDuration`        | Duration (seconds) for recorded audio            | Positive integer           | `10`          |
-| `plotInterval`          | Interval (seconds) between generated plots       | Positive integer           | `10`          |
-| `plotDpi`               | Resolution (DPI) of generated plots              | Positive integer           | `150`         |
-| `maxDirectionPoints`    | Maximum data points in direction plots           | Positive integer           | `100`         |
-| `directionPlotYlimit`   | Y-axis limit for direction plots (degrees)       | Positive integer           | `90`          |
+| `saveDirectionData`     | Save direction data (e.g., for localization)     | `true`, `false`            | `true`        |
+| `targetRMS`             | Target RMS level for audio normalization         | Positive float             | `0.2`         |
+| `applyNormalization`    | Apply RMS-based normalization to audio           | `true`, `false`            | `true`        |
 | `verboseMode`           | Enable detailed logging and diagnostics          | `true`, `false`            | `true`        |
 
 ---
@@ -64,58 +63,87 @@ The test can be performed on a **physical robot using its microphones** or using
 3. **Update Configuration File**
    Navigate to `~/workspace/pepper_rob_ws/src/unit_tests/sound_detection_test/config/sound_detection_test_configuration.json` and update the configuration according to the key-value pairs as shown above.
 
-4. **Launch the Physical Robot**
-   ```bash
-   # Launch the robot with the appropriate IP and network interface
-   roslaunch unit_tests sound_detection_test_launch.launch robot_ip:=<robot_ip> network_interface:=<network_interface>
-   ```
 
-   To use pre-recorded audio instead:
-   ```bash
-   # Use a pre-recorded audio file
-   roslaunch unit_tests sound_detection_test_launch.launch use_recorded_audio:=true audio_file:=<audio_file>
-   ```
+## Prerequisites
+Before running the Test Harness, activate the sound detection Python environment:
+```bash
+source ~/workspace/pepper_rob_ws/cssr4africa_sound_detection_env/bin/activate
+```
 
-   ### Audio File Options (`audio_file`):
-   - **`normal`**: Standard speech at normal volume and distance
-   - **`noisy`**: Speech with background noise for robustness testing
-   - **`multiple`**: Multiple speakers from different directions
-   - **`quiet`**: Soft speech for testing sensitivity
+Make the application scripts executable:
+```bash
+chmod +x ~/workspace/pepper_rob_ws/src/cssr4africa/cssr_system/sound_detection/src/sound_detection_application.py
+chmod +x ~/workspace/pepper_rob_ws/src/cssr4africa/unit_tests/sound_detection_test/src/sound_detection_test_application.py
+```
 
-   > **Note:**  
-   > Before running the Test Harness, activate the sound detection Python environment:
-   ```bash
-   source ~/workspace/pepper_rob_ws/cssr4africa_sound_detection_env/bin/activate
-   ```
-   ```bash
-   # Command to make application executable  
-   chmod +x ~/workspace/pepper_rob_ws/src/cssr4africa/cssr_system/sound_detection/src/sound_detection_application.py
-   chmod +x ~/workspace/pepper_rob_ws/src/cssr4africa/unit_tests/sound_detection_test/src/sound_detection_test_application.py
-   ```
+## Usage
 
-5. **Run Sound Detection Test Harness**
-   ```bash
-   # The launch file launches the sound_detection node for the unit test
-   roslaunch unit_tests sound_detection_test_launch_test_harness.launch
-   ```
+### Launch the Physical Robot
+```bash
+# Launch the robot with the appropriate IP and network interface
+roslaunch unit_tests sound_detection_test_launch.launch robot_ip:=<robot_ip> network_interface:=<network_interface> use_recorded_audio:=false
+```
+
+### Using Pre-recorded Audio
+```bash
+# Use a pre-recorded audio file
+roslaunch unit_tests sound_detection_test_launch.launch use_recorded_audio:=true audio_file:=<audio_file>
+```
+
+#### Audio File Options (`audio_file`):
+- **`sound_distance`**: Standard speech at normal volume and distance
+- **`sound_angle`**: Multiple speakers from different directions
+- **`sound_noise`**: Speech with background noise for robustness testing
+
+### Run Sound Detection Test Harness
+```bash
+# The launch file launches the sound_detection node for the unit test
+roslaunch unit_tests sound_detection_test_launch_test_harness.launch
+```
+
+## Available RosBag Files for Testing
+
+The test suite includes specialized rosbag files for different testing scenarios:
+
+### 1. `sound_distance.bag`
+- **Purpose**: Testing sound filtering effectiveness at various distances
+- **Description**: Contains recordings of speech at different distances from the robot
+- **Expected Results**: Successful detection and filtering of speech across different distances
+
+### 2. `sound_angle.bag`
+- **Purpose**: Testing angle detection accuracy
+- **Description**: Contains recordings of sound sources moving from the right side of the robot (positive angle) to the left side (negative angle)
+- **Expected Results**: Accurate tracking of sound source angle throughout movement
+
+### 3. `sound_noise.bag`
+- **Purpose**: Testing noise filtering and speech detection
+- **Description**: Contains recordings with intentional pauses between speech (e.g., counting numbers with pauses)
+- **Expected Results**: The system should detect only speech segments and filter out non-speech portions, resulting in continuous number counting in the processed output
 
 # 🖥️ Output Result
+
 When running the sound detection test node, the following outputs are generated:
 
-- **Audio Recordings**:
-  - Filtered audio files (`filtered_YYYYMMDD_HHMMSS.wav`)
-  - Unfiltered raw audio files (`unfiltered_YYYYMMDD_HHMMSS.wav`)
+### Audio Recordings
+- **Noise reduced audio files**: `sound_detection_test_noise_filtered_audio_YYYYMMDD_HHMMSS.wav`
+  - Processed audio with only noise reduction and filtering.
 
-- **Visualization Plots**:
-  - Audio signal comparison plots showing both raw and processed signals (`audio_signals_YYYYMMDD_HHMMSS.png`)
-  - Direction data plots showing the detected angles over time (`direction_data_YYYYMMDD_HHMMSS.png`)
+- **Filtered audio files**: `sound_detection_test_speech_filtered_YYYYMMDD_HHMMSS.wav`
+  - Processed audio with applied noise reduction and filtering
+  - Speech detection is applied to separate non-speech part
+  - Optionally RMS normalized for consistent volume levels
 
-- **Console Output**:
-  - Detailed logging of buffer fill percentages
-  - Signal intensity and publishing rate information
-  - Direction detection results
+- **Unfiltered raw audio files**: `sound_detection_test_unfiltered_YYYYMMDD_HHMMSS.wav`
+  - Raw audio captured directly from the microphone
+  - Optionally RMS normalized for consistent volume levels
 
-The details of the result are documented in the Sound Detection and Localization Deliverable Report.
+### Direction Data
+- **Direction text files**: `sound_detection_test_direction_data_YYYYMMDD_HHMMSS.txt`
+  - Contains timestamps and corresponding direction angles
+  - Format: `timestamp_in_seconds, angle_in_degrees`
+  - Negative angles indicate sound from left side, positive angles from right side
+
+For detailed information about the test results and system performance, refer to the Sound Detection and Localization Deliverable Report.
 
 # 💡Support
 
@@ -129,4 +157,4 @@ Copyright (C) 2023 CSSR4Africa Consortium
 Funded by the African Engineering and Technology Network (Afretec)  
 Inclusive Digital Transformation Research Grant Programme 
 
-2025-04-06
+2025-04-13
