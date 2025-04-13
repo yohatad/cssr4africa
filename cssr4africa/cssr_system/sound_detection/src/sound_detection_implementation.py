@@ -23,8 +23,8 @@ import std_msgs.msg
 import webrtcvad
 import rospkg
 import numpy as np
-import noisereduce as nr  # Added for noise reduction
-import soundfile as sf  # Added for saving audio files
+import noisereduce as nr 
+import soundfile as sf 
 from cssr_system.msg import sound_detection_microphone_msg_file
 from threading import Lock
 from std_msgs.msg import Float32MultiArray
@@ -64,15 +64,15 @@ class SoundDetectionNode:
         self.accumulated_samples = 0
 
         # Initialize VAD with configurable aggressiveness mode
-        self.vad_aggressiveness = self.config.get('vadAggressiveness', 3)
+        self.vad_aggressiveness = self.config.get('vadAggressiveness', 1)
         self.vad = webrtcvad.Vad(self.vad_aggressiveness)
         self.vad_frame_duration = 0.02  # 20 ms (WebRTC VAD requires specific frame durations)
         self.vad_frame_size = int(self.frequency_sample * self.vad_frame_duration)
 
         # Initialize noise reduction parameters
-        self.context_duration = self.config.get('contextDuration', 1.0)  # Context window duration in seconds
+        self.context_duration = self.config.get('contextDuration', 2.0)  # Context window duration in seconds
         self.context_size = int(self.frequency_sample * self.context_duration)
-        self.left_context_window = np.zeros(self.context_size, dtype=np.float32)  # Only need left channel context
+        self.left_context_window = np.zeros(self.context_size, dtype=np.float32) 
         self.use_noise_reduction = self.config.get('useNoiseReduction', True)
         
         if self.use_noise_reduction and self.verbose_mode:
@@ -85,7 +85,7 @@ class SoundDetectionNode:
         if self.unit_tests:
             self.save_audio = True
             self.sample_count = 0
-            self.max_samples_to_save = 10 * self.frequency_sample  # 10 seconds of audio
+            self.max_samples_to_save = self.save_audio_duration * self.frequency_sample 
             self.saved_samples = 0
             self.filtered_buffer = []
             
@@ -308,13 +308,8 @@ class SoundDetectionNode:
             if not self.is_intense_enough(sigIn_frontLeft):
                 return
                 
-            # Apply noise reduction only to the left channel
-            sigIn_frontLeft_clean = self.apply_noise_reduction(sigIn_frontLeft)
-            
-            # MODIFIED: Perform VAD check early in the pipeline
             # Check for voice activity in the left channel (using noise-reduced signal for better detection)
             self.speech_detected = self.voice_detected(sigIn_frontLeft_clean)
-
             # Save filtered audio for unit tests if enabled and speech is detected
             if self.unit_tests and self.save_audio:
                 # Add the filtered audio to the test buffer
@@ -328,10 +323,15 @@ class SoundDetectionNode:
                         total_seconds = self.max_samples_to_save / self.frequency_sample
                         if self.verbose_mode:
                             rospy.loginfo(f"{self.node_name}: Collected {seconds:.1f}/{total_seconds:.1f}s of audio for testing")
+
                 
                 # If we've collected enough samples, save the file
                 if self.saved_samples >= self.max_samples_to_save:
                     self.save_test_audio()
+                    
+            # Apply noise reduction only to the left channel
+            sigIn_frontLeft_clean = self.apply_noise_reduction(sigIn_frontLeft)
+            
 
             # If no speech detected, we can skip further processing
             if not self.speech_detected:
