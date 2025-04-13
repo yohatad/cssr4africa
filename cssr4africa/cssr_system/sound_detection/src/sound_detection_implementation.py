@@ -56,6 +56,11 @@ class SoundDetectionNode:
         self.distance_between_ears = self.config.get('distanceBetweenEars', 0.07)
         self.intensity_threshold = self.config.get('intensityThreshold', 3.9e-3)
         self.verbose_mode = self.config.get('verboseMode', False)
+
+        
+        # Initialize parameter for noise reduction filter 
+        self.noise_type = self.config.get('stationary', True)
+        self.prop_decrease = self.config.get('propDecrease', 0.9)
         
         # Buffer for localization (2 channels)
         self.localization_buffer_size = self.config.get('localizationBufferSize', 8192)
@@ -293,8 +298,8 @@ class SoundDetectionNode:
             reduced_context = nr.reduce_noise(
                 y=self.left_context_window,
                 sr=self.frequency_sample,
-                stationary=True,
-                prop_decrease=0.9
+                stationary=self.noise_type,
+                prop_decrease=self.prop_decrease,
             )
             
             # Extract only the most recent block from the processed context
