@@ -63,11 +63,10 @@ class HumanToPepperRetargeting:
         return np.degrees(np.arccos(dot))
     
     def LShoulderPitchRoll(self, LShoulder, LElbow, MidHip, Neck):
-        
         torso_vector = MidHip - Neck
         Z = self.normalize(torso_vector)
 
-        across_shoulders = LShoulder - Neck
+        across_shoulders = Neck - LShoulder
 
         X_unnormalized = np.cross(Z, across_shoulders)
         X = self.normalize(X_unnormalized)
@@ -84,79 +83,75 @@ class HumanToPepperRetargeting:
         upper_arm_y = np.dot(upper_arm, Y)
         upper_arm_z = np.dot(upper_arm, Z)
 
-        print("upper_arm_x: ", upper_arm_x)
-        print("upper_arm_y: ", upper_arm_y)
-        print("upper_arm_z: ", upper_arm_z)
+        # print("upper_arm_x: ", upper_arm_x)
+        # print("upper_arm_y: ", upper_arm_y)
+        # print("upper_arm_z: ", upper_arm_z)
         
-        # if upper_arm_z < 0 and upper_arm_x < 0:
-        #     pitch_radians = -(np.pi/2 + np.arctan2(upper_arm_x, upper_arm_z))
+        if upper_arm_z < 0 and upper_arm_x < 0:
+            pitch_radians = -(np.pi/2 + np.arctan2(upper_arm_x, upper_arm_z))
         
-        # elif upper_arm_z > 0 and upper_arm_x < 0:
-        #     pitch_radians = np.pi/2 - np.arctan2(upper_arm_x, upper_arm_z)
+        elif upper_arm_z > 0 and upper_arm_x < 0:
+            pitch_radians = np.pi/2 - np.arctan2(upper_arm_x, upper_arm_z)
         
-        # else:
-        pitch_radians = np.pi/2 - np.arctan2(upper_arm_x, upper_arm_z)
+        else:
+            pitch_radians = np.pi/2 - np.arctan2(upper_arm_x, upper_arm_z)
   
-        roll_radians = np.pi/2 - np.arctan2(upper_arm_x, upper_arm_y)
+        if upper_arm_x > 0 and upper_arm_y > 0:
+            roll_radians = np.pi/2 - np.arctan2(upper_arm_x, upper_arm_y)
 
-        # pitch_angle = np.degrees(pitch_radians)
-        # roll_angle =  np.degrees(roll_radians)
+        elif upper_arm_x < 0 and upper_arm_y > 0:
+            roll_radians = np.pi/2
 
-        # roll_radians = 0.1
+        else:
+            roll_radians = 0
 
         return pitch_radians, roll_radians
 
         # return pitch_angle, roll_angle
 
     def RShoulderPitchRoll(self, RShoulder, RElbow, MidHip, Neck):        
-        
         torso_vector = MidHip - Neck
         Z = self.normalize(torso_vector)
 
+        # Make this consistent with left side (but mirrored)
         across_shoulders = RShoulder - Neck
-
+        
         X_unnormalized = np.cross(Z, across_shoulders)
         X = self.normalize(X_unnormalized)
-
+        
         Y = np.cross(Z, X)
         Y = self.normalize(Y)
-
+        
         upper_arm = RElbow - RShoulder
-
-        # Normalize the vector
         upper_arm = self.normalize(upper_arm)
-
+        
         upper_arm_x = np.dot(upper_arm, X)
         upper_arm_y = np.dot(upper_arm, Y)
         upper_arm_z = np.dot(upper_arm, Z)
 
+        # print("UPPER ARM X: ", upper_arm_x)
+        # print("UPPER ARM Y: ", upper_arm_y)
+        # print("UPPER ARM Z: ", upper_arm_z)
+        
+        # Mirror the pitch calculation from left shoulder
         if upper_arm_z < 0 and upper_arm_x < 0:
             pitch_radians = -(np.pi/2 + np.arctan2(upper_arm_x, upper_arm_z))
-
         elif upper_arm_z > 0 and upper_arm_x < 0:
             pitch_radians = np.pi/2 - np.arctan2(upper_arm_x, upper_arm_z)
-
         else:
             pitch_radians = np.pi/2 - np.arctan2(upper_arm_x, upper_arm_z)
-
-  
-        roll_radians  = np.pi/2 - np.arctan2(upper_arm_x, upper_arm_y)   
-        # roll_radians  = -(np.arctan2(upper_arm_x, upper_arm_y) + np.pi/2)
-
-        # if upper_arm_y < 0:
-        #     roll_radians = -0.01
-        # elif upper_arm_x < 0:
-        #     roll_radians = -1.50
-
-        # # if the roll angle is outside [-90 , 0] range then just put -5.67 degrees
-        # if roll_angle < -90 or roll_angle > 0:
-        #     roll_angle = -5.67
-
-        # roll_radians = -0.1  
-        # Change back to radians
+        
+        # Mirror the roll calculation from left shoulder
+        if upper_arm_x > 0 and upper_arm_y < 0:  # Mirrored y condition
+            roll_radians = -np.pi/2 + np.arctan2(upper_arm_x, -upper_arm_y)
+        elif upper_arm_x < 0 and upper_arm_y < 0:  # Mirrored y condition
+            roll_radians = -np.pi/2
+        else:
+            roll_radians = 0
+        
+        # roll_radians = np.arctan2(upper_arm_x, upper_arm_y)
+        
         return pitch_radians, roll_radians
-
-        # return pitch_angle, roll_angle
     
     def LEblow(self, LShoulder, LElbow, LWrist):
         Z_elbow = LShoulder - LElbow
@@ -181,15 +176,15 @@ class HumanToPepperRetargeting:
         elbow_roll_radians = np.arctan2(forearm_y, forearm_z)
         elbow_yaw_radians = np.arctan2(forearm_x, forearm_y)
 
-        elbow_roll_degrees = np.degrees(elbow_roll_radians) + 180
+        elbow_roll_degrees = np.degrees(elbow_roll_radians)
         elbow_yaw_degrees = np.degrees(elbow_yaw_radians)
 
         # if elbow roll degree is between 180 and 260, then just put
             # if elbow_roll_degrees < 0 and elbow_roll_degrees > 80:
             #     elbow_roll_degrees = 0
 
-        elbow_roll_radians = -0.1334
-        elbow_yaw_radians = -1.7150
+        # elbow_roll_radians = -0.1334
+        # elbow_yaw_radians = -1.7150
 
         return elbow_yaw_radians, elbow_roll_radians
 
@@ -219,8 +214,8 @@ class HumanToPepperRetargeting:
         elbow_yaw_degrees = np.degrees(elbow_yaw_radians)
         elbow_roll_degrees = np.degrees(elbow_roll_radians)
 
-        elbow_roll_radians = 0.1334
-        elbow_yaw_radians = 1.7150
+        # elbow_roll_radians = 0.1334
+        # elbow_yaw_radians = 1.7150
         
         return elbow_yaw_radians, elbow_roll_radians
     
@@ -321,7 +316,8 @@ class HumanToPepperRetargeting:
             RShoulderPitch, RShoulderRoll= self.RShoulderPitchRoll(wp_dict.get('2'), wp_dict.get('3'), wp_dict.get('8'), wp_dict.get('1'))
                         
             RElbowYaw, RElbowRoll = self.REblow(wp_dict.get('2'), wp_dict.get('3'), wp_dict.get('4'))
-    
+
+            
             # Invert right arm with left arm
             # wp_dict = self.invert_right_left(wp_dict) 
             

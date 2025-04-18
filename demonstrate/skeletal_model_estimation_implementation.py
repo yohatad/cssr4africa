@@ -106,7 +106,7 @@ class SkeletalModelEstimationROS:
                     angle_y_pos += 25
                 
                 current_time = rospy.get_time()
-                if angles is not None and (current_time - self.last_logged_time) >= 1.0:
+                if (current_time - self.last_logged_time) >= 1.0:
                     rospy.loginfo("Joint Angles:")
                     colors = ["\033[91m", "\033[92m", "\033[93m", "\033[94m",
                             "\033[91m", "\033[92m", "\033[93m", "\033[94m"]
@@ -388,23 +388,31 @@ if __name__ == "__main__":
     #     [0.0, 0.0, 1.0]
     # ]
 
-    # K: [909.1842651367188, 0.0, 642.069580078125, 0.0, 908.5780639648438, 384.4430236816406, 0.0, 0.0, 1.0]
+    # K: [607.7355346679688, 0.0, 330.05035400390625, 0.0, 607.2567749023438, 242.61105346679688, 0.0, 0.0, 1.0]
 
     intrinsics = [
-        [909.1842651367188, 0.0, 642.069580078125],
-        [0.0, 908.5780639648438, 384.4430236816406],
+        [607.7355346679688, 0.0, 330.05035400390625],
+        [0.0, 607.2567749023438, 242.61105346679688],
         [0.0, 0.0, 1.0]
     ]
+
+    # K: [909.1842651367188, 0.0, 642.069580078125, 0.0, 908.5780639648438, 384.4430236816406, 0.0, 0.0, 1.0]
+
+    # intrinsics = [
+    #     [909.1842651367188, 0.0, 642.069580078125],
+    #     [0.0, 908.5780639648438, 384.4430236816406],
+    #     [0.0, 0.0, 1.0]
+    # ]
 
     retargeting = HumanToPepperRetargeting()
     skeletal_estimator = SkeletalModelEstimationROS(
         camera_intrinsics=intrinsics,
-        image_width=1280,
-        image_height=720,
+        image_width=640,
+        image_height=480,
         retargeting=retargeting
     )
 
-    rate = rospy.Rate(2)  # 2 Hz
+    rate = rospy.Rate(30)  # 2 Hz
     while not rospy.is_shutdown():
         skeletal_estimator.process_image()
         rate.sleep()
