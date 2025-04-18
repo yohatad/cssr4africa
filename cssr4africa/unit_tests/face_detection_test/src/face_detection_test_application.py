@@ -50,6 +50,7 @@ Parameters
     Configuration File Parameters
         Key                             Value
         algorithm                       sixdrep
+        useCompressed                   false
         saveVideo                       false
         saveImage                       false
         videoDuration                   10

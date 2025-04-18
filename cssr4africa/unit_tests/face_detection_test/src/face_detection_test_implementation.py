@@ -2,7 +2,7 @@
 face_detection_test_implementation.py Implementation code for running the Face and Mutual Gaze Detection and Localization unit test.
 
 Author: Yohannes Tadesse Haile
-Date: March 21, 2025
+Date: April 18, 2025
 Version: v1.0
 
 Copyright (C) 2023 CSSR4Africa Consortium
@@ -54,8 +54,7 @@ class FaceDetectionTest:
         
         self.camera = rospy.get_param('faceDetection/camera', default='video')
 
-        self.verbose_mode = self.config.get("verboseMode", False)
-        rospy.set_param('faceDetection/verboseMode', self.verbose_mode)
+        self.verbose_mode = rospy.get_param('faceDetection_config/verboseMode', default=False)
 
         # Initialize ROS topic subscription and CvBridge
         self.bridge = CvBridge()

@@ -40,7 +40,7 @@ python3.10 --version
 3. Set Up Virtual Environment
 ```sh
 # Create a virtual environment:
-cd $HOME/workspace/pepper_rob_ws
+cd $HOME/workspace/pepper_rob_ws/src/cssr4africa_virtual_envs
 python3.10 -m venv cssr4africa_face_person_detection_env
 
 # Activate the virtual environment:
@@ -56,7 +56,7 @@ pip install --upgrade pip
 pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 
 # Install additional requirements:
-pip install -r  ~/workspace/pepper_rob_ws/src/cssr4africa/cssr_system/face_detection/face_detection_requirements.txt
+pip install -r  ~/workspace/pepper_rob_ws/src/cssr4africa/cssr_system/face_detection/face_detection_requirements_x86.txt
 ```
 
 # 🔧 Configuration Parameters

@@ -37,6 +37,6 @@
 
     <!-- If using recorded video, play rosbag -->
     <group if="$(eval arg('camera') == 'video')">
-        <node pkg="rosbag" type="play" name="rosbag_play" args="--loop $(arg bag_file_path)"/>
+        <node pkg="rosbag" type="play" name="rosbag_play" args="$(arg bag_file_path)"/>
     </group>
 </launch>

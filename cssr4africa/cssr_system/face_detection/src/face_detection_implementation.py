@@ -2,7 +2,7 @@
 face_detection_implementation.py Implementation code for running the Face and Mutual Gaze Detection and Localization ROS node.
 
 Author: Yohannes Tadesse Haile
-Date: March 30, 2025
+Date: April 18, 2025
 Version: v1.0
 
 Copyright (C) 2023 CSSR4Africa Consortium
@@ -44,56 +44,117 @@ class FaceDetectionNode:
         self.camera_type = rospy.get_param('/faceDetection/camera', default="realsense")  # Default camera type
         self.node_name = rospy.get_name().lstrip('/')
         self.timer = rospy.get_time()
+        self.verbose_mode = rospy.get_param("/faceDetection_config/verboseMode", False)
 
     def subscribe_topics(self):
+        # Set up for indefinite waiting
+        wait_rate = rospy.Rate(1)  # Check once per second
+        start_time = rospy.get_time()
         
         if self.camera_type == "realsense":
             self.rgb_topic = self.extract_topics("RealSenseCameraRGB")
             self.depth_topic = self.extract_topics("RealSenseCameraDepth")
+        
         elif self.camera_type == "pepper":
             self.rgb_topic = self.extract_topics("PepperFrontCamera")
             self.depth_topic = self.extract_topics("PepperDepthCamera")
+        
         elif self.camera_type == "video":
             self.rgb_topic = self.extract_topics("RealSenseCameraRGB")
             self.depth_topic = self.extract_topics("RealSenseCameraDepth") 
+        
         else:
             rospy.logerr(f"{self.node_name}: Invalid camera type specified")
             rospy.logerr(f"{self.node_name}: Invalid camera type")
             return
         
+        # Check if topics were found
         if not self.rgb_topic or not self.depth_topic:
             rospy.logerr(f"{self.node_name}: Camera topic not found.")
             rospy.logerr(f"{self.node_name}: Camera topic not found")
             return
 
+        # Determine topic names based on compression settings
         if self.use_compressed and self.camera_type == "realsense":
-            color_sub = Subscriber(self.rgb_topic + "/compressed", CompressedImage)
-            depth_sub = Subscriber(self.depth_topic + "/compressedDepth", CompressedImage)
-            rospy.loginfo(f"{self.node_name}: Subscribed to {self.rgb_topic}/compressed")
-            rospy.loginfo(f"{self.node_name}: Subscribed to {self.depth_topic}/compressedDepth")
+            color_topic = self.rgb_topic + "/compressed"
+            depth_topic = self.depth_topic + "/compressedDepth"
+        
         elif self.use_compressed and self.camera_type == "pepper":
             # There is no compressed topic for Pepper cameras
             rospy.logwarn(f"{self.node_name}: Compressed images are not available for Pepper cameras.")
-            color_sub = Subscriber(self.rgb_topic, Image)
-            depth_sub = Subscriber(self.depth_topic, Image)
-            rospy.loginfo(f"{self.node_name}: Subscribed to {self.rgb_topic}")
-            rospy.loginfo(f"{self.node_name}: Subscribed to {self.depth_topic}")
+            color_topic = self.rgb_topic
+            depth_topic = self.depth_topic
+        
+        elif self.camera_type == "video":
+            color_topic = self.rgb_topic + "/compressed"
+            depth_topic = self.depth_topic + "/compressedDepth"
+        
+        else:
+            color_topic = self.rgb_topic
+            depth_topic = self.depth_topic
+        
+        # Wait for topics to be available, with indefinite waiting
+        rospy.loginfo(f"{self.node_name}: Waiting for topics: {color_topic}, {depth_topic}")
+        topics_available = False
+        warning_interval = 5.0  # Warn every 5 seconds
+        last_warning_time = start_time
+        
+        while not topics_available and not rospy.is_shutdown():
+            published_topics = dict(rospy.get_published_topics())
+            
+            color_available = color_topic in published_topics
+            depth_available = depth_topic in published_topics
+            
+            if color_available and depth_available:
+                topics_available = True
+                if self.verbose_mode:
+                    rospy.loginfo(f"{self.node_name}: Both topics are available!")
+                break
+            
+            # Generate warning messages periodically
+            current_time = rospy.get_time()
+            elapsed_time = current_time - start_time
+            
+            if current_time - last_warning_time >= warning_interval:
+                missing_topics = []
+                if not color_available:
+                    missing_topics.append(color_topic)
+                if not depth_available:
+                    missing_topics.append(depth_topic)
+                    
+                rospy.logwarn(f"{self.node_name}: Still waiting for topics after {int(elapsed_time)}s: {', '.join(missing_topics)}")
+                last_warning_time = current_time
+                
+            wait_rate.sleep()
+        
+        # Subscribe to topics
+        if self.use_compressed and self.camera_type == "realsense":
+            color_sub = Subscriber(color_topic, CompressedImage)
+            depth_sub = Subscriber(depth_topic, CompressedImage)
+            rospy.loginfo(f"{self.node_name}: Subscribed to {color_topic}")
+            rospy.loginfo(f"{self.node_name}: Subscribed to {depth_topic}")
+        
+        elif self.use_compressed and self.camera_type == "pepper":
+            color_sub = Subscriber(color_topic, Image)
+            depth_sub = Subscriber(depth_topic, Image)
+            rospy.loginfo(f"{self.node_name}: Subscribed to {color_topic}")
+            rospy.loginfo(f"{self.node_name}: Subscribed to {depth_topic}")
 
         elif self.camera_type == "video":
-            color_sub = Subscriber(self.rgb_topic + "/compressed", CompressedImage)
-            depth_sub = Subscriber(self.depth_topic + "/compressedDepth", CompressedImage)
-            rospy.loginfo(f"{self.node_name}: Subscribed to {self.rgb_topic}/compressed")
-            rospy.loginfo(f"{self.node_name}: Subscribed to {self.depth_topic}/compressedDepth")
+            color_sub = Subscriber(color_topic, CompressedImage)
+            depth_sub = Subscriber(depth_topic, CompressedImage)
+            rospy.loginfo(f"{self.node_name}: Subscribed to {color_topic}")
+            rospy.loginfo(f"{self.node_name}: Subscribed to {depth_topic}")
 
         else:
-            color_sub = Subscriber(self.rgb_topic, Image)
-            depth_sub = Subscriber(self.depth_topic, Image)
-            rospy.loginfo(f"{self.node_name}: Subscribed to {self.rgb_topic}")
-            rospy.loginfo(f"{self.node_name}: Subscribed to {self.depth_topic}")
+            color_sub = Subscriber(color_topic, Image)
+            depth_sub = Subscriber(depth_topic, Image)
+            rospy.loginfo(f"{self.node_name}: Subscribed to {color_topic}")
+            rospy.loginfo(f"{self.node_name}: Subscribed to {depth_topic}")
 
         # ApproximateTimeSynchronizer setup
         if self.camera_type == "pepper":
-            ats= ApproximateTimeSynchronizer([color_sub, depth_sub], queue_size=10, slop=1)
+            ats = ApproximateTimeSynchronizer([color_sub, depth_sub], queue_size=10, slop=1)
         else:
             ats = ApproximateTimeSynchronizer([color_sub, depth_sub], queue_size=10, slop=0.1)  
         
@@ -379,8 +440,6 @@ class MediaPipe(FaceDetectionNode):
         self.centroid_tracker = CentroidTracker(rospy.get_param("/faceDetection_config/centroidMaxDisappeared", 15), rospy.get_param("/faceDetection_config/centroidMaxDistance", 100))
         self.latest_frame = None
 
-        self.verbose_mode = rospy.get_param("/faceDetection_config/verboseMode", False)
-        
         # Subscribe to the image topic
         self.subscribe_topics()
 
@@ -518,15 +577,8 @@ class MediaPipe(FaceDetectionNode):
                             cv2.FONT_HERSHEY_SIMPLEX, 0.7, face_color, 2)
                 
                 # Draw depth information below the box
-                cv2.putText(
-                    display_frame,
-                    f"Depth: {cz:.2f}m",
-                    (x_min, y_max + 20),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    0.6,
-                    face_color,
-                    2
-                )
+                cv2.putText(display_frame, f"Depth: {cz:.2f}m", (x_min, y_max + 20),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, face_color, 2)
             
         # Save the processed frame for display in spin()
         self.latest_frame = display_frame
@@ -584,8 +636,6 @@ class YOLOONNX:
 class SixDrepNet(FaceDetectionNode):
     def __init__(self):
         super().__init__()
-        self.verbose_mode = rospy.get_param("/faceDetection_config/verboseMode", False)
-
         if self.verbose_mode:
             rospy.loginfo(f"{self.node_name}: Initializing SixDrepNet...")
 

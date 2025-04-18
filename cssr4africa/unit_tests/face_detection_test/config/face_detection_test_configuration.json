@@ -1,9 +1,10 @@
-{   "algorthim": "sixdrep",
+{   "algorithm": "mediapipe",
+    "useCompressed": false,
     "saveVideo": false,
     "saveImage": false, 
     "videoDuration": 10,
     "imageInterval": 5,
     "recordingDelay": 0,
     "maxFramesBuffer": 300,
-    "verboseMode": false
+    "verboseMode": true
 }
