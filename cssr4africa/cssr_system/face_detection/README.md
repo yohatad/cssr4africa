@@ -40,7 +40,9 @@ python3.10 --version
 3. Set Up Virtual Environment
 ```sh
 # Create a virtual environment:
+mkdir -p $HOME/workspace/pepper_rob_ws/src/cssr4africa_virtual_envs
 cd $HOME/workspace/pepper_rob_ws/src/cssr4africa_virtual_envs
+
 python3.10 -m venv cssr4africa_face_person_detection_env
 
 # Activate the virtual environment:
