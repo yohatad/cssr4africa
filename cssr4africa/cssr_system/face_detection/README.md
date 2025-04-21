@@ -77,6 +77,7 @@ The following table provides the key-value pairs used in the configuration file:
 | `sortMaxDisappeared`        | Maximum frames allowed for disappearance in SORT tracking        | Positive integer        | `30`          |
 | `sortMinHits`               | Minimum consecutive detections to confirm object tracking (SORT) | Positive integer        | `20`          |
 | `sortIouThreshold`          | IoU threshold for SORT tracker                                   | `[0.0 - 1.0]`           | `0.3`         |
+| `imageTimeout`	            | Timeout (seconds) for shutting down the node after video ends	   | Float (seconds)	       | `2.0`         |
 | `verboseMode`               | Enable visualization using OpenCV windows and detailed logging   | `True`, `False`         | `True`        |
 
 > **Note:**  
