@@ -44,7 +44,7 @@ class PersonDetectionNode:
         self.camera_type = rospy.get_param("/personDetection/camera", "realsense")
         
         self.last_image_time = rospy.get_time()
-        self.image_timeout = rospy.get_param("/faceDetection/imageTimeout", 2.0)
+        self.image_timeout = rospy.get_param("/personDetection/imageTimeout", 2.0)
     
     def subscribe_topics(self):
         # Set up for indefinite waiting
@@ -160,19 +160,8 @@ class PersonDetectionNode:
         
         ats.registerCallback(self.synchronized_callback)
 
-    def start_timeout_monitor(self):
-        def monitor():
-            rate = rospy.Rate(1)
-            while not rospy.is_shutdown():
-                time_since_last = rospy.get_time() - self.last_image_time
-                if time_since_last > self.image_timeout:
-                    rospy.logwarn(f"{self.node_name}: No image received for {self.image_timeout} seconds. Assuming rosbag is done. Shutting down.")
-                    rospy.signal_shutdown("No image data — rosbag likely finished.")
-                rate.sleep()
-
-        threading.Thread(target=monitor, daemon=True).start()
-
     def synchronized_callback(self, color_data, depth_data):
+        self.last_image_time = rospy.get_time()
         try:
             # --- Color Image Processing ---
             if isinstance(color_data, CompressedImage):
@@ -216,6 +205,18 @@ class PersonDetectionNode:
             rospy.logerr(f"{self.node_name}: synchronized_callback CvBridge Error: {str(e)}")
         except Exception as e:
             rospy.logerr(f"{self.node_name}: synchronized_callback Exception: {str(e)}")
+
+    def start_timeout_monitor(self):
+        def monitor():
+            rate = rospy.Rate(1)
+            while not rospy.is_shutdown():
+                time_since_last = rospy.get_time() - self.last_image_time
+                if time_since_last > self.image_timeout:
+                    rospy.logwarn(f"{self.node_name}: No image received for {self.image_timeout} seconds. Assuming rosbag is done. Shutting down.")
+                    rospy.signal_shutdown("No image data — rosbag likely finished.")
+                rate.sleep()
+
+        threading.Thread(target=monitor, daemon=True).start()
 
     def check_camera_resolution(self, color_image, depth_image):
         """Check if the color and depth images have the same resolution."""

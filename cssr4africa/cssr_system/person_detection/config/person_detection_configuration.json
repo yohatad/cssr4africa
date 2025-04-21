@@ -4,5 +4,6 @@
     "sortMaxDisappeared": 30,
     "sortMinHits": 20,
     "sortIouThreshold": 0.3,
+    "imageTimeout": 4,
     "verboseMode": true
 }
