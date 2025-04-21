@@ -48,7 +48,7 @@ class FaceDetectionNode:
         self.verbose_mode = rospy.get_param("/faceDetection/verboseMode", False)
 
         self.last_image_time = rospy.get_time()
-        self.image_timeout = rospy.get_param("/faceDetection/imageTimeout", 5.0)  # default 10 seconds
+        self.image_timeout = rospy.get_param("/faceDetection/imageTimeout", 2.0)
 
     def subscribe_topics(self):
         # Set up for indefinite waiting
@@ -222,7 +222,6 @@ class FaceDetectionNode:
 
         threading.Thread(target=monitor, daemon=True).start()
 
-    
     def check_camera_resolution(self, color_image, depth_image):
         """Check if the color and depth images have the same resolution."""
         if color_image is None or depth_image is None:
