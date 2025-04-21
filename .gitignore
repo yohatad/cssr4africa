@@ -6,3 +6,4 @@
 *.pyc
 **/__pycache__/
 cssr4africa/cssr_system/person_detection/models/yolov8s.pt
+**/cssr4africa_virtual_envs/**
