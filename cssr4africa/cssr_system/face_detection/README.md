@@ -18,7 +18,7 @@ Install the required software components to instantiate and set up the developme
 ## Installation on Ubuntu (x86-based Systems)
 
 1. Prerequisites  
-Make sure you are running Ubuntu 20.04. The python environment to run face detection similar to person detection. If you have setup the person detection python environment you can skip this step.
+Make sure you are running Ubuntu 20.04. The python environment to run face detection similar to person detection. If you have setup the person detection python environment you can skip this step.If the intel real sense camera is used make sure it uses USB 3.0. 
 
 2. Install Python 3.10 and Virtual Environment.
 ```sh
@@ -104,7 +104,7 @@ Follow below steps, run in different terminals.
   In a new terminal activate the python environment. 
   ```bash
   # Activate the python environment.
-  source ~/workspace/pepper_rob_ws/cssr4africa_face_person_detection_env/bin/activate
+  source $HOME/workspace/pepper_rob_ws/src/cssr4africa_virtual_envs/cssr4africa_face_person_detection_env/bin/activate
   ```
 
   ```bash
