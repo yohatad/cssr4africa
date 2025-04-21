@@ -53,8 +53,7 @@ class FaceDetectionTest:
             raise RuntimeError("Configuration file could not be loaded.")
         
         self.camera = rospy.get_param('faceDetection/camera', default='video')
-
-        self.verbose_mode = rospy.get_param('faceDetection_config/verboseMode', default=False)
+        self.verbose_mode = rospy.get_param('faceDetection/verboseMode', default=False)
 
         # Initialize ROS topic subscription and CvBridge
         self.bridge = CvBridge()

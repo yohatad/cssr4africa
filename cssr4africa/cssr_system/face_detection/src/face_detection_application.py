@@ -138,7 +138,7 @@ def main():
     unit_tests = rospy.get_param('/faceDetection/unit_tests', default=False)
     
     if not unit_tests:
-        rospy.set_param('/faceDetection_config', config)
+        rospy.set_param('/faceDetection', config)
     else:
         # Create a filtered config without the excluded keys
         filtered_config = {k: v for k, v in config.items() 
@@ -146,7 +146,7 @@ def main():
         
         # Set the filtered parameters to the parameter server
         for key, value in filtered_config.items():
-            rospy.set_param('/faceDetection_config/' + key, value)
+            rospy.set_param('/faceDetection/' + key, value)
 
         # Set the algorithm, useCompressed, and verboseMode parameters
         config_test = FaceDetectionNode.read_json_file('unit_tests')
@@ -154,9 +154,9 @@ def main():
         # Filter and set only the specific parameters from the test config
         for key, value in config_test.items():
             if key in ["useCompressed", "algorithm", "verboseMode"]:
-                rospy.set_param('/faceDetection_config/' + key, value)
+                rospy.set_param('/faceDetection/' + key, value)
         
-    algorithm = rospy.get_param('/faceDetection_config/algorithm', default="sixdrep")
+    algorithm = rospy.get_param('/faceDetection/algorithm', default="sixdrep")
 
     if algorithm == 'mediapipe':
         face_detection = MediaPipe()
