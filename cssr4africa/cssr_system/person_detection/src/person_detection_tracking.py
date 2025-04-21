@@ -2,7 +2,7 @@
 person_detection_tracking.py Functionality for tracking people using SORT (simple online and realtime tracking).
 
 Author: Yohannes Tadesse Haile
-Date: March 28, 2025
+Date: April 21, 2025
 Version: v1.0
 
 Copyright (C) 2023 CSSR4Africa Consortium

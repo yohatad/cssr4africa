@@ -56,7 +56,7 @@ class PersonDetectionTest:
         
         # Set the verbose mode based on the configuration
         self.verbose_mode = self.config.get("verboseMode", False)
-        rospy.set_param('/personDetection_config/verboseMode', self.verbose_mode)
+        rospy.set_param('/personDetection/verboseMode', self.verbose_mode)
 
         # Initialize ROS topic subscription and CvBridge
         self.bridge = CvBridge()
@@ -232,7 +232,11 @@ class PersonDetectionTest:
         """
         Subscribe to RGB and depth camera topics based on the configured camera type.
         Can use either separate callbacks or synchronized callbacks based on configuration.
-        """        
+        """
+        # Set up for indefinite waiting
+        wait_rate = rospy.Rate(1)  # Check once per second
+        start_time = rospy.get_time()
+        
         if self.camera == "realsense":
             self.rgb_topic = self.extract_topics("RealSenseCameraRGB")
             self.depth_topic = self.extract_topics("RealSenseCameraDepth")
@@ -247,7 +251,40 @@ class PersonDetectionTest:
             rospy.logerr(f"{self.node_name}: subscribe_camera_topics: Camera topic(s) not found.")
             rospy.signal_shutdown("subscribe_camera_topics: Camera topic(s) not found")
             return
-
+        
+        # Wait for topics to be available, with indefinite waiting
+        rospy.loginfo(f"{self.node_name}: Waiting for topics: {self.rgb_topic}, {self.depth_topic}")
+        topics_available = False
+        warning_interval = 5.0  # Warn every 5 seconds
+        last_warning_time = start_time
+        
+        while not topics_available and not rospy.is_shutdown():
+            published_topics = dict(rospy.get_published_topics())
+            
+            rgb_available = self.rgb_topic in published_topics
+            depth_available = self.depth_topic in published_topics
+            
+            if rgb_available and depth_available:
+                topics_available = True
+                rospy.loginfo(f"{self.node_name}: Both topics are available!")
+                break
+            
+            # Generate warning messages periodically
+            current_time = rospy.get_time()
+            elapsed_time = current_time - start_time
+            
+            if current_time - last_warning_time >= warning_interval:
+                missing_topics = []
+                if not rgb_available:
+                    missing_topics.append(self.rgb_topic)
+                if not depth_available:
+                    missing_topics.append(self.depth_topic)
+                    
+                rospy.logwarn(f"{self.node_name}: Still waiting for topics after {int(elapsed_time)}s: {', '.join(missing_topics)}")
+                last_warning_time = current_time
+                
+            wait_rate.sleep()
+        
         rospy.loginfo(f"{self.node_name}: Subscribed to {self.rgb_topic}")
         rospy.loginfo(f"{self.node_name}: Subscribed to {self.depth_topic}")
         

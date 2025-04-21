@@ -29,7 +29,7 @@ Libraries
     - multiprocessing
     - json
     - random
-    - lap
+    - threading
     - sensor_msgs.msg (Image, CompressedImage)
     - filterpy.kalman (KalmanFilter)
     - itertools (count)
@@ -87,7 +87,7 @@ Example of instantiation of the module
 
 Author: Yohannes Tadesse Haile, Carnegie Mellon University Africa
 Email: yohanneh@andrew.cmu.edu
-Date: March 28, 2025
+Date: April 21, 2025
 Version: v1.0
 """
 
@@ -120,7 +120,7 @@ def main():
     unit_tests = rospy.get_param('/personDetection/unit_tests', default=False)
     
     if not unit_tests:
-        rospy.set_param('/personDetection_config', config)
+        rospy.set_param('/personDetection', config)
     else:
         # Create a filtered config without the excluded keys
         filtered_config = {k: v for k, v in config.items() 
@@ -128,9 +128,9 @@ def main():
         
         # Set the filtered parameters to the parameter server
         for key, value in filtered_config.items():
-            rospy.set_param('/personDetection_config/' + key, value)
+            rospy.set_param('/personDetection/' + key, value)
 
-        rospy.set_param('/personDetection_config/' + key, value)
+        rospy.set_param('/personDetection/' + key, value)
 
         # Set the algorithm, useCompressed, and verboseMode parameters
         config_test = PersonDetectionNode.read_json_file('unit_tests')
@@ -138,7 +138,7 @@ def main():
         # Filter and set only the specific parameters from the test config
         for key, value in config_test.items():
             if key in ["useCompressed", "algorithm", "verboseMode"]:
-                rospy.set_param('/personDetection_config/' + key, value)
+                rospy.set_param('/personDetection/' + key, value)
     
     person_detection = YOLOv8()
     person_detection.spin()

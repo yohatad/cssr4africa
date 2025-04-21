@@ -23,6 +23,7 @@ The following table provides the key-value pairs used in the configuration file:
 | Parameter          | Description                                   | Possible Values            | Default Value |
 |--------------------|-----------------------------------------------|----------------------------|---------------|
 | `saveVideo`        | Save the output video of the test             | `True`, `False`            | `False`       |
+| `useCompressed`    | Use compressed ROS image topics               | `True`, `False`            | `True`        |
 | `saveImage`        | Save individual image frames from the test    | `True`, `False`            | `False`       |
 | `videoDuration`    | Duration (seconds) for saved video            | Positive integer           | `10`          |
 | `imageInterval`    | Interval (seconds) between captured images    | Positive integer           | `5`           |
@@ -42,7 +43,7 @@ The test can be performed on a **physical robot using realsense or pepper camera
 
 1. **Install the required software components:**
 
-  Install the required software components to instantiate and set up the development environment for controlling the Pepper robot. Use the [CSSR4Africa Software Installation Manual](https://cssr4africa.github.io/deliverables/CSSR4Africa_Deliverable_D3.3.pdf)
+  Install the required software components to instantiate and set up the development environment for controlling the Pepper robot. Use the [CSSR4Africa Software Installation Manual](https://cssr4africa.github.io/deliverables/CSSR4Africa_Deliverable_D3.3.pdf).You can use the README provided in the face detection node to install the necessary packages. 
 
 2. **Clone and build the project (if not already cloned)**:
   - Move to the source directory of the workspace
@@ -83,7 +84,7 @@ roslaunch unit_tests person_detection_test_launch_robot.launch camera:=<camera> 
 > **Note:**  
 > Before running the Test Harness, activate the person detection python environment. Refer the README.md file for the person detection node.
 ```bash
-  source ~/workspace/pepper_rob_ws/cssr4africa_face_person_detection_env/bin/activate
+  source $HOME/workspace/pepper_rob_ws/src/cssr4africa_virtual_envs/cssr4africa_face_person_detection_env/bin/activate
 ```
 
 ```bash

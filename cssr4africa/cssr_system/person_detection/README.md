@@ -37,7 +37,8 @@ python3.10 --version
 3. Set Up Virtual Environment
 ```sh
 # Create a virtual environment:
-cd $HOME/workspace/pepper_rob_ws
+mkdir -p $HOME/workspace/pepper_rob_ws/src/cssr4africa_virtual_envs
+cd $HOME/workspace/pepper_rob_ws/src/cssr4africa_virtual_envs
 python3.10 -m venv cssr4africa_face_person_detection_env
 
 # Activate the virtual environment:
@@ -53,7 +54,7 @@ pip install --upgrade pip
 pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 
 # Install additional requirements:
-pip install -r  ~/workspace/pepper_rob_ws/src/cssr4africa/cssr_system/sound_detection/person_detection_requirements.txt
+pip install -r  ~/workspace/pepper_rob_ws/src/cssr4africa/cssr_system/person_detection/person_detection_requirements_x86.txt
 ```
 
 # 🔧 Configuration Parameters
@@ -62,7 +63,7 @@ The following table provides the key-value pairs used in the configuration file:
 | Parameter                   | Description                                                      | Range/Values            | Default Value |
 |-----------------------------|------------------------------------------------------------------|-------------------------|---------------|
 | `useCompressed`             | Use compressed ROS image topics                                  | `True`, `False`         | `False`       |
-| `confidence_iou_threshold`  | Confidence threshold for person detection                        | `[0.0 - 1.0]`           | `0.5`         |
+| `confidenceThreshold`       | Confidence threshold for person detection                        | `[0.0 - 1.0]`           | `0.5`         |
 | `sortMaxDisappeared`        | Maximum frames allowed for disappearance in SORT tracking        | Positive integer        | `50`          |
 | `sortMinHits`               | Minimum consecutive detections to confirm object tracking (SORT) | Positive integer        | `3`           |
 | `sortIouThreshold`          | IoU threshold for SORT tracker                                   | `[0.0 - 1.0]`           | `0.5`         |
@@ -94,7 +95,7 @@ Follow below steps, run in different terminals.
 
   In a new terminal activate the python environment. 
   ```bash
-  source ~/workspace/pepper_rob_ws/cssr4africa_face_person_detection_env/bin/activate
+  source $HOME/workspace/pepper_rob_ws/src/cssr4africa_virtual_envs/cssr4africa_face_person_detection_env/bin/activate
   ```
 
   ```bash

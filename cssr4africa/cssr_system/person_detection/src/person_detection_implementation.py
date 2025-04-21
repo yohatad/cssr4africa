@@ -2,7 +2,7 @@
 person_detection_implementation.py Implementation code for running the Person Detection and Localization ROS node.
 
 Author: Yohannes Tadesse Haile
-Date: March 28, 2025
+Date: April 21, 2025
 Version: v1.0
 
 Copyright (C) 2023 CSSR4Africa Consortium
@@ -24,6 +24,7 @@ import onnxruntime
 import multiprocessing
 import json
 import random
+import threading
 from sensor_msgs.msg import Image, CompressedImage
 from cv_bridge import CvBridge, CvBridgeError
 from message_filters import ApproximateTimeSynchronizer, Subscriber
@@ -37,64 +38,139 @@ class PersonDetectionNode:
         self.bridge = CvBridge()
         self.color_image = None
         self.depth_image = None
-        self.use_compressed = rospy.get_param("/personDetection_config/useCompressed", False)
-        self.verbose_mode = rospy.get_param("/personDetection_config/verboseMode", False)
+        self.use_compressed = rospy.get_param("/personDetection/useCompressed", False)
+        self.verbose_mode = rospy.get_param("/personDetection/verboseMode", False)
         self.node_name = rospy.get_name().lstrip('/')
         self.camera_type = rospy.get_param("/personDetection/camera", "realsense")
+        
+        self.last_image_time = rospy.get_time()
+        self.image_timeout = rospy.get_param("/faceDetection/imageTimeout", 2.0)
     
     def subscribe_topics(self):
+        # Set up for indefinite waiting
+        wait_rate = rospy.Rate(1)  # Check once per second
+        start_time = rospy.get_time()
+        
         if self.camera_type == "realsense":
             self.rgb_topic = self.extract_topics("RealSenseCameraRGB")
             self.depth_topic = self.extract_topics("RealSenseCameraDepth")
+        
         elif self.camera_type == "pepper":
             self.rgb_topic = self.extract_topics("PepperFrontCamera")
             self.depth_topic = self.extract_topics("PepperDepthCamera")
+        
         elif self.camera_type == "video":
             self.rgb_topic = self.extract_topics("RealSenseCameraRGB")
             self.depth_topic = self.extract_topics("RealSenseCameraDepth") 
+        
         else:
             rospy.logerr(f"{self.node_name}: Invalid camera type specified")
-            rospy.signal_shutdown("Invalid camera type")
+            rospy.logerr(f"{self.node_name}: Invalid camera type")
             return
         
+        # Check if topics were found
         if not self.rgb_topic or not self.depth_topic:
             rospy.logerr(f"{self.node_name}: Camera topic not found.")
-            rospy.signal_shutdown("Camera topic not found")
+            rospy.logerr(f"{self.node_name}: Camera topic not found")
             return
 
+        # Determine topic names based on compression settings
         if self.use_compressed and self.camera_type == "realsense":
-            color_sub = Subscriber(self.rgb_topic + "/compressed", CompressedImage)
-            depth_sub = Subscriber(self.depth_topic + "/compressedDepth", CompressedImage)
-            rospy.loginfo(f"{self.node_name}: Subscribed to {self.rgb_topic}/compressed")
-            rospy.loginfo(f"{self.node_name}: Subscribed to {self.depth_topic}/compressedDepth")
+            color_topic = self.rgb_topic + "/compressed"
+            depth_topic = self.depth_topic + "/compressedDepth"
         
         elif self.use_compressed and self.camera_type == "pepper":
             # There is no compressed topic for Pepper cameras
             rospy.logwarn(f"{self.node_name}: Compressed images are not available for Pepper cameras.")
-            color_sub = Subscriber(self.rgb_topic, Image)
-            depth_sub = Subscriber(self.depth_topic, Image)
-            rospy.loginfo(f"{self.node_name}: Subscribed to {self.rgb_topic}")
-            rospy.loginfo(f"{self.node_name}: Subscribed to {self.depth_topic}")
+            color_topic = self.rgb_topic
+            depth_topic = self.depth_topic
+        
+        elif self.camera_type == "video":
+            color_topic = self.rgb_topic + "/compressed"
+            depth_topic = self.depth_topic + "/compressedDepth"
+        
+        else:
+            color_topic = self.rgb_topic
+            depth_topic = self.depth_topic
+        
+        # Wait for topics to be available, with indefinite waiting
+        rospy.loginfo(f"{self.node_name}: Waiting for topics: {color_topic}, {depth_topic}")
+        topics_available = False
+        warning_interval = 5.0  # Warn every 5 seconds
+        last_warning_time = start_time
+        
+        while not topics_available and not rospy.is_shutdown():
+            published_topics = dict(rospy.get_published_topics())
+            
+            color_available = color_topic in published_topics
+            depth_available = depth_topic in published_topics
+            
+            if color_available and depth_available:
+                topics_available = True
+                if self.verbose_mode:
+                    rospy.loginfo(f"{self.node_name}: Both topics are available!")
+                break
+            
+            # Generate warning messages periodically
+            current_time = rospy.get_time()
+            elapsed_time = current_time - start_time
+            
+            if current_time - last_warning_time >= warning_interval:
+                missing_topics = []
+                if not color_available:
+                    missing_topics.append(color_topic)
+                if not depth_available:
+                    missing_topics.append(depth_topic)
+                    
+                rospy.logwarn(f"{self.node_name}: Still waiting for topics after {int(elapsed_time)}s: {', '.join(missing_topics)}")
+                last_warning_time = current_time
+                
+            wait_rate.sleep()
+        
+        # Subscribe to topics
+        if self.use_compressed and self.camera_type == "realsense":
+            color_sub = Subscriber(color_topic, CompressedImage)
+            depth_sub = Subscriber(depth_topic, CompressedImage)
+            rospy.loginfo(f"{self.node_name}: Subscribed to {color_topic}")
+            rospy.loginfo(f"{self.node_name}: Subscribed to {depth_topic}")
+        
+        elif self.use_compressed and self.camera_type == "pepper":
+            color_sub = Subscriber(color_topic, Image)
+            depth_sub = Subscriber(depth_topic, Image)
+            rospy.loginfo(f"{self.node_name}: Subscribed to {color_topic}")
+            rospy.loginfo(f"{self.node_name}: Subscribed to {depth_topic}")
 
         elif self.camera_type == "video":
-            color_sub = Subscriber(self.rgb_topic + "/compressed", CompressedImage)
-            depth_sub = Subscriber(self.depth_topic + "/compressedDepth", CompressedImage)
-            rospy.loginfo(f"{self.node_name}: Subscribed to {self.rgb_topic}/compressed")
-            rospy.loginfo(f"{self.node_name}: Subscribed to {self.depth_topic}/compressedDepth")
+            color_sub = Subscriber(color_topic, CompressedImage)
+            depth_sub = Subscriber(depth_topic, CompressedImage)
+            rospy.loginfo(f"{self.node_name}: Subscribed to {color_topic}")
+            rospy.loginfo(f"{self.node_name}: Subscribed to {depth_topic}")
 
         else:
-            color_sub = Subscriber(self.rgb_topic, Image)
-            depth_sub = Subscriber(self.depth_topic, Image)
-            rospy.loginfo(f"{self.node_name}: Subscribed to {self.rgb_topic}")
-            rospy.loginfo(f"{self.node_name}: Subscribed to {self.depth_topic}")
+            color_sub = Subscriber(color_topic, Image)
+            depth_sub = Subscriber(depth_topic, Image)
+            rospy.loginfo(f"{self.node_name}: Subscribed to {color_topic}")
+            rospy.loginfo(f"{self.node_name}: Subscribed to {depth_topic}")
 
         # ApproximateTimeSynchronizer setup
         if self.camera_type == "pepper":
             ats = ApproximateTimeSynchronizer([color_sub, depth_sub], queue_size=10, slop=1)
         else:
-            ats = ApproximateTimeSynchronizer([color_sub, depth_sub], queue_size=10, slop=0.1)
+            ats = ApproximateTimeSynchronizer([color_sub, depth_sub], queue_size=10, slop=0.1)  
         
         ats.registerCallback(self.synchronized_callback)
+
+    def start_timeout_monitor(self):
+        def monitor():
+            rate = rospy.Rate(1)
+            while not rospy.is_shutdown():
+                time_since_last = rospy.get_time() - self.last_image_time
+                if time_since_last > self.image_timeout:
+                    rospy.logwarn(f"{self.node_name}: No image received for {self.image_timeout} seconds. Assuming rosbag is done. Shutting down.")
+                    rospy.signal_shutdown("No image data — rosbag likely finished.")
+                rate.sleep()
+
+        threading.Thread(target=monitor, daemon=True).start()
 
     def synchronized_callback(self, color_data, depth_data):
         try:
@@ -398,10 +474,10 @@ class YOLOv8(PersonDetectionNode):
         """
         super().__init__()
         
-        self.confidence_threshold = rospy.get_param("/personDetection_config/confidenceThreshold", 0.5)
-        self.sort_max_disap = rospy.get_param("/personDetection_config/sortMaxDisappeared", 50)
-        self.sort_min_hits = rospy.get_param("/personDetection_config/sortMinHits", 3)
-        self.sort_iou_threshold = rospy.get_param("/personDetection_config/sortIouThreshold", 0.5)
+        self.confidence_threshold = rospy.get_param("/personDetection/confidenceThreshold", 0.5)
+        self.sort_max_disap = rospy.get_param("/personDetection/sortMaxDisappeared", 50)
+        self.sort_min_hits = rospy.get_param("/personDetection/sortMinHits", 3)
+        self.sort_iou_threshold = rospy.get_param("/personDetection/sortIouThreshold", 0.5)
 
         # Initialize model
         if not self._init_model():
@@ -429,6 +505,8 @@ class YOLOv8(PersonDetectionNode):
         if self.depth_image is not None and self.color_image is not None:
             if not self.check_camera_resolution(self.color_image, self.depth_image) or self.camera_type != "pepper":
                 rospy.logerr(f"{self.node_name}: Color camera and depth camera have different resolutions.")
+
+        self.start_timeout_monitor()
 
     def _init_model(self):
         """Loads the ONNX model and prepares the runtime session."""
