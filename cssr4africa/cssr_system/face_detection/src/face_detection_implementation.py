@@ -204,6 +204,7 @@ class FaceDetectionNode:
 
             # Process synchronized images
             self.process_images()
+            self.last_image_time = rospy.get_time()
 
         except CvBridgeError as e:
             rospy.logerr(f"{self.node_name}: synchronized_callback CvBridge Error: {str(e)}")
@@ -216,7 +217,7 @@ class FaceDetectionNode:
             while not rospy.is_shutdown():
                 time_since_last = rospy.get_time() - self.last_image_time
                 if time_since_last > self.image_timeout:
-                    rospy.logwarn(f"{self.node_name}: No image received for {self.image_timeout} seconds. Assuming rosbag is done. Shutting down.")
+                    rospy.logwarn(f"{self.node_name}: No image received for {self.image_timeout} seconds. Shutting down.")
                     rospy.signal_shutdown("No image data — rosbag likely finished.")
                 rate.sleep()
 
@@ -476,6 +477,10 @@ class MediaPipe(FaceDetectionNode):
                 if self.verbose_mode:
                     # Display the processed frame
                     cv2.imshow("Face Detection & Mutual Gaze Estimation", self.latest_frame)
+
+            if rospy.get_time() - self.timer > 10:
+                rospy.loginfo(f"{self.node_name}: running.")
+                self.timer = rospy.get_time()
 
             # Display the depth image if verbose mode is enabled
             if self.verbose_mode:
