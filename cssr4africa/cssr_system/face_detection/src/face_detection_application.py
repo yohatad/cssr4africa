@@ -142,7 +142,7 @@ def main():
     else:
         # Create a filtered config without the excluded keys
         filtered_config = {k: v for k, v in config.items() 
-                        if k not in ["useCompressed", "algorithm", "verboseMode"]}
+                        if k not in ["useCompressed", "algorithm"]}
         
         # Set the filtered parameters to the parameter server
         for key, value in filtered_config.items():
@@ -153,7 +153,7 @@ def main():
         
         # Filter and set only the specific parameters from the test config
         for key, value in config_test.items():
-            if key in ["useCompressed", "algorithm", "verboseMode"]:
+            if key in ["useCompressed", "algorithm"]:
                 rospy.set_param('/faceDetection/' + key, value)
         
     algorithm = rospy.get_param('/faceDetection/algorithm', default="sixdrep")
