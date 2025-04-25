@@ -77,7 +77,6 @@ roslaunch unit_tests person_detection_test_launch_robot.launch camera:=<camera> 
 
 - **`singlePerson`**: Contains data with a single person for basic detection testing and tracking with various distances from the robot.
 - **`multiplePeople`**: Includes multiple people to test detection robustness in crowded scenes.
-- **`partialOcclusion`**: Data intended for analyzing detection with partially occluded persons.
 - **`lighting1`**: Features variations in lighting conditions to assess detection stability.
 - **`lighting2`**: Features variations in lighting conditions to assess detection performance.
 
