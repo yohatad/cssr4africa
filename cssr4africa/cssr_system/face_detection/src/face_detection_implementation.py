@@ -41,14 +41,14 @@ class FaceDetectionNode:
         self.bridge = CvBridge()
         self.depth_image = None  # Initialize depth_image
         self.color_image = None  # Initialize color_image
-        self.use_compressed = rospy.get_param('/faceDetection/useCompressed', False)  # Parameter to choose compressed or raw images
+        self.use_compressed = rospy.get_param('/faceDetection_config/useCompressed', False)  # Parameter to choose compressed or raw images
         self.camera_type = rospy.get_param('/faceDetection/camera', default="realsense")  # Default camera type
         self.node_name = rospy.get_name().lstrip('/')
         self.timer = rospy.get_time()
-        self.verbose_mode = rospy.get_param("/faceDetection/verboseMode", False)
+        self.verbose_mode = rospy.get_param("/faceDetection_config/verboseMode", False)
 
         self.last_image_time = rospy.get_time()
-        self.image_timeout = rospy.get_param("/faceDetection/imageTimeout", 2.0)
+        self.image_timeout = rospy.get_param("/faceDetection_config/imageTimeout", 2.0)
 
     def subscribe_topics(self):
         # Set up for indefinite waiting
@@ -446,7 +446,7 @@ class MediaPipe(FaceDetectionNode):
         super().__init__()
         # Initialize MediaPipe components
         self.mp_face_mesh = mp.solutions.face_mesh
-        self.face_mesh = self.mp_face_mesh.FaceMesh(rospy.get_param("/faceDetection/mpFacedetConfidence", 0.5), max_num_faces=10)
+        self.face_mesh = self.mp_face_mesh.FaceMesh(rospy.get_param("/faceDetection_config/mpFacedetConfidence", 0.5), max_num_faces=10)
 
         self.mp_face_detection = mp.solutions.face_detection
         self.face_detection = self.mp_face_detection.FaceDetection(model_selection=1, min_detection_confidence=0.5)
@@ -455,7 +455,7 @@ class MediaPipe(FaceDetectionNode):
         self.drawing_spec = self.mp_drawing.DrawingSpec(color=(128, 128, 128), thickness=1, circle_radius=1)
 
         # Initialize the CentroidTracker
-        self.centroid_tracker = CentroidTracker(rospy.get_param("/faceDetection/centroidMaxDisappeared", 15), rospy.get_param("/faceDetection/centroidMaxDistance", 100))
+        self.centroid_tracker = CentroidTracker(rospy.get_param("/faceDetection_config/centroidMaxDisappeared", 15), rospy.get_param("/faceDetection_config/centroidMaxDistance", 100))
         self.latest_frame = None
 
         # Subscribe to the image topic
@@ -557,7 +557,7 @@ class MediaPipe(FaceDetectionNode):
                 x_angle = angles[0] * 360
                 y_angle = angles[1] * 360
                 
-                mp_angle = rospy.get_param("/faceDetection/mpHeadposeAngle", 8)
+                mp_angle = rospy.get_param("/faceDetection_config/mpHeadposeAngle", 8)
                 mutualGaze = abs(x_angle) <= mp_angle and abs(y_angle) <= mp_angle
                 mutualGaze_list.append(mutualGaze)
             
@@ -671,7 +671,7 @@ class SixDrepNet(FaceDetectionNode):
         
         # Initialize YOLOONNX model early and check success
         try:
-            self.yolo_model = YOLOONNX(model_path=yolo_model_path, class_score_th = rospy.get_param("/faceDetection/sixdrepnetConfidence", 0.65))
+            self.yolo_model = YOLOONNX(model_path=yolo_model_path, class_score_th = rospy.get_param("/faceDetection_config/sixdrepnetConfidence", 0.65))
             if self.verbose_mode:
                 rospy.loginfo(f"{self.node_name}: YOLOONNX model initialized successfully.")
         except Exception as e:
@@ -708,9 +708,9 @@ class SixDrepNet(FaceDetectionNode):
         self.mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)
         self.std = np.array([0.229, 0.224, 0.225], dtype=np.float32)
 
-        self.sort_max_disappeared = rospy.get_param("/faceDetection/sortMaxDisappeared", 5)
-        self.sort_min_hits = rospy.get_param("/faceDetection/sortMinHits", 3)
-        self.sort_iou_threshold = rospy.get_param("/faceDetection/sortIOUThreshold", 0.3)
+        self.sort_max_disappeared = rospy.get_param("/faceDetection_config/sortMaxDisappeared", 5)
+        self.sort_min_hits = rospy.get_param("/faceDetection_config/sortMinHits", 3)
+        self.sort_iou_threshold = rospy.get_param("/faceDetection_config/sortIOUThreshold", 0.3)
 
         self.sort_tracker = Sort(max_age=self.sort_max_disappeared, min_hits=self.sort_min_hits, iou_threshold=self.sort_iou_threshold)
         self.tracks = [] 
@@ -816,7 +816,7 @@ class SixDrepNet(FaceDetectionNode):
             cz = cz if cz is not None else 0.0
 
             # Determine if the person is engaged
-            sixdrep_angle = rospy.get_param("/faceDetection/sixdrepnetHeadposeAngle", 10)
+            sixdrep_angle = rospy.get_param("/faceDetection_config/sixdrepnetHeadposeAngle", 10)
             mutual_gaze = abs(yaw_deg) < sixdrep_angle and abs(pitch_deg) < sixdrep_angle
 
             # Add width and height to tracking data
