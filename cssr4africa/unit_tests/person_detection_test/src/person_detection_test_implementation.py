@@ -2,7 +2,7 @@
 person_detection_test_implementation.py Implementation code for running the Person Detection and Localization unit test.
 
 Author: Yohannes Tadesse Haile
-Date: March 28, 2025
+Date: April 25, 2025
 Version: v1.0
 
 Copyright (C) 2023 CSSR4Africa Consortium
@@ -56,7 +56,7 @@ class PersonDetectionTest:
         
         # Set the verbose mode based on the configuration
         self.verbose_mode = self.config.get("verboseMode", False)
-        rospy.set_param('/personDetection/verboseMode', self.verbose_mode)
+        rospy.set_param('/personDetection_config/verboseMode', self.verbose_mode)
 
         # Initialize ROS topic subscription and CvBridge
         self.bridge = CvBridge()
@@ -112,15 +112,10 @@ class PersonDetectionTest:
             rospy.loginfo(f"{self.node_name}: Camera subscription disabled - not recording or visualizing")
                 
         # Subscribe to person detection data
-        self.person_data_sub = rospy.Subscriber(
-            '/personDetection/data',
-            person_detection_test_msg_file,
-            self.person_data_callback,
-            queue_size=10
-        )
+        self.person_data_sub = rospy.Subscriber('/personDetection/data',person_detection_test_msg_file,self.person_data_callback,queue_size=10)
         
         # Set a delay for recording if configured
-        if self.config.get("recordingDelay", 0) > 0:
+        if self.config.get("recordingDelay", 0) > 0 and (self.config.get("saveVideo", False) or self.config.get("saveImage", False)):
             delay = self.config.get("recordingDelay", 5)  # Default 5 second delay
             if self.verbose_mode:
                 rospy.loginfo(f"{self.node_name}: Will start recording after {delay} seconds delay")
@@ -306,11 +301,6 @@ class PersonDetectionTest:
         else:
             sync = ApproximateTimeSynchronizer([rgb_sub, depth_sub], queue_size=10, slop=0.1)
         sync.registerCallback(self.synchronized_callback)
-
-        # Print message every 10 seconds
-        if rospy.get_time() - self.timer > 10:
-            rospy.loginfo(f"{self.node_name}: running.")
-            self.timer = rospy.get_time()
         
         rospy.loginfo(f"{self.node_name}: Set up synchronized RGB and depth image subscribers")
     
@@ -323,6 +313,11 @@ class PersonDetectionTest:
             depth_msg (sensor_msgs.msg.Image): Depth image message
         """
         try:
+            # Print message every 10 seconds
+            if rospy.get_time() - self.timer > 10:
+                rospy.loginfo(f"{self.node_name}: running.")
+                self.timer = rospy.get_time()
+
             # Convert ROS Image messages to OpenCV format
             cv_rgb = self.bridge.imgmsg_to_cv2(rgb_msg, desired_encoding="bgr8")
             cv_depth = self.bridge.imgmsg_to_cv2(depth_msg, desired_encoding="passthrough")

@@ -38,13 +38,13 @@ class PersonDetectionNode:
         self.bridge = CvBridge()
         self.color_image = None
         self.depth_image = None
-        self.use_compressed = rospy.get_param("/personDetection/useCompressed", False)
+        self.use_compressed = rospy.get_param("/personDetection_config/useCompressed", False)
         self.verbose_mode = rospy.get_param("/personDetection/verboseMode", False)
         self.node_name = rospy.get_name().lstrip('/')
         self.camera_type = rospy.get_param("/personDetection/camera", "realsense")
         
         self.last_image_time = rospy.get_time()
-        self.image_timeout = rospy.get_param("/personDetection/imageTimeout", 2.0)
+        self.image_timeout = rospy.get_param("/personDetection_config/imageTimeout", 2.0)
     
     def subscribe_topics(self):
         # Set up for indefinite waiting
@@ -212,7 +212,7 @@ class PersonDetectionNode:
             while not rospy.is_shutdown():
                 time_since_last = rospy.get_time() - self.last_image_time
                 if time_since_last > self.image_timeout:
-                    rospy.logwarn(f"{self.node_name}: No image received for {self.image_timeout} seconds. Assuming rosbag is done. Shutting down.")
+                    rospy.logwarn(f"{self.node_name}: No image received for {self.image_timeout} seconds. Shutting down.")
                     rospy.signal_shutdown("No image data — rosbag likely finished.")
                 rate.sleep()
 
@@ -475,10 +475,10 @@ class YOLOv8(PersonDetectionNode):
         """
         super().__init__()
         
-        self.confidence_threshold = rospy.get_param("/personDetection/confidenceThreshold", 0.5)
-        self.sort_max_disap = rospy.get_param("/personDetection/sortMaxDisappeared", 50)
-        self.sort_min_hits = rospy.get_param("/personDetection/sortMinHits", 3)
-        self.sort_iou_threshold = rospy.get_param("/personDetection/sortIouThreshold", 0.5)
+        self.confidence_threshold = rospy.get_param("/personDetection_config/confidenceThreshold", 0.5)
+        self.sort_max_disap = rospy.get_param("/personDetection_config/sortMaxDisappeared", 50)
+        self.sort_min_hits = rospy.get_param("/personDetection_config/sortMinHits", 3)
+        self.sort_iou_threshold = rospy.get_param("/personDetection_config/sortIouThreshold", 0.5)
 
         # Initialize model
         if not self._init_model():
