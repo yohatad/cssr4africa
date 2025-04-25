@@ -80,7 +80,7 @@ roslaunch cssr_system sound_detection_launch_robot.launch robot_ip:=<robot_ip> r
 In a new terminal, activate the Python environment:
 ```bash
 # Activate the python environment
-source ~/workspace/pepper_rob_ws/cssr4africa_sound_detection_env/bin/activate
+source $HOME/workspace/pepper_rob_ws/src/cssr4africa_virtual_envs/cssr4africa_sound_detection_env/bin/activate
 ```
 
 ```bash

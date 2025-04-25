@@ -67,7 +67,7 @@ The test can be performed on a **physical robot using its microphones** or using
 ## Prerequisites
 Before running the Test Harness, activate the sound detection Python environment:
 ```bash
-source ~/workspace/pepper_rob_ws/cssr4africa_sound_detection_env/bin/activate
+source $HOME/workspace/pepper_rob_ws/src/cssr4africa_virtual_envs/cssr4africa_sound_detection_env/bin/activate
 ```
 
 Make the application scripts executable:
@@ -81,13 +81,13 @@ chmod +x ~/workspace/pepper_rob_ws/src/cssr4africa/unit_tests/sound_detection_te
 ### Launch the Physical Robot
 ```bash
 # Launch the robot with the appropriate IP and network interface
-roslaunch unit_tests sound_detection_test_launch.launch robot_ip:=<robot_ip> network_interface:=<network_interface> use_recorded_audio:=false
+roslaunch unit_tests sound_detection_test_launch_robot.launch robot_ip:=<robot_ip> network_interface:=<network_interface> use_recorded_audio:=false
 ```
 
 ### Using Pre-recorded Audio
 ```bash
 # Use a pre-recorded audio file
-roslaunch unit_tests sound_detection_test_launch.launch use_recorded_audio:=true audio_file:=<audio_file>
+roslaunch unit_tests sound_detection_test_launch_robot.launch use_recorded_audio:=true audio_file:=<audio_file>
 ```
 
 #### Audio File Options (`audio_file`):
@@ -96,6 +96,11 @@ roslaunch unit_tests sound_detection_test_launch.launch use_recorded_audio:=true
 - **`sound_noise`**: Speech with background noise for robustness testing
 
 ### Run Sound Detection Test Harness
+```bash
+# Activate the python environment
+source $HOME/workspace/pepper_rob_ws/src/cssr4africa_virtual_envs/cssr4africa_sound_detection_env/bin/activate
+```
+
 ```bash
 # The launch file launches the sound_detection node for the unit test
 roslaunch unit_tests sound_detection_test_launch_test_harness.launch
@@ -125,20 +130,20 @@ The test suite includes specialized rosbag files for different testing scenarios
 When running the sound detection test node, the following outputs are generated:
 
 ### Audio Recordings
-- **Noise reduced audio files**: `sound_detection_test_noise_filtered_audio_YYYYMMDD_HHMMSS.wav`
+- **Noise reduced audio files**: `sound_detection_test_noise_filtered_audio_YYYY-MM-DD_HH-MM-SS.wav`
   - Processed audio with only noise reduction and filtering.
 
-- **Filtered audio files**: `sound_detection_test_speech_filtered_YYYYMMDD_HHMMSS.wav`
+- **Filtered audio files**: `sound_detection_test_speech_filtered_YYYY-MM-DD_HH-MM-SS.wav`
   - Processed audio with applied noise reduction and filtering
   - Speech detection is applied to separate non-speech part
   - Optionally RMS normalized for consistent volume levels
 
-- **Unfiltered raw audio files**: `sound_detection_test_unfiltered_YYYYMMDD_HHMMSS.wav`
+- **Unfiltered raw audio files**: `sound_detection_test_unfiltered_YYYY-MM-DD_HH-MM-SS.wav`
   - Raw audio captured directly from the microphone
   - Optionally RMS normalized for consistent volume levels
 
 ### Direction Data
-- **Direction text files**: `sound_detection_test_direction_data_YYYYMMDD_HHMMSS.txt`
+- **Direction text files**: `sound_detection_test_direction_data_YYYY-MM-DD_HH-MM-SS.txt`
   - Contains timestamps and corresponding direction angles
   - Format: `timestamp_in_seconds, angle_in_degrees`
   - Negative angles indicate sound from left side, positive angles from right side

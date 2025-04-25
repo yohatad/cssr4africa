@@ -229,7 +229,7 @@ class SoundDetectionTest:
                     self.direction_file.close()
                     
                 # Create new file with timestamp
-                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
                 self.direction_file_path = os.path.join(self.save_dir, f"sound_detection_test_direction_data_{timestamp}.txt")
                 
                 # Open file for writing
@@ -356,7 +356,7 @@ class SoundDetectionTest:
         
         try:
             # Generate filename with timestamp
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
             
             # Save as WAV file
             wav_filepath = os.path.join(self.save_dir, f"sound_detection_test_speech_filtered_{timestamp}.wav")
@@ -392,7 +392,7 @@ class SoundDetectionTest:
             
         try:
             # Generate filename with timestamp
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
             
             # Save as WAV file
             wav_filepath = os.path.join(self.save_dir, f"sound_detection_test_unfiltered_{timestamp}.wav")
