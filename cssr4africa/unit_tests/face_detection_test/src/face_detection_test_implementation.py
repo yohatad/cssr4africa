@@ -24,6 +24,7 @@ import cv2
 import time
 import threading
 import colorsys
+import datetime
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 from message_filters import ApproximateTimeSynchronizer, Subscriber
@@ -292,9 +293,15 @@ class FaceDetectionTest:
         # Create an approximate time synchronizer
         # queue_size: how many sets of messages to store
         # slop: how close in time the messages need to be (in seconds)
-        sync = ApproximateTimeSynchronizer([rgb_sub, depth_sub], queue_size=10, slop=0.1)
-        sync.registerCallback(self.synchronized_callback)
         
+        # ApproximateTimeSynchronizer setup
+        if self.camera == "pepper":
+            ats = ApproximateTimeSynchronizer([rgb_sub, depth_sub], queue_size=10, slop=5)
+        else:
+            ats = ApproximateTimeSynchronizer([rgb_sub, depth_sub], queue_size=10, slop=0.1)  
+        
+        ats.registerCallback(self.synchronized_callback)
+
         rospy.loginfo(f"{self.node_name}: Set up synchronized RGB and depth image subscribers")
     
     def synchronized_callback(self, rgb_msg, depth_msg):
@@ -310,6 +317,7 @@ class FaceDetectionTest:
             if rospy.get_time() - self.timer > 10:
                 rospy.loginfo(f"{self.node_name}: running.")
                 self.timer = rospy.get_time()
+
             # Convert ROS Image messages to OpenCV format
             cv_rgb = self.bridge.imgmsg_to_cv2(rgb_msg, desired_encoding="bgr8")
             cv_depth = self.bridge.imgmsg_to_cv2(depth_msg, desired_encoding="passthrough")
@@ -408,7 +416,7 @@ class FaceDetectionTest:
             width (int): Width of the RGB image
             height (int): Height of the RGB image
         """
-        timestamp = int(self.start_time)
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         rgb_video_path = os.path.join(
             self.unit_test_package_path, 'face_detection_test/data', f'face_detection_test_rgb_video_{timestamp}.mp4')
         
@@ -432,7 +440,7 @@ class FaceDetectionTest:
             width (int): Width of the depth image
             height (int): Height of the depth image
         """
-        timestamp = int(self.start_time)
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         depth_video_path = os.path.join(self.unit_test_package_path, 'face_detection_test/data', f'face_detection_test_depth_video_{timestamp}.mp4')
         
         # Ensure directory exists
