@@ -24,7 +24,7 @@ import cv2
 import time
 import threading
 import colorsys
-import datetime
+from datetime import datetime
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 from message_filters import ApproximateTimeSynchronizer, Subscriber
@@ -599,11 +599,14 @@ class FaceDetectionTest:
         if (self.config.get("saveImage", False) and 
             self.recording_enabled and
             (current_time - self.image_save_time >= self.image_interval)):
+
+
+            timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
             
             image_path = os.path.join(
                 self.unit_test_package_path, 
                 'face_detection_test/data', 
-                f'face_detection_depth_image_{int(current_time)}.png'
+                f'face_detection_depth_image_{timestamp}.png'
             )
             self.save_image(cv_depth, image_path, is_depth=True)
         
