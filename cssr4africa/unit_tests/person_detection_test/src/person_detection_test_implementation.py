@@ -24,6 +24,7 @@ import cv2
 import time
 import threading
 import colorsys
+import datetime
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 from message_filters import ApproximateTimeSynchronizer, Subscriber
@@ -295,11 +296,13 @@ class PersonDetectionTest:
         # Create an approximate time synchronizer
         # queue_size: how many sets of messages to store
         # slop: how close in time the messages need to be (in seconds)
+        
         if self.camera == "pepper":
             # For Pepper, use a larger slop value to account for latency
-            sync = ApproximateTimeSynchronizer([rgb_sub, depth_sub], queue_size=10, slop=1)
+            sync = ApproximateTimeSynchronizer([rgb_sub, depth_sub], queue_size=10, slop=5)
         else:
             sync = ApproximateTimeSynchronizer([rgb_sub, depth_sub], queue_size=10, slop=0.1)
+        
         sync.registerCallback(self.synchronized_callback)
         
         rospy.loginfo(f"{self.node_name}: Set up synchronized RGB and depth image subscribers")
@@ -416,7 +419,7 @@ class PersonDetectionTest:
             width (int): Width of the RGB image
             height (int): Height of the RGB image
         """
-        timestamp = int(self.start_time)
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         rgb_video_path = os.path.join(
             self.unit_test_package_path, 'person_detection_test/data', f'person_detection_test_rgb_video__{timestamp}.mp4')
         
@@ -440,7 +443,7 @@ class PersonDetectionTest:
             width (int): Width of the depth image
             height (int): Height of the depth image
         """
-        timestamp = int(self.start_time)
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         depth_video_path = os.path.join(self.unit_test_package_path, 'person_detection_test/data', f'person_detection_test_depth_video_{timestamp}.mp4')
 
         # Ensure directory exists

@@ -154,7 +154,7 @@ class PersonDetectionNode:
 
         # ApproximateTimeSynchronizer setup
         if self.camera_type == "pepper":
-            ats = ApproximateTimeSynchronizer([color_sub, depth_sub], queue_size=10, slop=1)
+            ats = ApproximateTimeSynchronizer([color_sub, depth_sub], queue_size=10, slop=5)
         else:
             ats = ApproximateTimeSynchronizer([color_sub, depth_sub], queue_size=10, slop=0.1)  
         
@@ -211,9 +211,9 @@ class PersonDetectionNode:
             rate = rospy.Rate(1)
             while not rospy.is_shutdown():
                 time_since_last = rospy.get_time() - self.last_image_time
-                if time_since_last > self.image_timeout:
+                if time_since_last > self.image_timeout and self.color_image is None:
                     rospy.logwarn(f"{self.node_name}: No image received for {self.image_timeout} seconds. Shutting down.")
-                    rospy.signal_shutdown("No image data — rosbag likely finished.")
+                    rospy.signal_shutdown("No image data.")
                 rate.sleep()
 
         threading.Thread(target=monitor, daemon=True).start()
