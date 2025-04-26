@@ -39,7 +39,7 @@ class PersonDetectionNode:
         self.color_image = None
         self.depth_image = None
         self.use_compressed = rospy.get_param("/personDetection_config/useCompressed", False)
-        self.verbose_mode = rospy.get_param("/personDetection/verboseMode", False)
+        self.verbose_mode = rospy.get_param("/personDetection_config/verboseMode", False)
         self.node_name = rospy.get_name().lstrip('/')
         self.camera_type = rospy.get_param("/personDetection/camera", "realsense")
         
