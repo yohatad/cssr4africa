@@ -1,6 +1,6 @@
 {
     "algorithm": "sixdrep",
-    "useCompressed": true,
+    "useCompressed": false,
     "mpFacedetConfidence": 0.5,
     "mpHeadposeAngle": 8,
     "centroidMaxDistance": 100,
@@ -10,5 +10,6 @@
     "sortMaxDisappeared": 5,
     "sortMinHits": 3,
     "sortIouThreshold": 0.3,
+    "imageTimeout": 4,
     "verboseMode": true
 }

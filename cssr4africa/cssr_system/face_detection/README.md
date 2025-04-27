@@ -3,10 +3,10 @@
 </div>
 
 <div align="center">
-  <img src="CSSR4AfricaLogo.svg" alt="CSSR4Africa Logo" style="width:50%; height:auto;">
+  <img src="../CSSR4AfricaLogo.svg" alt="CSSR4Africa Logo" style="width:50%; height:auto;">
 </div>
 
-The **Face and Mutual Gaze Detection and Localization** package is a ROS package designed to detect multiple faces and evaluate their **mutual gaze** in real-time by subscribing to an image topic. It publishes an array of detected faces and their mutual gaze status to the **/faceDetection/data** topic. Each entry in the published data includes the **label ID** of the detected face, the **centroid** coordinates representing the center point of each face, and a boolean value indicating **mutual gaze** status as either **True** or **False**, the **widht** and **height** of the bounding box.
+The **Face and Mutual Gaze Detection and Localization** package is a ROS package designed to detect multiple faces and evaluate their **mutual gaze** in real-time by subscribing to an image topic. It publishes an array of detected faces and their mutual gaze status to the **/faceDetection/data** topic. Each entry in the published data includes the **label ID** of the detected face, the **centroid** coordinates representing the center point of each face, and a boolean value indicating **mutual gaze** status as either **True** or **False**, the **width** and **height** of the bounding box.
 
 # 📄 Documentation
 The main documentation for this deliverable is found in [D4.2.2 Face and Mutual Gaze Detection and Localization](https://cssr4africa.github.io/deliverables/CSSR4Africa_Deliverable_D4.2.2.pdf) that provides more details.
@@ -18,7 +18,7 @@ Install the required software components to instantiate and set up the developme
 ## Installation on Ubuntu (x86-based Systems)
 
 1. Prerequisites  
-Make sure you are running Ubuntu 20.04. The python environment to run face detection similar to person detection. If you have setup the person detection python environment you can skip this step.
+Make sure you are running Ubuntu 20.04. The python environment to run face detection similar to person detection. If you have setup the person detection python environment you can skip this step.If the intel real sense camera is used make sure it uses USB 3.0. 
 
 2. Install Python 3.10 and Virtual Environment.
 ```sh
@@ -40,7 +40,9 @@ python3.10 --version
 3. Set Up Virtual Environment
 ```sh
 # Create a virtual environment:
-cd $HOME/workspace/pepper_rob_ws
+mkdir -p $HOME/workspace/pepper_rob_ws/src/cssr4africa_virtual_envs
+cd $HOME/workspace/pepper_rob_ws/src/cssr4africa_virtual_envs
+
 python3.10 -m venv cssr4africa_face_person_detection_env
 
 # Activate the virtual environment:
@@ -56,7 +58,7 @@ pip install --upgrade pip
 pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 
 # Install additional requirements:
-pip install -r  ~/workspace/pepper_rob_ws/src/cssr4africa/cssr_system/sound_detection/face_detection_requirements.txt
+pip install -r  ~/workspace/pepper_rob_ws/src/cssr4africa/cssr_system/face_detection/face_detection_requirements_x86.txt
 ```
 
 # 🔧 Configuration Parameters
@@ -75,6 +77,7 @@ The following table provides the key-value pairs used in the configuration file:
 | `sortMaxDisappeared`        | Maximum frames allowed for disappearance in SORT tracking        | Positive integer        | `30`          |
 | `sortMinHits`               | Minimum consecutive detections to confirm object tracking (SORT) | Positive integer        | `20`          |
 | `sortIouThreshold`          | IoU threshold for SORT tracker                                   | `[0.0 - 1.0]`           | `0.3`         |
+| `imageTimeout`	            | Timeout (seconds) for shutting down the node after video ends	   | Float (seconds)	       | `2.0`         |
 | `verboseMode`               | Enable visualization using OpenCV windows and detailed logging   | `True`, `False`         | `True`        |
 
 > **Note:**  
@@ -102,7 +105,7 @@ Follow below steps, run in different terminals.
   In a new terminal activate the python environment. 
   ```bash
   # Activate the python environment.
-  source ~/workspace/pepper_rob_ws/cssr4africa_face_person_detection_env/bin/activate
+  source $HOME/workspace/pepper_rob_ws/src/cssr4africa_virtual_envs/cssr4africa_face_person_detection_env/bin/activate
   ```
 
   ```bash

@@ -2,7 +2,7 @@
 face_detection_implementation.py Implementation code for running the Face and Mutual Gaze Detection and Localization ROS node.
 
 Author: Yohannes Tadesse Haile
-Date: March 30, 2025
+Date: April 18, 2025
 Version: v1.0
 
 Copyright (C) 2023 CSSR4Africa Consortium
@@ -25,6 +25,7 @@ import onnxruntime
 import multiprocessing
 import json
 import random
+import threading
 from math import cos, sin, pi
 from sensor_msgs.msg import Image, CompressedImage
 from cv_bridge import CvBridge, CvBridgeError
@@ -41,61 +42,130 @@ class FaceDetectionNode:
         self.depth_image = None  # Initialize depth_image
         self.color_image = None  # Initialize color_image
         self.use_compressed = rospy.get_param('/faceDetection_config/useCompressed', False)  # Parameter to choose compressed or raw images
+        self.camera_type = rospy.get_param('/faceDetection/camera', default="realsense")  # Default camera type
+        self.node_name = rospy.get_name().lstrip('/')
+        self.timer = rospy.get_time()
+        self.verbose_mode = rospy.get_param("/faceDetection_config/verboseMode", False)
+
+        self.last_image_time = rospy.get_time()
+        self.image_timeout = rospy.get_param("/faceDetection_config/imageTimeout", 2.0)
 
     def subscribe_topics(self):
-        camera_type = rospy.get_param('/faceDetection/camera', default="realsense")
+        # Set up for indefinite waiting
+        wait_rate = rospy.Rate(1)  # Check once per second
+        start_time = rospy.get_time()
         
-        if camera_type == "realsense":
+        if self.camera_type == "realsense":
             self.rgb_topic = self.extract_topics("RealSenseCameraRGB")
             self.depth_topic = self.extract_topics("RealSenseCameraDepth")
-        elif camera_type == "pepper":
+        
+        elif self.camera_type == "pepper":
             self.rgb_topic = self.extract_topics("PepperFrontCamera")
             self.depth_topic = self.extract_topics("PepperDepthCamera")
-        elif camera_type == "video":
+        
+        elif self.camera_type == "video":
             self.rgb_topic = self.extract_topics("RealSenseCameraRGB")
             self.depth_topic = self.extract_topics("RealSenseCameraDepth") 
+        
         else:
-            rospy.logerr("Invalid camera type specified")
-            rospy.signal_shutdown("Invalid camera type")
+            rospy.logerr(f"{self.node_name}: Invalid camera type specified")
+            rospy.logerr(f"{self.node_name}: Invalid camera type")
             return
         
+        # Check if topics were found
         if not self.rgb_topic or not self.depth_topic:
-            rospy.logerr("Camera topic not found.")
-            rospy.signal_shutdown("Camera topic not found")
+            rospy.logerr(f"{self.node_name}: Camera topic not found.")
+            rospy.logerr(f"{self.node_name}: Camera topic not found")
             return
 
-        if self.use_compressed and camera_type == "realsense":
-            color_sub = Subscriber(self.rgb_topic + "/compressed", CompressedImage)
-            depth_sub = Subscriber(self.depth_topic + "/compressedDepth", CompressedImage)
-            rospy.loginfo(f"Subscribed to {self.rgb_topic}/compressed")
-            rospy.loginfo(f"Subscribed to {self.depth_topic}/compressedDepth")
-        elif self.use_compressed and camera_type == "pepper":
+        # Determine topic names based on compression settings
+        if self.use_compressed and self.camera_type == "realsense":
+            color_topic = self.rgb_topic + "/compressed"
+            depth_topic = self.depth_topic + "/compressedDepth"
+        
+        elif self.use_compressed and self.camera_type == "pepper":
             # There is no compressed topic for Pepper cameras
-            rospy.logwarn("Compressed images are not available for Pepper cameras.")
-            color_sub = Subscriber(self.rgb_topic, Image)
-            depth_sub = Subscriber(self.depth_topic, Image)
-            rospy.loginfo(f"Subscribed to {self.rgb_topic}")
-            rospy.loginfo(f"Subscribed to {self.depth_topic}")
+            rospy.logwarn(f"{self.node_name}: Compressed images are not available for Pepper cameras.")
+            color_topic = self.rgb_topic
+            depth_topic = self.depth_topic
+        
+        elif self.camera_type == "video":
+            color_topic = self.rgb_topic + "/compressed"
+            depth_topic = self.depth_topic + "/compressedDepth"
+        
+        else:
+            color_topic = self.rgb_topic
+            depth_topic = self.depth_topic
+        
+        # Wait for topics to be available, with indefinite waiting
+        rospy.loginfo(f"{self.node_name}: Waiting for topics: {color_topic}, {depth_topic}")
+        topics_available = False
+        warning_interval = 5.0  # Warn every 5 seconds
+        last_warning_time = start_time
+        
+        while not topics_available and not rospy.is_shutdown():
+            published_topics = dict(rospy.get_published_topics())
+            
+            color_available = color_topic in published_topics
+            depth_available = depth_topic in published_topics
+            
+            if color_available and depth_available:
+                topics_available = True
+                if self.verbose_mode:
+                    rospy.loginfo(f"{self.node_name}: Both topics are available!")
+                break
+            
+            # Generate warning messages periodically
+            current_time = rospy.get_time()
+            elapsed_time = current_time - start_time
+            
+            if current_time - last_warning_time >= warning_interval:
+                missing_topics = []
+                if not color_available:
+                    missing_topics.append(color_topic)
+                if not depth_available:
+                    missing_topics.append(depth_topic)
+                    
+                rospy.logwarn(f"{self.node_name}: Still waiting for topics after {int(elapsed_time)}s: {', '.join(missing_topics)}")
+                last_warning_time = current_time
+                
+            wait_rate.sleep()
+        
+        # Subscribe to topics
+        if self.use_compressed and self.camera_type == "realsense":
+            color_sub = Subscriber(color_topic, CompressedImage)
+            depth_sub = Subscriber(depth_topic, CompressedImage)
+            rospy.loginfo(f"{self.node_name}: Subscribed to {color_topic}")
+            rospy.loginfo(f"{self.node_name}: Subscribed to {depth_topic}")
+        
+        elif self.use_compressed and self.camera_type == "pepper":
+            color_sub = Subscriber(color_topic, Image)
+            depth_sub = Subscriber(depth_topic, Image)
+            rospy.loginfo(f"{self.node_name}: Subscribed to {color_topic}")
+            rospy.loginfo(f"{self.node_name}: Subscribed to {depth_topic}")
 
-        elif camera_type == "video":
-            color_sub = Subscriber(self.rgb_topic + "/compressed", CompressedImage)
-            depth_sub = Subscriber(self.depth_topic + "/compressedDepth", CompressedImage)
-            rospy.loginfo(f"Subscribed to {self.rgb_topic}/compressed")
-            rospy.loginfo(f"Subscribed to {self.depth_topic}/compressedDepth")
+        elif self.camera_type == "video":
+            color_sub = Subscriber(color_topic, CompressedImage)
+            depth_sub = Subscriber(depth_topic, CompressedImage)
+            rospy.loginfo(f"{self.node_name}: Subscribed to {color_topic}")
+            rospy.loginfo(f"{self.node_name}: Subscribed to {depth_topic}")
 
         else:
-            color_sub = Subscriber(self.rgb_topic, Image)
-            depth_sub = Subscriber(self.depth_topic, Image)
-            rospy.loginfo(f"Subscribed to {self.rgb_topic}")
-            rospy.loginfo(f"Subscribed to {self.depth_topic}")
+            color_sub = Subscriber(color_topic, Image)
+            depth_sub = Subscriber(depth_topic, Image)
+            rospy.loginfo(f"{self.node_name}: Subscribed to {color_topic}")
+            rospy.loginfo(f"{self.node_name}: Subscribed to {depth_topic}")
 
         # ApproximateTimeSynchronizer setup
-        ats = ApproximateTimeSynchronizer(
-            [color_sub, depth_sub], queue_size=10, slop=0.1
-        )
+        if self.camera_type == "pepper":
+            ats = ApproximateTimeSynchronizer([color_sub, depth_sub], queue_size=10, slop=5)
+        else:
+            ats = ApproximateTimeSynchronizer([color_sub, depth_sub], queue_size=10, slop=0.1)  
+        
         ats.registerCallback(self.synchronized_callback)
 
     def synchronized_callback(self, color_data, depth_data):
+        self.last_image_time = rospy.get_time()
         try:
             # --- Color Image Processing ---
             if isinstance(color_data, CompressedImage):
@@ -118,9 +188,9 @@ class FaceDetectionNode:
                         if depth_img is not None:
                             self.depth_image = depth_img
                         else:
-                            rospy.logerr("Failed to decode PNG depth image")
+                            rospy.logerr(f"{self.node_name}: Failed to decode PNG depth image")
                     except Exception as e:
-                        rospy.logerr(f"Depth decoding error: {str(e)}")
+                        rospy.logerr(f"{self.node_name}: Depth decoding error: {str(e)}")
                 else:
                     # Regular compressed image
                     np_arr = np.frombuffer(depth_data.data, np.uint8)
@@ -129,27 +199,39 @@ class FaceDetectionNode:
                 self.depth_image = self.bridge.imgmsg_to_cv2(depth_data, desired_encoding="passthrough")
 
             if self.color_image is None or self.depth_image is None:
-                rospy.logwarn("synchronized_callback: Decoded images are None.")
+                rospy.logwarn(f"{self.node_name}: synchronized_callback: Decoded images are None.")
                 return
 
             # Process synchronized images
             self.process_images()
+            self.last_image_time = rospy.get_time()
 
         except CvBridgeError as e:
-            rospy.logerr(f"synchronized_callback CvBridge Error: {str(e)}")
+            rospy.logerr(f"{self.node_name}: synchronized_callback CvBridge Error: {str(e)}")
         except Exception as e:
-            rospy.logerr(f"synchronized_callback Exception: {str(e)}")
-    
+            rospy.logerr(f"{self.node_name}: synchronized_callback Exception: {str(e)}")
+
+    def start_timeout_monitor(self):
+        def monitor():
+            rate = rospy.Rate(1)
+            while not rospy.is_shutdown():
+                time_since_last = rospy.get_time() - self.last_image_time
+                if time_since_last > self.image_timeout and self.color_image is not None:
+                    rospy.logwarn(f"{self.node_name}: No image received for {self.image_timeout} seconds.Shutting down.")
+                    rospy.signal_shutdown("No image data.")
+                rate.sleep()
+
+        threading.Thread(target=monitor, daemon=True).start()
+
     def check_camera_resolution(self, color_image, depth_image):
         """Check if the color and depth images have the same resolution."""
         if color_image is None or depth_image is None:
-            rospy.logwarn("check_camera_resolution: One of the images is None")
+            rospy.logwarn(f"{self.node_name}: check_camera_resolution: One of the images is None")
             return False
         rgb_h, rgb_w = color_image.shape[:2]
         depth_h, depth_w = depth_image.shape[:2]
         return rgb_h == depth_h and rgb_w == depth_w
 
-    @staticmethod
     def read_json_file(package_name):
         """
         Read and parse a JSON configuration file from the specified ROS package.
@@ -160,12 +242,13 @@ class FaceDetectionNode:
         Returns:
             dict: Configuration data from JSON file, or empty dict if file not found
         """
+        node_name = rospy.get_name()
         rospack = rospkg.RosPack()
         try:
             package_path = rospack.get_path(package_name)
             
             # Determine the directory and file name based on the package name
-            if package_name == 'unit_test':
+            if package_name == 'unit_tests':
                 directory = 'face_detection_test/config'
                 config_file = 'face_detection_test_configuration.json'
             else:
@@ -179,21 +262,22 @@ class FaceDetectionNode:
                     data = json.load(file)
                     return data
             else:
-                rospy.logerr(f"read_json_file: Configuration file not found at {config_path}")
+                rospy.logerr(f"{node_name}: read_json_file: Configuration file not found at {config_path}")
                 return {}
                 
         except rospkg.ResourceNotFound as e:
-            rospy.logerr(f"ROS package '{package_name}' not found: {e}")
+            rospy.logerr(f"{node_name}: ROS package '{package_name}' not found: {e}")
             return {}
         except json.JSONDecodeError as e:
-            rospy.logerr(f"Error parsing JSON configuration file: {e}")
+            rospy.logerr(f"{node_name}: Error parsing JSON configuration file: {e}")
             return {}
         except Exception as e:
-            rospy.logerr(f"Unexpected error reading configuration file: {e}")
+            rospy.logerr(f"{node_name}: Unexpected error reading configuration file: {e}")
             return {}
     
     @staticmethod
     def extract_topics(image_topic):
+        node_name = rospy.get_name()
         rospack = rospkg.RosPack()
         try:
             package_path = rospack.get_path('cssr_system')
@@ -209,18 +293,18 @@ class FaceDetectionNode:
                         if key.lower() == image_topic.lower():
                             return value
             else:
-                rospy.logerr(f"extract_topics: Data file not found at {config_path}")
+                rospy.logerr(f"{node_name}: extract_topics: Data file not found at {config_path}")
         except rospkg.ResourceNotFound as e:
-            rospy.logerr(f"ROS package 'cssr_system' not found: {e}")
+            rospy.logerr(f"{node_name}: ROS package 'cssr_system' not found: {e}")
         
     def process_images(self):
         if self.color_image is None or self.depth_image is None:
-            rospy.logwarn("process_images: Missing images.")
+            rospy.logwarn(f"{self.node_name}: process_images: Missing images.")
             return
 
-        if not self.check_camera_resolution(self.color_image, self.depth_image):
-            rospy.logwarn("process_images: Color and depth image resolutions do not match.")
-            return
+        if not self.check_camera_resolution(self.color_image, self.depth_image) and self.camera_type != "pepper":
+            rospy.logwarn(f"{self.node_name}: process_images: Color and depth image resolutions do not match.")
+            pass
 
         if hasattr(self, 'face_mesh'):  # MediaPipe implementation
             rgb_frame = cv2.cvtColor(self.color_image, cv2.COLOR_BGR2RGB)
@@ -230,7 +314,7 @@ class FaceDetectionNode:
         elif hasattr(self, 'yolo_model'):  # SixDrepNet implementation
             self.latest_frame = self.process_frame(self.color_image)
         else:
-            rospy.logwarn("process_images: No processing method found (face_mesh/yolo_model missing).")
+            rospy.logwarn(f"{self.node_name}: process_images: No processing method found (face_mesh/yolo_model missing).")
 
     def display_depth_image(self):
         if self.depth_image is not None:
@@ -254,7 +338,7 @@ class FaceDetectionNode:
                 cv2.imshow("Depth Image", depth_colormap)
 
             except Exception as e:
-                rospy.logerr("display_depth_image: Error displaying depth image: {}".format(e))
+                rospy.logerr(f"{self.node_name}: {self.node_name}: display_depth_image: Error displaying depth image: {e}")
 
     def get_depth_at_centroid(self, centroid_x, centroid_y):
         """Get the depth value at the centroid of a face."""
@@ -267,7 +351,7 @@ class FaceDetectionNode:
 
         # Check bounds
         if x < 0 or x >= width or y < 0 or y >= height:
-            rospy.logwarn(f"Centroid coordinates ({x}, {y}) are out of bounds.")
+            rospy.logwarn(f"{self.node_name}: Centroid coordinates ({x}, {y}) are out of bounds.")
             return None
 
         depth_value = self.depth_image[y, x]
@@ -315,7 +399,7 @@ class FaceDetectionNode:
 
         # If the region is invalid (e.g., zero area), return None
         if x_start >= x_end or y_start >= y_end:
-            rospy.logwarn(f"Invalid region coordinates ({x_start}, {y_start}, {x_end}, {y_end}).")
+            rospy.logwarn(f"{self.node_name}: Invalid region coordinates ({x_start}, {y_start}, {x_end}, {y_end}).")
             return None
 
         # Extract the region of interest
@@ -374,20 +458,16 @@ class MediaPipe(FaceDetectionNode):
         self.centroid_tracker = CentroidTracker(rospy.get_param("/faceDetection_config/centroidMaxDisappeared", 15), rospy.get_param("/faceDetection_config/centroidMaxDistance", 100))
         self.latest_frame = None
 
-        self.verbose_mode = rospy.get_param("/faceDetection_config/verboseMode", False)
-
-        # Timer for printing message every 5 seconds
-        self.timer = rospy.get_time()
-        
         # Subscribe to the image topic
         self.subscribe_topics()
 
         # check if the depth camera and color camera have the same resolution.
         if self.depth_image is not None:
-            if not self.check_camera_resolution(self.color_image, self.depth_image):
-                rospy.logerr("Color camera and depth camera have different resolutions.")
-                rospy.signal_shutdown("Resolution mismatch")
-        
+            if not self.check_camera_resolution(self.color_image, self.depth_image) and self.camera_type != "pepper":
+                rospy.logerr(f"{self.node_name}: Color camera and depth camera have different resolutions.")
+                rospy.signal_shutdown(f"{self.node_name}: Resolution mismatch")
+
+        self.start_timeout_monitor()
 
     def spin(self):
         """Main loop to display processed frames and depth images."""
@@ -397,6 +477,10 @@ class MediaPipe(FaceDetectionNode):
                 if self.verbose_mode:
                     # Display the processed frame
                     cv2.imshow("Face Detection & Mutual Gaze Estimation", self.latest_frame)
+
+            if rospy.get_time() - self.timer > 10:
+                rospy.loginfo(f"{self.node_name}: running.")
+                self.timer = rospy.get_time()
 
             # Display the depth image if verbose mode is enabled
             if self.verbose_mode:
@@ -517,15 +601,8 @@ class MediaPipe(FaceDetectionNode):
                             cv2.FONT_HERSHEY_SIMPLEX, 0.7, face_color, 2)
                 
                 # Draw depth information below the box
-                cv2.putText(
-                    display_frame,
-                    f"Depth: {cz:.2f}m",
-                    (x_min, y_max + 20),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    0.6,
-                    face_color,
-                    2
-                )
+                cv2.putText(display_frame, f"Depth: {cz:.2f}m", (x_min, y_max + 20),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, face_color, 2)
             
         # Save the processed frame for display in spin()
         self.latest_frame = display_frame
@@ -583,10 +660,8 @@ class YOLOONNX:
 class SixDrepNet(FaceDetectionNode):
     def __init__(self):
         super().__init__()
-        self.verbose_mode = rospy.get_param("/faceDetection_config/verboseMode", False)
-
         if self.verbose_mode:
-            rospy.loginfo("Initializing SixDrepNet...")
+            rospy.loginfo(f"{self.node_name}: Initializing SixDrepNet...")
 
         # Set up model paths
         yolo_model_path = rospkg.RosPack().get_path('cssr_system') + '/face_detection/models/face_detection_goldYOLO.onnx'
@@ -594,17 +669,14 @@ class SixDrepNet(FaceDetectionNode):
         
         self.latest_frame = None
         
-        # Timer for printing message every 5 seconds
-        self.timer = rospy.get_time()
-
         # Initialize YOLOONNX model early and check success
         try:
             self.yolo_model = YOLOONNX(model_path=yolo_model_path, class_score_th = rospy.get_param("/faceDetection_config/sixdrepnetConfidence", 0.65))
             if self.verbose_mode:
-                rospy.loginfo("YOLOONNX model initialized successfully.")
+                rospy.loginfo(f"{self.node_name}: YOLOONNX model initialized successfully.")
         except Exception as e:
             self.yolo_model = None
-            rospy.logerr(f"Failed to initialize YOLOONNX model: {e}")
+            rospy.logerr(f"{self.node_name}: Failed to initialize YOLOONNX model: {e}")
             return  # Exit early if initialization fails
 
         # Initialize SixDrepNet ONNX session
@@ -621,15 +693,15 @@ class SixDrepNet(FaceDetectionNode):
 
             active_providers = self.sixdrepnet_session.get_providers()
             if self.verbose_mode:
-                rospy.loginfo(f"Active providers: {active_providers}")
+                rospy.loginfo(f"{self.node_name}: Active providers: {active_providers}")
             if "CUDAExecutionProvider" not in active_providers:
                 if self.verbose_mode:
-                    rospy.logwarn("CUDAExecutionProvider is not available. Running on CPU may slow down inference.")
+                    rospy.logwarn(f"{self.node_name}: CUDAExecutionProvider is not available. Running on CPU may slow down inference.")
             else:
                 if self.verbose_mode:
-                    rospy.loginfo("CUDAExecutionProvider is active. Running on GPU for faster inference.")
+                    rospy.loginfo(f"{self.node_name}: CUDAExecutionProvider is active. Running on GPU for faster inference.")
         except Exception as e:
-            rospy.logerr(f"Failed to initialize SixDrepNet ONNX session: {e}")
+            rospy.logerr(f"{self.node_name}: Failed to initialize SixDrepNet ONNX session: {e}")
             return  # Exit early if initialization fails
 
         # Set up remaining attributes
@@ -644,15 +716,17 @@ class SixDrepNet(FaceDetectionNode):
         self.tracks = [] 
         
         if self.verbose_mode:
-            rospy.loginfo("SixDrepNet initialization complete.")
+            rospy.loginfo(f"{self.node_name} SixDrepNet initialization complete.")
 
         self.subscribe_topics()
 
         # check if the depth camera and color camera have the same resolution.
         if self.depth_image is not None:
-            if not self.check_camera_resolution(self.color_image, self.depth_image):
-                rospy.logerr("Color camera and depth camera have different resolutions.")
-                rospy.signal_shutdown("Resolution mismatch")
+            if not self.check_camera_resolution(self.color_image, self.depth_image) and self.camera_type != "pepper":
+                rospy.logerr(f"{self.node_name}: Color camera and depth camera have different resolutions.")
+                rospy.signal_shutdown(f"{self.node_name}: Resolution mismatch")
+
+        self.start_timeout_monitor()
     
     def draw_axis(self, img, yaw, pitch, roll, tdx=None, tdy=None, size=100):
         pitch = pitch * pi / 180
@@ -777,6 +851,10 @@ class SixDrepNet(FaceDetectionNode):
         """Main loop to display processed frames and depth images."""
         rate = rospy.Rate(30)  # Adjust the rate as needed
         while not rospy.is_shutdown():
+            if rospy.get_time() - self.timer > 10:
+                rospy.loginfo(f"{self.node_name}: running.")
+                self.timer = rospy.get_time()
+
             if self.latest_frame is not None:
                 if self.verbose_mode:
                     # Display the processed frame

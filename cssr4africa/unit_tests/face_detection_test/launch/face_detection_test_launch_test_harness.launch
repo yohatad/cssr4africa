@@ -1,0 +1,13 @@
+<launch>
+  <!-- Run the Face Detection Node -->
+  <node name="faceDetection" pkg="cssr_system" type="face_detection_application.py" output="screen" required="true"/>
+  
+  <!-- Add a delay -->
+  <arg name="startup_delay" value="0.5" />
+  <param name="startup_delay" value="$(arg startup_delay)" />
+  
+  <!-- Launch the face detection test node with a slight delay -->
+  <node name="faceDetectionTest" pkg="unit_tests" type="face_detection_test_application.py" 
+        output="screen" launch-prefix="bash -c 'sleep $(arg startup_delay); $0 $@'">
+  </node>
+</launch>
