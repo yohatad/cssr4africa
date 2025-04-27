@@ -1,8 +1,9 @@
 {
-    "useCompressed": true,
+    "useCompressed": false,
     "confidenceThreshold": 0.8,
     "sortMaxDisappeared": 30,
     "sortMinHits": 20,
     "sortIouThreshold": 0.3,
+    "imageTimeout": 4,
     "verboseMode": true
 }

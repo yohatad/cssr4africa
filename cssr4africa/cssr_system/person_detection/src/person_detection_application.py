@@ -29,7 +29,7 @@ Libraries
     - multiprocessing
     - json
     - random
-    - lap
+    - threading
     - sensor_msgs.msg (Image, CompressedImage)
     - filterpy.kalman (KalmanFilter)
     - itertools (count)
@@ -87,7 +87,7 @@ Example of instantiation of the module
 
 Author: Yohannes Tadesse Haile, Carnegie Mellon University Africa
 Email: yohanneh@andrew.cmu.edu
-Date: March 28, 2025
+Date: April 21, 2025
 Version: v1.0
 """
 
@@ -108,7 +108,7 @@ def main():
         "\t\t\t    This program comes with ABSOLUTELY NO WARRANTY."
     )
     
-    rospy.init_node(node_name, anonymous=True)
+    rospy.init_node(node_name)
     
     # Print the messages using ROS logging
     rospy.loginfo(copyright_message)
@@ -117,9 +117,9 @@ def main():
     # Read the configuration file
     config = PersonDetectionNode.read_json_file('cssr_system')
     
-    unit_test = rospy.get_param('/personDetection/unit_test', default=False)
+    unit_tests = rospy.get_param('/personDetection/unit_tests', default=False)
     
-    if not unit_test:
+    if not unit_tests:
         rospy.set_param('/personDetection_config', config)
     else:
         # Create a filtered config without the excluded keys
@@ -130,14 +130,12 @@ def main():
         for key, value in filtered_config.items():
             rospy.set_param('/personDetection_config/' + key, value)
 
-        rospy.set_param('/personDetection_config/' + key, value)
-
         # Set the algorithm, useCompressed, and verboseMode parameters
-        config_test = PersonDetectionNode.read_json_file('unit_test')
+        config_test = PersonDetectionNode.read_json_file('unit_tests')
         
         # Filter and set only the specific parameters from the test config
         for key, value in config_test.items():
-            if key in ["useCompressed", "algorithm", "verboseMode"]:
+            if key in ["useCompressed", "verboseMode"]:
                 rospy.set_param('/personDetection_config/' + key, value)
     
     person_detection = YOLOv8()

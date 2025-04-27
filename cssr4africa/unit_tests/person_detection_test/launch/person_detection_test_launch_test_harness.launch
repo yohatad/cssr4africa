@@ -1,0 +1,13 @@
+<launch>
+  <!-- Run the Person Detection Node -->
+  <node name="person_detection" pkg="cssr_system" type="person_detection_application.py" output="screen" required="true"/>
+  
+  <!-- Add a delay -->
+  <arg name="startup_delay" value="1.0" />
+  <param name="startup_delay" value="$(arg startup_delay)" />
+  
+  <!-- Launch the person detection test node with a slight delay -->
+  <node name="person_detection_test" pkg="unit_tests" type="person_detection_test_application.py" 
+        output="screen" launch-prefix="bash -c 'sleep $(arg startup_delay); $0 $@'">
+  </node>
+</launch>
