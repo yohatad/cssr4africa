@@ -8,11 +8,15 @@ project(cssr_system)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  roscpp
   rospy
   std_msgs
   sensor_msgs
   geometry_msgs
   cv_bridge
+  actionlib
+  control_msgs
+  image_transport
   message_generation
 )
 ## System dependencies are found with CMake's conventions
@@ -56,6 +60,13 @@ add_message_files(
   face_detection_msg_file.msg
 )
 
+add_message_files(
+  DIRECTORY
+  behaviorController/msg
+  FILES
+  faceDetectionData.msg 
+  overtAttentionMode.msg
+)
 
 add_message_files(
   DIRECTORY
@@ -65,12 +76,20 @@ add_message_files(
 )
 
 ## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
-
+  add_service_files(
+    DIRECTORY
+    behaviorController/srv
+    FILES
+    animateBehaviorSetActivation.srv
+    gestureExecutionPerformGesture.srv
+    overtAttentionSetMode.srv
+    robotLocalizationResetPose.srv
+    robotNavigationSetGoal.srv
+    speechEventSetEnabled.srv
+    speechEventSetLanguage.srv
+    tabletEventPromptAndGetResponse.srv
+    textToSpeechSayText.srv
+  )
 ## Generate actions in the 'action' folder
 # add_action_files(
 #   FILES
@@ -114,8 +133,18 @@ generate_messages(
 ## LIBRARIES: libraries you create in this project that dependent projects also need
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
+
 catkin_package(
+  # INCLUDE_DIRS include
+  INCLUDE_DIRS behaviorController
+  # LIBRARIES 
+  LIBRARIES ${PROJECT_NAME}
   CATKIN_DEPENDS rospy std_msgs sensor_msgs cv_bridge geometry_msgs message_runtime
+)
+
+find_package(OpenCV REQUIRED)
+    catkin_package(
+    CATKIN_DEPENDS cv_bridge image_transport roscpp sensor_msgs std_msgs
 )
 
 ###########
@@ -125,8 +154,10 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-# include
+include
+behaviorController/include
+behaviorController/include/utilities/include
   ${catkin_INCLUDE_DIRS}
 )
-
+add_subdirectory(behaviorController)
 
