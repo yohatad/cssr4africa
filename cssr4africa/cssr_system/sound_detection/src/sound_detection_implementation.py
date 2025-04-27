@@ -23,8 +23,10 @@ import std_msgs.msg
 import webrtcvad
 import rospkg
 import numpy as np
+import threading
 import noisereduce as nr 
 import soundfile as sf 
+from datetime import datetime
 from cssr_system.msg import sound_detection_microphone_msg_file
 from threading import Lock
 from std_msgs.msg import Float32MultiArray
@@ -77,6 +79,11 @@ class SoundDetectionNode:
         # Initialize RMS parameters
         self.target_rms = self.config.get('targetRMS', 0.2)
 
+         # Initialize timeout parameters
+        self.last_audio_time = rospy.get_time()
+        self.audio_timeout = self.config.get('audioTimeout', 2)  # Default 10 seconds timeout
+        self.received_first_audio = False  # Flag to track if we've received any audio yet
+
         # Initialize noise reduction parameters
         self.context_duration = self.config.get('contextDuration', 2.0)  # Context window duration in seconds
         self.context_size = int(self.frequency_sample * self.context_duration)
@@ -128,6 +135,28 @@ class SoundDetectionNode:
         self.signal_pub = rospy.Publisher('/soundDetection/signal', std_msgs.msg.Float32MultiArray, queue_size=10)
         self.direction_pub = rospy.Publisher('/soundDetection/direction', std_msgs.msg.Float32, queue_size=10)
 
+        self.start_timeout_monitor()
+
+    def start_timeout_monitor(self):
+        """
+        Start a background thread to monitor for audio timeouts.
+        Shuts down the node if no audio is received within the timeout period,
+        but only after at least one audio message has been received.
+        """
+        def monitor():
+            rate = rospy.Rate(1)  # Check once per second
+            while not rospy.is_shutdown():
+                # Only check for timeouts if we've received at least one audio message
+                if self.received_first_audio:
+                    time_since_last = rospy.get_time() - self.last_audio_time
+                    if time_since_last > self.audio_timeout:
+                        rospy.logwarn(f"{self.node_name}: No audio received for {self.audio_timeout} seconds. Shutting down.")
+                        rospy.signal_shutdown("No audio data.")
+                rate.sleep()
+
+        threading.Thread(target=monitor, daemon=True).start()
+        if self.verbose_mode:
+            rospy.loginfo(f"{self.node_name}: Audio timeout monitor started (timeout: {self.audio_timeout}s)")
 
     @staticmethod
     def read_json_file(package_name):
@@ -257,7 +286,7 @@ class SoundDetectionNode:
             audio_data = self.normalize_rms(audio_data)
             
             # Generate filename with timestamp
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
             filename = os.path.join(self.unit_test_path, f"sound_detection_test_noise_filtered_audio_{timestamp}.wav")
             
             # Save to WAV file
@@ -346,6 +375,14 @@ class SoundDetectionNode:
             msg (microphone_msg_file): The audio data message
         """
         try:
+            self.last_audio_time = rospy.get_time()
+    
+            # If this is the first audio message, log it and set the flag
+            if not self.received_first_audio:
+                self.received_first_audio = True
+                if self.verbose_mode:
+                    rospy.loginfo(f"{self.node_name}: First audio data received, timeout monitoring active")
+            
             # Print a status message every 10 seconds
             current_time = rospy.get_time()
             if current_time - self.last_status_time >= 10:
