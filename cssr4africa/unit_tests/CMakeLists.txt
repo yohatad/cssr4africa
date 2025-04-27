@@ -32,6 +32,22 @@ add_message_files(
   overtAttentionMode.msg
 )
 
+add_message_files(
+  DIRECTORY
+  face_detection_test/msg
+  FILES
+  face_detection_test_msg_file.msg
+)
+
+
+add_message_files(
+  DIRECTORY
+  person_detection_test/msg
+  FILES
+  person_detection_test_msg_file.msg
+)
+
+
 add_service_files(
   DIRECTORY
   behaviorControllerTest/srv
@@ -88,7 +104,7 @@ catkin_package(
 find_package(OpenCV REQUIRED)
 
 catkin_package(
-  CATKIN_DEPENDS roscpp roslib std_msgs nav_msgs geometry_msgs sensor_msgs image_transport cv_bridge tf angles message_runtime
+  CATKIN_DEPENDS rospy roscpp roslib std_msgs nav_msgs geometry_msgs sensor_msgs image_transport cv_bridge tf angles message_runtime
 )
 
 ###########
