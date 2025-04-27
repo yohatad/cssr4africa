@@ -6,3 +6,4 @@
 *.pyc
 __pycache__/
 **/cssr4africa_virtual_envs/**
+**/BehaviorTree.CPP/**
