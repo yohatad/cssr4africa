@@ -84,7 +84,7 @@ roslaunch face_detection_test_launch_robot.launch camera:=<camera> bag_file:=<ba
 assess detection performance.
 
 > **Note:**  
-> Before running the Test Harness, activate the face detection python environement. Refer the README.md file for the face detection node.
+> Before running the Test Harness, activate the face detection python environment. Refer the README.md file for the face detection node.
 ```bash
   source $HOME/workspace/pepper_rob_ws/src/cssr4africa_virtual_envs/cssr4africa_face_person_detection_env/bin/activate
 ```
@@ -111,7 +111,7 @@ Each detected face will have:
   - "Engaged" or "Not Engaged" status based on mutual gaze  
   - Depth information showing distance from camera  
 
-The details of the result is documented in the Face and Mutual Gaze Detection and Localization Deliverible Report.
+The details of the result is documented in the Face and Mutual Gaze Detection and Localization Deliverable Report.
 
 # 💡Support
 
