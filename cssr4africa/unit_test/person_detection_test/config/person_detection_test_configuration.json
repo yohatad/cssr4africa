@@ -1,8 +1,0 @@
-{   "saveVideo": true,
-    "saveImage": false, 
-    "videoDuration": 10,
-    "imageInterval": 5,
-    "recordingDelay": 5,
-    "maxFramesBuffer": 300,
-    "verboseMode": true
-}
