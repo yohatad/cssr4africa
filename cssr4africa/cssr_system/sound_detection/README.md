@@ -45,17 +45,18 @@ pip install -r ~/workspace/pepper_rob_ws/src/cssr4africa/cssr_system/sound_detec
 # 🔧 Configuration Parameters  
 The following table provides the key-value pairs used in the configuration file:
 
-| Parameter                   | Description                                              | Range/Values               | Default Value |
-|-----------------------------|----------------------------------------------------------|----------------------------|---------------|
-| `intensityThreshold`        | Minimum intensity threshold for audio processing         | Positive float             | `0.0039`      |
-| `distanceBetweenEars`       | Distance between microphones in meters                   | Positive float             | `0.07`        |
-| `localizationBufferSize`    | Size of audio buffer for localization                    | Positive integer           | `8192`        |
-| `vadAggressiveness`         | Voice Activity Detection aggressiveness level            | `[0-3]`                    | `1`           |
-| `contextDuration`           | Duration (in seconds) of context window for processing   | Positive float (seconds)   | `1.0`         |
-| `useNoiseReduction`         | Enable noise reduction                                   | `True`, `False`            | `True`        |
-| `stationary`                | Assume noise is stationary during noise reduction        | `true`, `false`            | `true`        |
-| `prop_decrease`             | Proportion of noise reduction applied to signal          | `[0.0 - 1.0]`              | `0.9`         |
-| `verboseMode`               | Enable detailed logging and diagnostic information       | `True`, `False`            | `True`        |
+| Parameter                   | Description                                                     | Range/Values               | Default Value |
+|-----------------------------|-----------------------------------------------------------------|----------------------------|---------------|
+| `intensityThreshold`        | Minimum intensity threshold for audio processing                | Positive float             | `0.0039`      |
+| `distanceBetweenEars`       | Distance between microphones in meters                          | Positive float             | `0.07`        |
+| `localizationBufferSize`    | Size of audio buffer for localization                           | Positive integer           | `8192`        |
+| `vadAggressiveness`         | Voice Activity Detection aggressiveness level                   | `[0-3]`                    | `1`           |
+| `contextDuration`           | Duration (in seconds) of context window for processing          | Positive float (seconds)   | `1.0`         |
+| `useNoiseReduction`         | Enable noise reduction                                          | `True`, `False`            | `True`        |
+| `stationary`                | Assume noise is stationary during noise reduction               | `true`, `false`            | `true`        |
+| `propDecrease`              | Proportion of noise reduction applied to signal                 | `[0.0 - 1.0]`              | `0.9`         |
+| `audioTimeout`              | Timeout (seconds) for shutting down the node after audio ends   | Positive float (seconds)   | `2.0`         |
+| `verboseMode`               | Enable detailed logging and diagnostic information              | `True`, `False`            | `True`        |
 
 > **Note:**  
 > Enabling **`verboseMode`** (`True`) will provide detailed diagnostic output to the terminal.
