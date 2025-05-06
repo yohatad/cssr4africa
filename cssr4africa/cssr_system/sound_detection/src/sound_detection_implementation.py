@@ -135,7 +135,8 @@ class SoundDetectionNode:
         self.signal_pub = rospy.Publisher('/soundDetection/signal', std_msgs.msg.Float32MultiArray, queue_size=10)
         self.direction_pub = rospy.Publisher('/soundDetection/direction', std_msgs.msg.Float32, queue_size=10)
 
-        self.start_timeout_monitor()
+        if self.unit_tests:
+            self.start_timeout_monitor()
 
     def start_timeout_monitor(self):
         """
