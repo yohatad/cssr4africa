@@ -5,3 +5,4 @@
 **/*.bag
 *.pyc
 __pycache__/
+**/BehaviorTree.CPP/**
