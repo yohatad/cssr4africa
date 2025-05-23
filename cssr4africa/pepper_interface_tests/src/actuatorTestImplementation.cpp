@@ -107,7 +107,6 @@ void moveToPosition(ControlClientPtr& client, const std::vector<std::string>& jo
     }
 }
 
-
 // generate duration by taking the velocity max, min and home position (t = (max - min) / velocity)
 std::vector<std::vector<double>> calculateDuration(std::vector<double> homePosition, std::vector<double> maxPosition, std::vector<double> minPosition, std::vector<std::vector<double>> velocity){
     
