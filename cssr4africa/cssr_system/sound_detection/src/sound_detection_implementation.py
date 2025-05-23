@@ -59,7 +59,6 @@ class SoundDetectionNode:
         self.intensity_threshold = self.config.get('intensityThreshold', 3.9e-3)
         self.verbose_mode = self.config.get('verboseMode', False)
 
-        
         # Initialize parameter for noise reduction filter 
         self.noise_type = self.config.get('stationary', True)
         self.prop_decrease = self.config.get('propDecrease', 0.9)
