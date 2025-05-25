@@ -82,6 +82,8 @@
 *
 * sensorTestOutput.dat, 
 * frontCameraOutput.mp4,
+* realsenseRGBOutput.mp4,
+* realsenseDepthOutput.mp4,
 * bottomCameraOutput.mp4,
 * depthCameraOutput.mp4,
 * stereoCameraOutput.mp4,
@@ -99,8 +101,8 @@
 *
 * Author: Yohannes Tadesse Haile, Carnegie Mellon University Africa
 * Email: yohanneh@andrew.cmu.edu
-* Date: March 19, 2024
-* Version: v1.0
+* Date: May 21, 2025
+* Version: v1.1
 *
 */
 
