@@ -30,24 +30,28 @@
 
 * Key | Value
 * --- | ---
-* BackSonar     |   true
-* FrontSonar    |   true    
-* BottomCamera  |   true
-* FrontCamera   |   true
-* DepthCamera   |   true
-* StereoCamera  |   true
-* LaserSensor   |   true
-* Microphone    |   true
-* JointState    |   true
-* Odometry      |   true
-* IMU           |   true
-* Speech        |   true
+* BackSonar             |   true
+* FrontSonar            |   true    
+* BottomCamera          |   true
+* FrontCamera           |   true
+* realsenseRGBDCamera   |   true
+* realsenseDepthCamera  |   true
+* DepthCamera           |   true
+* StereoCamera          |   true
+* LaserSensor           |   true
+* Microphone            |   true
+* JointState            |   true
+* Odometry              |   true
+* IMU                   |   true
+* Speech                |   true
 ...
 * Subscribed Topics and Message Types
 *
 * /naoqi_driver/sonar/back                      sensor_msgs/Range                 
 * /naoqi_driver/sonar/front                     sensor_msgs/Range
 * /naoqi_driver/camera/front/image_raw          sensor_msgs/Image
+* /camera/color/image_raw                       sensor_msgs/Image
+* /camera/aligned_depth_to_color/image_raw      sensor_msgs/Image
 * /naoqi_driver/camera/bottom/image_raw         sensor_msgs/Image
 * /naoqi_driver/camera/depth/image_raw          sensor_msgs/Image
 * /naoqi_driver/laser                           sensor_msgs/LaserScan
