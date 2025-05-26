@@ -69,7 +69,7 @@ void microphoneMessageReceived(const naoqi_driver::AudioCustomMsg& msg);
 #endif // DEBUG
 
 std::vector<string> extractTests(string key);
-string extractTopic(string set);   
+string extractTopic(string key);   
 std::string extractMode();
 void writeWavHeader(std::ofstream &file, int sampleRate, int numSamples);
 void playAndDeleteFile();

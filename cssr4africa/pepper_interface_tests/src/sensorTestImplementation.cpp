@@ -1376,7 +1376,6 @@ void realsenseRGBCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg) {
     cv::waitKey(30); // Wait for a short time to allow the image to be displayed
 }
 
-
 void depthCameraMessageReceived(const sensor_msgs::ImageConstPtr& msg) {
     /*
      * Callback function to process received depth camera image messages
