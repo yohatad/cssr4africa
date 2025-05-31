@@ -222,7 +222,7 @@ void realsenseRGBCamera(ros::NodeHandle nh) {
      */
     
     // Find the respective topic for the RealSense RGB camera sensor
-    string topicName = extractTopic("RealSenseRGB");
+    string topicName = extractTopic("RealSenseCameraRGB");
     output = true;
 
     // Check if the topic name is empty
@@ -320,7 +320,7 @@ void realsenseDepthCamera(ros::NodeHandle nh) {
      */
     
     // Find the respective topic for the RealSense depth camera sensor
-    string topicName = extractTopic("RealSenseDepth");
+    string topicName = extractTopic("RealSenseCameraDepth");
     output = true;
 
     // Check if the topic name is empty
@@ -2168,6 +2168,8 @@ void executeTestsSequentially(const std::vector<std::string>& testNames, ros::No
         {"frontsonar", frontSonar},
         {"frontcamera", frontCamera},
         {"bottomcamera", bottomCamera},
+        {"realsensergbcamera", realsenseRGBCamera},
+        {"realsensedepthcamera", realsenseDepthCamera},
         {"depthcamera", depthCamera},
         {"laser", laserSensor},
         {"jointstate", jointState},
@@ -2211,7 +2213,9 @@ void executeTestsInParallel(const std::vector<std::string>& testNames, ros::Node
     std::unordered_map<std::string, TestFunction> testMap = {
         {"backsonar", backSonar},
         {"frontsonar", frontSonar},
-        {"frontcamera", frontCamera},   
+        {"frontcamera", frontCamera}, 
+        {"realsenseRGBCamera", realsenseRGBCamera},
+        {"realsenseDepthCamera", realsenseDepthCamera},  
         {"bottomcamera", bottomCamera},
         {"depthcamera", depthCamera},
         {"laser", laserSensor},
