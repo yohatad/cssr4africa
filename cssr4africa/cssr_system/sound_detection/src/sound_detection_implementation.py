@@ -78,9 +78,9 @@ class SoundDetectionNode:
         # Initialize RMS parameters
         self.target_rms = self.config.get('targetRMS', 0.2)
 
-         # Initialize timeout parameters
+        # Initialize timeout parameters
         self.last_audio_time = rospy.get_time()
-        self.audio_timeout = self.config.get('audioTimeout', 2)  # Default 10 seconds timeout
+        self.audio_timeout = self.config.get('audioTimeout', 2)  # Default 2 seconds timeout
         self.received_first_audio = False  # Flag to track if we've received any audio yet
 
         # Initialize noise reduction parameters

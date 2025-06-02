@@ -7,5 +7,6 @@
     "useNoiseReduction": true,
     "stationary": true,
     "propDecrease": 0.9,
+    "audioTimeout": 2,
     "verboseMode": true
 }
