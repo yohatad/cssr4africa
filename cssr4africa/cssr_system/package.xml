@@ -1,0 +1,60 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>cssr_system</name>
+  <version>0.0.1</version>
+  <description>“Super‐package” that groups robotLocalization and exports custom services</description>
+
+  <maintainer email="you@example.com">Your Name</maintainer>
+  <license>MIT</license>
+
+  <!-- Build‐tool dependency -->
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <!-- Message generation -->
+  <build_depend>message_generation</build_depend>
+  <exec_depend>message_runtime</exec_depend>
+
+  <!-- ROS dependencies (must match find_package(catkin …) exactly) -->
+  <build_depend>roscpp</build_depend>
+  <exec_depend>roscpp</exec_depend>
+
+  <build_depend>rospy</build_depend>
+  <exec_depend>rospy</exec_depend>
+
+  <build_depend>std_msgs</build_depend>
+  <exec_depend>std_msgs</exec_depend>
+
+  <build_depend>sensor_msgs</build_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+
+  <build_depend>nav_msgs</build_depend>
+  <exec_depend>nav_msgs</exec_depend>
+
+  <build_depend>geometry_msgs</build_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+
+  <build_depend>cv_bridge</build_depend>
+  <exec_depend>cv_bridge</exec_depend>
+
+  <build_depend>image_transport</build_depend>
+  <exec_depend>image_transport</exec_depend>
+
+  <build_depend>tf2_ros</build_depend>
+  <exec_depend>tf2_ros</exec_depend>
+
+  <build_depend>tf2_geometry_msgs</build_depend>
+  <exec_depend>tf2_geometry_msgs</exec_depend>
+
+  <build_depend>actionlib</build_depend>
+  <exec_depend>actionlib</exec_depend>
+
+  <build_depend>control_msgs</build_depend>
+  <exec_depend>control_msgs</exec_depend>
+
+  <!-- Non‐ROS external libraries -->
+  <build_depend>opencv</build_depend>
+  <exec_depend>opencv</exec_depend>
+
+  <build_depend>yaml-cpp</build_depend>
+  <exec_depend>yaml-cpp</exec_depend>
+</package>
