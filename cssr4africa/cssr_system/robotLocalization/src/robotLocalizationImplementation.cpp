@@ -66,10 +66,8 @@ public:
         reset_srv_ = nh_.advertiseService("/robotLocalization/reset_pose", &RobotLocalizationNode::resetPoseCallback, this);
         setpose_srv_ = nh_.advertiseService("/robotLocalization/set_pose", &RobotLocalizationNode::setPoseCallback, this);
 
-
         initializePoseAdjustments();
 
-        
         // Initialize pose
         current_pose_.x = 0.0;
         current_pose_.y = 0.0;
@@ -88,10 +86,17 @@ public:
     }
 
 private:
+    // ============================
+    // MEMBER VARIABLES
+    // ============================
+    
+    // ROS Components
     ros::NodeHandle nh_;
     image_transport::ImageTransport it_;
     tf2_ros::Buffer tf_buffer_;
     tf2_ros::TransformListener tf_listener_;
+    
+    // Subscribers and Publishers
     ros::Subscriber odom_sub_, imu_sub_, joint_sub_, camera_info_sub_;
     image_transport::Subscriber image_sub_, depth_sub_;
     ros::Publisher pose_pub_;
@@ -99,27 +104,38 @@ private:
     ros::ServiceServer reset_srv_, setpose_srv_;
     ros::Timer reset_timer_, camera_info_timer_;
 
+    // Configuration Parameters
     bool verbose_, use_depth_, use_head_yaw_, camera_info_received_ = false;
     double reset_interval_, camera_info_timeout_, absolute_pose_timeout_;
     std::string config_file_, topics_file_, camera_info_file_;
     std::string head_yaw_joint_name_, map_frame_, odom_frame_;
+    
+    // Pose and State Variables
     geometry_msgs::Pose2D current_pose_, baseline_pose_, last_odom_pose_;
+    geometry_msgs::Pose2D relative_pose, last_reset_pose;
     ros::Time last_absolute_pose_time_;
+    nav_msgs::Odometry previous_odom_;
+    bool first_odom_received_ = false;
+    
+    // Landmark and Map Data
     std::map<int, Landmark3D> landmarks3D_;
     std::map<int, std::pair<double, double>> projected_landmarks_;
     std::map<std::string, std::string> topic_map_;
+    
+    // Sensor Data
     cv::Mat latest_image_, latest_depth_;
     double head_yaw_ = 0.0;
     double camera_height_ = 1.225;
-    double fx_ = 0.0, fy_ = 0.0, cx_ = 0.0, cy_ = 0.0; // Camera intrinsics initialize
+    double fx_ = 0.0, fy_ = 0.0, cx_ = 0.0, cy_ = 0.0; // Camera intrinsics
+    
+    // Odometry Adjustment Variables
+    double initial_robot_x = 0.0, initial_robot_y = 0.0, initial_robot_theta = 0.0;
+    double adjustment_x_ = 0.0, adjustment_y_ = 0.0, adjustment_theta_ = 0.0;
+    double odom_x_ = 0.0, odom_y_ = 0.0, odom_theta_ = 0.0;
 
-
-    geometry_msgs::Pose2D relative_pose, last_reset_pose;
-    nav_msgs::Odometry previous_odom_;
-    bool first_odom_received_ = false;
-    double initial_robot_x=0.0, initial_robot_y=0.0, initial_robot_theta=0.0;
-    double adjustment_x_=0.0, adjustment_y_=0.0, adjustment_theta_=0.0;
-    double odom_x_=0.0, odom_y_=0.0, odom_theta_=0.0;
+    // ============================
+    // INITIALIZATION METHODS
+    // ============================
     
     void initializePoseAdjustments() {
         ros::Rate rate(10);
@@ -164,7 +180,7 @@ private:
                 return;
             }
             for (const auto& marker : config["landmarks"]) {
-                if (!marker["id"] || !marker["x"] || !marker["y"] || !marker["z"]) {
+                if (!marker["id"] || !marker["x"] || !marker["y"]) {
                     ROS_WARN("Skipping invalid landmark entry in %s", config_file_.c_str());
                     continue;
                 }
@@ -221,6 +237,10 @@ private:
         }
     }
 
+    // ============================
+    // CALLBACK METHODS
+    // ============================
+
     void cameraInfoCallback(const sensor_msgs::CameraInfo::ConstPtr& msg) {
         if (camera_info_received_) return;
         fx_ = msg->K[0];
@@ -272,70 +292,60 @@ private:
         pose_pub_.publish(pose_msg);
 
         if (verbose_) {
-            ROS_INFO_THROTTLE(1, "Odometry: position = (%5.3f, %5.3f) orientation = %5.3f degrees", current_x, current_y, angles::to_degrees(current_theta));
+            ROS_INFO_THROTTLE(1, "Odometry: position = (%5.3f, %5.3f) orientation = %5.3f degrees", 
+                             current_x, current_y, angles::to_degrees(current_theta));
         }
     }
 
-        void imuCallback(const sensor_msgs::Imu::ConstPtr& msg) {
-            // Optional using IMU angular velocity
-        }
+    void imuCallback(const sensor_msgs::Imu::ConstPtr& msg) {
+        // Optional: Use IMU angular velocity for enhanced localization
+        // Implementation can be added here if needed
+    }
 
-        void jointCallback(const sensor_msgs::JointState::ConstPtr& msg) {
-            bool found = false;
-            for (size_t i = 0; i < msg->name.size(); ++i) {
-                if (msg->name[i] == head_yaw_joint_name_) {
-                    head_yaw_ = msg->position[i]; // Radians
-                    found = true;
-                    if (verbose_) {
-                        ROS_INFO("Head yaw update: %.3f radians", head_yaw_);
-                    }
-                    break;
-                }
-            }
-            if (!found && verbose_) {
-                std::string names;
-                for (const auto& name : msg->name) names += name + ", ";
-                ROS_WARN("Head yaw joint '%s' not found in joint_states: %s", head_yaw_joint_name_.c_str(), names.c_str());
-            }
-        }
-
-        void imageCallback(const sensor_msgs::Image::ConstPtr& msg) {
-            try {
-                latest_image_ = cv_bridge::toCvShare(msg, "bgr8")->image;
+    void jointCallback(const sensor_msgs::JointState::ConstPtr& msg) {
+        bool found = false;
+        for (size_t i = 0; i < msg->name.size(); ++i) {
+            if (msg->name[i] == head_yaw_joint_name_) {
+                head_yaw_ = msg->position[i]; // Radians
+                found = true;
                 if (verbose_) {
-                    ROS_INFO("Received image: width=%d, height=%d", latest_image_.cols, latest_image_.rows);
+                    ROS_INFO("Head yaw update: %.3f radians", head_yaw_);
                 }
-            } catch (cv_bridge::Exception& e) {
-                ROS_ERROR("cv_bridge exception: %s", e.what());
+                break;
             }
         }
-
-        void depthCallback(const sensor_msgs::Image::ConstPtr& msg) {
-            try {
-                latest_depth_ = cv_bridge::toCvShare(msg, "32FC1")->image;
-                if (verbose_) {
-                    ROS_INFO("Received depth image: width=%d, height=%d", latest_depth_.cols, latest_depth_.rows);
-                }
-            } catch (cv_bridge::Exception& e) {
-                ROS_ERROR("cv_bridge exception: %s", e.what());
-            }
+        if (!found && verbose_) {
+            std::string names;
+            for (const auto& name : msg->name) names += name + ", ";
+            ROS_WARN("Head yaw joint '%s' not found in joint_states: %s", head_yaw_joint_name_.c_str(), names.c_str());
         }
+    }
 
-        // bool setPoseCallback(cssr_system::SetPose::Request& req, cssr_system::SetPose::Response& res) {
-        //     baseline_pose_.x = req.x;
-        //     baseline_pose_.y = req.y;
-        //     baseline_pose_.theta = req.theta * M_PI / 180.0; // Convert degrees to radians
-        //     while (baseline_pose_.theta > M_PI) baseline_pose_.theta -= 2 * M_PI;
-        //     while (baseline_pose_.theta < -M_PI) baseline_pose_.theta += 2 * M_PI;
-        //     current_pose_ = baseline_pose_;
-        //     last_absolute_pose_time_ = ros::Time::now();
-        //     publishPose();
-        //     if (verbose_) {
-        //         ROS_INFO("Manually set pose: x=%.3f, y=%.3f, theta=%.3f degrees", current_pose_.x, current_pose_.y, req.theta);
-        //     }
-        //     res.success = true;
-        //     return true;
-        // }
+    void imageCallback(const sensor_msgs::Image::ConstPtr& msg) {
+        try {
+            latest_image_ = cv_bridge::toCvShare(msg, "bgr8")->image;
+            if (verbose_) {
+                ROS_INFO("Received image: width=%d, height=%d", latest_image_.cols, latest_image_.rows);
+            }
+        } catch (cv_bridge::Exception& e) {
+            ROS_ERROR("cv_bridge exception: %s", e.what());
+        }
+    }
+
+    void depthCallback(const sensor_msgs::Image::ConstPtr& msg) {
+        try {
+            latest_depth_ = cv_bridge::toCvShare(msg, "32FC1")->image;
+            if (verbose_) {
+                ROS_INFO("Received depth image: width=%d, height=%d", latest_depth_.cols, latest_depth_.rows);
+            }
+        } catch (cv_bridge::Exception& e) {
+            ROS_ERROR("cv_bridge exception: %s", e.what());
+        }
+    }
+
+    // ============================
+    // SERVICE CALLBACKS
+    // ============================
 
     bool setPoseCallback(cssr_system::SetPose::Request& req, cssr_system::SetPose::Response& res) {
         initial_robot_x = req.x;
@@ -382,132 +392,25 @@ private:
         if (use_depth_) {
             return computeAbsolutePoseWithDepth();
         } else {
-            if (latest_image_.empty()) {
-                ROS_WARN("No image available for absolute pose estimation");
-                return false;
-            }
-
-            // Detect ArUco markers
-            std::vector<int> marker_ids;
-            std::vector<std::vector<cv::Point2f>> marker_corners;
-            cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_4X4_100);
-            cv::aruco::detectMarkers(latest_image_, dictionary, marker_corners, marker_ids);
-
-             // Draw and publish marker image
-            cv::Mat output_image = latest_image_.clone();
-            if (!marker_ids.empty()) {
-                cv::aruco::drawDetectedMarkers(output_image, marker_corners, marker_ids);
-            }
-            sensor_msgs::ImagePtr img_msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", output_image).toImageMsg();
-            image_pub_.publish(img_msg);
-            if (verbose_) {
-                ROS_INFO("Published marker image with %zu markers", marker_ids.size());
-            }
-
-            if (marker_ids.size() < 3) {
-                ROS_WARN("Detected %zu markers, need at least 3", marker_ids.size());
-                return false;
-            }
-
-            // // Draw bounding boxes
-            // cv::Mat output_image = latest_image_.clone();
-            // cv::aruco::drawDetectedMarkers(output_image, marker_corners, marker_ids);
-
-            // Compute angles and triangulate
-            std::vector<std::pair<double, double>> marker_centers;
-            for (size_t i = 0; i < marker_ids.size(); ++i) {
-                auto& corners = marker_corners[i];
-                double cx = (corners[0].x + corners[1].x + corners[2].x + corners[3].x) / 4.0;
-                double cy = (corners[0].y + corners[1].y + corners[2].y + corners[3].y) / 4.0;
-                marker_centers.push_back({cx, cy});
-            }
-
-            // Assume first three detected markers are used
-            int id1 = marker_ids[0], id2 = marker_ids[1], id3 = marker_ids[2];
-            if (projected_landmarks_.find(id1) == projected_landmarks_.end() || projected_landmarks_.find(id2) == projected_landmarks_.end() || projected_landmarks_.find(id3) == projected_landmarks_.end()) {
-                ROS_WARN("Unknown marker IDs detected: %d, %d, %d", id1, id2, id3);
-                return false;
-            }
-
-            double x1 = projected_landmarks_[id1].first, y1 = projected_landmarks_[id1].second;
-            double x2 = projected_landmarks_[id2].first, y2 = projected_landmarks_[id2].second;
-            double x3 = projected_landmarks_[id3].first, y3 = projected_landmarks_[id3].second;
-
-            // Check for collinear markers
-            double cross_product = (x2 - x1) * (y3 - y1) - (y2 - y1) * (x3 - x1);
-            if (std::abs(cross_product) < 0.01) {
-                ROS_WARN("Markers are nearly collinear, triangulation may be inaccurate");
-                return false;
-            }
-
-            // Compute angles alpha1 (between markers 1 and 2) and alpha2 (between markers 2 and 3)
-            double alpha1 = computeAngle(marker_centers[0], marker_centers[1]);
-            double alpha2 = computeAngle(marker_centers[1], marker_centers[2]);
-
-            if (verbose_) {
-                ROS_INFO("Computed angles: alpha1=%.3f degrees, alpha2=%.3f degrees", alpha1, alpha2);
-            }
-
-            // Triangulation
-            double xc1a, yc1a, xc1b, yc1b, xc2a, yc2a, xc2b, yc2b, r1, r2;
-            double x1_intersection, y1_intersection, x2_intersection, y2_intersection;
-            double tolerance = 0.001;
-
-            circle_centre(x2, y2, x1, y1, alpha1, &xc1a, &yc1a, &xc1b, &yc1b, &r1);
-            circle_centre(x3, y3, x2, y2, alpha2, &xc2a, &yc2a, &xc2b, &yc2b, &r2);
-
-            int result = circle_circle_intersection(xc1a, yc1a, r1, xc2a, yc2a, r2, &x1_intersection, &y1_intersection, &x2_intersection, &y2_intersection);
-            if (result == 0) {
-                ROS_WARN("Circles do not intersect");
-                return false;
-            }
-
-            // Determine robot position
-            double xr, yr;
-            if ((std::abs(x1_intersection - x1) < tolerance && std::abs(y1_intersection - y1) < tolerance) ||
-                (std::abs(x1_intersection - x2) < tolerance && std::abs(y1_intersection - y2) < tolerance) ||
-                (std::abs(x1_intersection - x3) < tolerance && std::abs(y1_intersection - y3) < tolerance)) {
-                xr = x2_intersection;
-                yr = y2_intersection;
-            } else {
-                xr = x1_intersection;
-                yr = y1_intersection;
-            }
-
-            // Compute yaw (using marker 1)
-            double theta = computeYaw(marker_centers[0], x1, y1, xr, yr);
-
-            // Update pose
-            baseline_pose_.x = xr;
-            baseline_pose_.y = yr;
-            baseline_pose_.theta = theta; // Radians
-            current_pose_ = baseline_pose_;
-            last_absolute_pose_time_ = ros::Time::now();
-
-            // sensor_msgs::ImagePtr img_msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", output_image).toImageMsg();
-            // image_pub_.publish(img_msg);
-
-            // Alternate update pose
-            initial_robot_x = xr;
-            initial_robot_y = yr;
-            initial_robot_theta = theta;
-            adjustment_x_ = initial_robot_x - odom_x_;
-            adjustment_y_ = initial_robot_y - odom_y_;
-            adjustment_theta_ = initial_robot_theta - odom_theta_;
-
-
-            ROS_INFO("Robot Pose: x=%.3f, y=%.3f, theta=%.3f degrees", xr, yr, theta * 180.0 / M_PI);
-            cv::imshow("ArUco Markers", output_image);
-            cv::waitKey(1);
-
-            // publishPose();
-            return true;
+            return computeAbsolutePoseWith3Landmarks(); // Use the enhanced triangulation
         }
     }
 
-    bool computeAbsolutePoseWithDepth() {
-        if (latest_image_.empty() || latest_depth_.empty()) {
-            ROS_WARN("No image or depth data available");
+    // ============================
+    // 3-LANDMARK TRIANGULATION IMPLEMENTATION
+    // ============================
+
+    bool computeAbsolutePoseWith3Landmarks() {
+        if (projected_landmarks_.empty()) {
+            ROS_WARN("No landmarks loaded");
+            return false;
+        }
+        if (!camera_info_received_) {
+            ROS_WARN("Camera intrinsics not received");
+            return false;
+        }
+        if (latest_image_.empty()) {
+            ROS_WARN("No image available for absolute pose estimation");
             return false;
         }
 
@@ -524,299 +427,686 @@ private:
         }
         sensor_msgs::ImagePtr img_msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", output_image).toImageMsg();
         image_pub_.publish(img_msg);
-        if (verbose_) {
-            ROS_INFO("Published marker image with %zu markers", marker_ids.size());
-        }
 
-        if (marker_ids.size() < 2) {
-            ROS_WARN("Detected %zu markers, need at least 2", marker_ids.size());
+        if (marker_ids.size() < 3) {
+            ROS_WARN("Detected %zu markers, need at least 3 for triangulation", marker_ids.size());
             return false;
         }
 
-        // Get horizontal distances from depth image (correcting for height differences)
-        std::vector<std::tuple<int, double, double, double, cv::Point2f>> markers; // id, x, y, horizontal_distance, image_center
+        // Get marker centers in image coordinates
+        std::vector<cv::Point2f> marker_centers;
+        std::vector<int> valid_marker_ids;
         
         for (size_t i = 0; i < marker_ids.size(); ++i) {
-            // Check if this marker is in our landmark database
-            if (landmarks3D_.find(marker_ids[i]) == landmarks3D_.end()) {
+            // Check if this marker exists in our landmark database
+            if (projected_landmarks_.find(marker_ids[i]) == projected_landmarks_.end()) {
                 ROS_WARN("Unknown marker ID %d, skipping", marker_ids[i]);
                 continue;
             }
-
+            
             auto& corners = marker_corners[i];
             double cx = (corners[0].x + corners[1].x + corners[2].x + corners[3].x) / 4.0;
             double cy = (corners[0].y + corners[1].y + corners[2].y + corners[3].y) / 4.0;
             
-            // Get depth sensor reading (3D distance from camera to marker)
-            float depth_distance = latest_depth_.at<float>(int(cy), int(cx)) / 1000.0; // Convert mm to m
+            marker_centers.push_back(cv::Point2f(cx, cy));
+            valid_marker_ids.push_back(marker_ids[i]);
             
-            if (std::isnan(depth_distance) || depth_distance <= 0.0) {
-                ROS_WARN("Invalid depth reading for marker %d", marker_ids[i]);
-                continue;
-            }
-
-            // Get marker's known 3D position
-            const Landmark3D& landmark = landmarks3D_[marker_ids[i]];
-            double marker_height = landmark.z;
-            
-            // Calculate height difference between camera and marker
-            double height_diff = marker_height - camera_height_;
-            
-            // Project 3D depth distance to horizontal (X-Y plane) distance
-            // Using Pythagorean theorem: horizontal_distance^2 + height_diff^2 = depth_distance^2
-            double horizontal_distance_squared = depth_distance * depth_distance - height_diff * height_diff;
-            
-            if (horizontal_distance_squared <= 0.0) {
-                ROS_WARN("Marker %d: height difference too large for depth reading (%.3f vs %.3f)", 
-                        marker_ids[i], depth_distance, std::abs(height_diff));
-                continue;
-            }
-            
-            double horizontal_distance = std::sqrt(horizontal_distance_squared);
-            
-            // Use the projected landmark coordinates (already projected to camera height plane)
-            if (projected_landmarks_.find(marker_ids[i]) == projected_landmarks_.end()) {
-                ROS_WARN("Marker %d not found in projected landmarks", marker_ids[i]);
-                continue;
-            }
-            
-            double proj_x = projected_landmarks_[marker_ids[i]].first;
-            double proj_y = projected_landmarks_[marker_ids[i]].second;
-            
-            markers.push_back({marker_ids[i], proj_x, proj_y, horizontal_distance, cv::Point2f(cx, cy)});
-            
-            if (verbose_) {
-                ROS_INFO("Marker ID %d: 3D distance=%.3f m, height_diff=%.3f m, horizontal_distance=%.3f m", 
-                        marker_ids[i], depth_distance, height_diff, horizontal_distance);
-            }
+            if (valid_marker_ids.size() >= 3) break; // We only need 3 markers for triangulation
         }
 
-        // Sort by distance (closest first) for better numerical stability
-        std::sort(markers.begin(), markers.end(), 
-            [](const std::tuple<int, double, double, double, cv::Point2f>& a, 
-            const std::tuple<int, double, double, double, cv::Point2f>& b) {
-                return std::get<3>(a) < std::get<3>(b);
-            });
-
-        ROS_INFO("Valid markers for localization: %zu", markers.size());
-        for (const auto& marker : markers) {
-            ROS_INFO("  Marker ID %d: Position (%.3f, %.3f), Horizontal Distance = %.3f m", 
-                    std::get<0>(marker), std::get<1>(marker), std::get<2>(marker), std::get<3>(marker));
-        }
-
-        if (markers.size() < 2) {
-            ROS_WARN("Insufficient valid markers for localization (need at least 2)");
+        if (valid_marker_ids.size() < 3) {
+            ROS_WARN("Only %zu valid markers found, need at least 3", valid_marker_ids.size());
             return false;
         }
 
-        // Use the two closest/best markers for localization
-        double x1 = std::get<1>(markers[0]), y1 = std::get<2>(markers[0]), d1 = std::get<3>(markers[0]);
-        double x2 = std::get<1>(markers[1]), y2 = std::get<2>(markers[1]), d2 = std::get<3>(markers[1]);
-        cv::Point2f img1 = std::get<4>(markers[0]);
-        cv::Point2f img2 = std::get<4>(markers[1]);
+        // Use first three valid markers
+        int id1 = valid_marker_ids[0], id2 = valid_marker_ids[1], id3 = valid_marker_ids[2];
+        cv::Point2f center1 = marker_centers[0], center2 = marker_centers[1], center3 = marker_centers[2];
 
-        // Check that the two landmarks are sufficiently separated
-        double landmark_distance = std::sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
-        double max_measurement_distance = std::max(d1, d2);
-        
-        if (landmark_distance < max_measurement_distance * 0.2) {
-            ROS_WARN("Landmarks too close together for reliable localization (%.3f m apart, max distance %.3f m)", 
-                    landmark_distance, max_measurement_distance);
-            // Continue anyway but with reduced confidence
-        }
+        // Get landmark coordinates (projected to camera height plane)
+        double x1 = projected_landmarks_[id1].first, y1 = projected_landmarks_[id1].second;
+        double x2 = projected_landmarks_[id2].first, y2 = projected_landmarks_[id2].second;
+        double x3 = projected_landmarks_[id3].first, y3 = projected_landmarks_[id3].second;
 
-        // Two-circle intersection (bilateration)
-        double dx = x2 - x1;
-        double dy = y2 - y1;
-        double d = std::sqrt(dx * dx + dy * dy);
-        
-        if (d == 0) {
-            ROS_ERROR("Two landmarks are at the same location");
-            return false;
-        }
-        
-        // Check if circles can intersect
-        if (d > d1 + d2) {
-            ROS_WARN("Circles don't intersect - landmarks too far apart relative to distances");
-            return false;
-        }
-        if (d < std::abs(d1 - d2)) {
-            ROS_WARN("One circle is contained in the other");
+        // Check for collinear landmarks (would make triangulation unstable)
+        if (areLandmarksCollinear(x1, y1, x2, y2, x3, y3)) {
+            ROS_WARN("Landmarks are nearly collinear, triangulation may be inaccurate");
             return false;
         }
 
-        // Calculate intersection points
-        double a = (d1 * d1 - d2 * d2 + d * d) / (2.0 * d);
-        double h_squared = d1 * d1 - a * a;
+        // Compute bearing angles between consecutive markers
+        double alpha1 = computeBearingAngle(center1, center2); // Angle between markers 1 and 2
+        double alpha2 = computeBearingAngle(center2, center3); // Angle between markers 2 and 3
+
+        if (verbose_) {
+            ROS_INFO("Computed bearing angles: alpha1=%.3f degrees, alpha2=%.3f degrees", 
+                     angles::to_degrees(alpha1), angles::to_degrees(alpha2));
+            ROS_INFO("Using landmarks: ID%d(%.2f,%.2f), ID%d(%.2f,%.2f), ID%d(%.2f,%.2f)",
+                     id1, x1, y1, id2, x2, y2, id3, x3, y3);
+        }
+
+        // Perform triangulation using circle intersection method
+        double robot_x, robot_y;
+        if (!triangulatePosition(x1, y1, x2, y2, x3, y3, alpha1, alpha2, &robot_x, &robot_y)) {
+            ROS_WARN("Triangulation failed - circles do not intersect properly");
+            return false;
+        }
+
+        // Compute robot heading using the first marker
+        double robot_theta = computeRobotHeading(center1, x1, y1, robot_x, robot_y);
+
+        // Validate the triangulation result
+        if (!validateTriangulationResult(robot_x, robot_y, x1, y1, x2, y2, x3, y3, 
+                                       center1, center2, center3)) {
+            ROS_WARN("Triangulation result validation failed");
+            return false;
+        }
+
+        // Update robot pose
+        updateRobotPose(robot_x, robot_y, robot_theta);
+
+        ROS_INFO("Triangulated Robot Pose: x=%.3f, y=%.3f, theta=%.3f degrees", 
+                 robot_x, robot_y, angles::to_degrees(robot_theta));
+
+        // Display result
+        cv::imshow("ArUco Triangulation", output_image);
+        cv::waitKey(1);
+
+        return true;
+    }
+
+    // ============================
+    // TRIANGULATION HELPER METHODS
+    // ============================
+
+    bool areLandmarksCollinear(double x1, double y1, double x2, double y2, double x3, double y3, 
+                              double tolerance = 0.01) {
+        // Calculate cross product to check collinearity
+        double cross_product = (x2 - x1) * (y3 - y1) - (y2 - y1) * (x3 - x1);
+        return std::abs(cross_product) < tolerance;
+    }
+
+    double computeBearingAngle(const cv::Point2f& p1, const cv::Point2f& p2) {
+        // Convert image coordinates to normalized camera coordinates
+        double x1_norm = (p1.x - cx_) / fx_;
+        double y1_norm = (p1.y - cy_) / fy_;
+        double x2_norm = (p2.x - cx_) / fx_;
+        double y2_norm = (p2.y - cy_) / fy_;
         
-        if (h_squared < 0) {
-            ROS_WARN("No real intersection points");
+        // Calculate 3D vectors (assuming unit depth for angle calculation)
+        cv::Vec3f vec1(x1_norm, y1_norm, 1.0);
+        cv::Vec3f vec2(x2_norm, y2_norm, 1.0);
+        
+        // Compute angle between vectors
+        double dot_product = vec1.dot(vec2);
+        double magnitude1 = cv::norm(vec1);
+        double magnitude2 = cv::norm(vec2);
+        
+        if (magnitude1 == 0 || magnitude2 == 0) {
+            ROS_ERROR("Zero magnitude vector in bearing angle calculation");
+            return 0.0;
+        }
+        
+        double cos_angle = dot_product / (magnitude1 * magnitude2);
+        cos_angle = std::max(-1.0, std::min(1.0, cos_angle)); // Clamp to valid range
+        
+        return std::acos(cos_angle); // Return angle in radians
+    }
+
+    bool triangulatePosition(double x1, double y1, double x2, double y2, double x3, double y3,
+                           double alpha1, double alpha2, double* robot_x, double* robot_y) {
+        
+        // Find circle centers for the two angle constraints
+        double xc1a, yc1a, xc1b, yc1b, r1;
+        double xc2a, yc2a, xc2b, yc2b, r2;
+        
+        // Circle 1: defined by landmarks 1,2 and angle alpha1
+        if (!computeCircleFromChordAndAngle(x1, y1, x2, y2, alpha1, 
+                                          &xc1a, &yc1a, &xc1b, &yc1b, &r1)) {
             return false;
         }
         
-        double h = std::sqrt(h_squared);
-        
-        // Point on line between circle centers
-        double x_mid = x1 + a * dx / d;
-        double y_mid = y1 + a * dy / d;
-        
-        // Two possible robot positions
-        double xr1 = x_mid + h * dy / d;
-        double yr1 = y_mid - h * dx / d;
-        double xr2 = x_mid - h * dy / d;
-        double yr2 = y_mid + h * dx / d;
+        // Circle 2: defined by landmarks 2,3 and angle alpha2  
+        if (!computeCircleFromChordAndAngle(x2, y2, x3, y3, alpha2,
+                                          &xc2a, &yc2a, &xc2b, &yc2b, &r2)) {
+            return false;
+        }
 
-        ROS_INFO("Two possible positions: (%.3f, %.3f) and (%.3f, %.3f)", xr1, yr1, xr2, yr2);
+        // Find intersection of the two circles
+        double x_int1, y_int1, x_int2, y_int2;
+        
+        // Try both combinations of circle centers
+        std::vector<std::tuple<double, double, double, double, double, double>> circle_combinations = {
+            {xc1a, yc1a, r1, xc2a, yc2a, r2},
+            {xc1a, yc1a, r1, xc2b, yc2b, r2},
+            {xc1b, yc1b, r1, xc2a, yc2a, r2},
+            {xc1b, yc1b, r1, xc2b, yc2b, r2}
+        };
 
-        // Choose the correct position using additional information
-        double xr, yr;
-        
-        // First check: Use known map boundaries (X: 0.0-7.0, Y: 0.0-10.0)
-        bool pos1_in_bounds = (xr1 >= 0.0 && xr1 <= 7.0 && yr1 >= 0.0 && yr1 <= 10.0);
-        bool pos2_in_bounds = (xr2 >= 0.0 && xr2 <= 7.0 && yr2 >= 0.0 && yr2 <= 10.0);
-        
-        if (pos1_in_bounds && !pos2_in_bounds) {
-            xr = xr1; yr = yr1;
-            ROS_INFO("Selected position 1 (%.3f, %.3f) - only position within map bounds [0-7, 0-10]", xr1, yr1);
-        } else if (pos2_in_bounds && !pos1_in_bounds) {
-            xr = xr2; yr = yr2;
-            ROS_INFO("Selected position 2 (%.3f, %.3f) - only position within map bounds [0-7, 0-10]", xr2, yr2);
-        } else if (!pos1_in_bounds && !pos2_in_bounds) {
-            ROS_WARN("Both positions outside map bounds: (%.3f, %.3f) and (%.3f, %.3f)", xr1, yr1, xr2, yr2);
-            // Continue with other disambiguation methods
-            if (markers.size() >= 3) {
-                // Use third marker to disambiguate
-                double x3 = std::get<1>(markers[2]), y3 = std::get<2>(markers[2]), d3 = std::get<3>(markers[2]);
-                double dist1_to_3 = std::sqrt((xr1 - x3) * (xr1 - x3) + (yr1 - y3) * (yr1 - y3));
-                double dist2_to_3 = std::sqrt((xr2 - x3) * (xr2 - x3) + (yr2 - y3) * (yr2 - y3));
-                double error1 = std::abs(dist1_to_3 - d3);
-                double error2 = std::abs(dist2_to_3 - d3);
-                
-                if (error1 < error2) {
-                    xr = xr1; yr = yr1;
-                    ROS_INFO("Selected position 1 using third marker (error: %.3f vs %.3f) - both out of bounds", error1, error2);
-                } else {
-                    xr = xr2; yr = yr2;
-                    ROS_INFO("Selected position 2 using third marker (error: %.3f vs %.3f) - both out of bounds", error1, error2);
+        for (const auto& combo : circle_combinations) {
+            double cx1, cy1, cr1, cx2, cy2, cr2;
+            std::tie(cx1, cy1, cr1, cx2, cy2, cr2) = combo;
+            
+            int result = circle_circle_intersection(cx1, cy1, cr1, cx2, cy2, cr2, 
+                                                  &x_int1, &y_int1, &x_int2, &y_int2);
+            
+            if (result > 0) {
+                // Choose the correct intersection point
+                if (!selectCorrectIntersection(x_int1, y_int1, x_int2, y_int2, 
+                                             x1, y1, x2, y2, x3, y3, robot_x, robot_y)) {
+                    continue;
                 }
+                
+                if (verbose_) {
+                    ROS_INFO("Triangulation successful using circles: (%.3f,%.3f,r=%.3f) and (%.3f,%.3f,r=%.3f)",
+                             cx1, cy1, cr1, cx2, cy2, cr2);
+                }
+                return true;
+            }
+        }
+        
+        return false;
+    }
+
+    bool computeCircleFromChordAndAngle(double x1, double y1, double x2, double y2, double angle,
+                                      double* xc1, double* yc1, double* xc2, double* yc2, double* r) {
+        
+        if (angle <= 0 || angle >= M_PI) {
+            ROS_ERROR("Invalid angle for circle computation: %.3f", angle);
+            return false;
+        }
+        
+        double d = std::sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
+        if (d < 1e-6) {
+            ROS_ERROR("Chord length too small for circle computation");
+            return false;
+        }
+        
+        // Calculate circle radius and center offset
+        *r = d / (2.0 * std::sin(angle));
+        double h = d / (2.0 * std::tan(angle));
+        
+        // Calculate perpendicular direction
+        double midx = (x1 + x2) / 2.0;
+        double midy = (y1 + y2) / 2.0;
+        
+        double perpx = -(y2 - y1) / d;
+        double perpy = (x2 - x1) / d;
+        
+        // Two possible circle centers
+        *xc1 = midx + h * perpx;
+        *yc1 = midy + h * perpy;
+        *xc2 = midx - h * perpx;
+        *yc2 = midy - h * perpy;
+        
+        return true;
+    }
+
+    bool selectCorrectIntersection(double x1, double y1, double x2, double y2,
+                                 double lm1_x, double lm1_y, double lm2_x, double lm2_y, 
+                                 double lm3_x, double lm3_y,
+                                 double* robot_x, double* robot_y) {
+        
+        // Method 1: Check if point coincides with any landmark (invalid)
+        double tolerance = 0.1;
+        
+        auto isNearLandmark = [&](double x, double y) {
+            return (std::abs(x - lm1_x) < tolerance && std::abs(y - lm1_y) < tolerance) ||
+                   (std::abs(x - lm2_x) < tolerance && std::abs(y - lm2_y) < tolerance) ||
+                   (std::abs(x - lm3_x) < tolerance && std::abs(y - lm3_y) < tolerance);
+        };
+        
+        bool point1_valid = !isNearLandmark(x1, y1);
+        bool point2_valid = !isNearLandmark(x2, y2);
+        
+        if (point1_valid && !point2_valid) {
+            *robot_x = x1; *robot_y = y1;
+            return true;
+        } else if (point2_valid && !point1_valid) {
+            *robot_x = x2; *robot_y = y2;
+            return true;
+        } else if (!point1_valid && !point2_valid) {
+            return false;
+        }
+        
+        // Method 2: Use map boundaries if available
+        // Assuming map bounds [0,7] x [0,10] based on your code
+        auto isInBounds = [](double x, double y) {
+            return x >= 0.0 && x <= 7.0 && y >= 0.0 && y <= 10.0;
+        };
+        
+        bool point1_in_bounds = isInBounds(x1, y1);
+        bool point2_in_bounds = isInBounds(x2, y2);
+        
+        if (point1_in_bounds && !point2_in_bounds) {
+            *robot_x = x1; *robot_y = y1;
+            return true;
+        } else if (point2_in_bounds && !point1_in_bounds) {
+            *robot_x = x2; *robot_y = y2;
+            return true;
+        }
+        
+        // Method 3: Use previous position for temporal consistency
+        if (last_absolute_pose_time_.isValid()) {
+            double dist1 = std::sqrt((x1 - current_pose_.x) * (x1 - current_pose_.x) + 
+                                   (y1 - current_pose_.y) * (y1 - current_pose_.y));
+            double dist2 = std::sqrt((x2 - current_pose_.x) * (x2 - current_pose_.x) + 
+                                   (y2 - current_pose_.y) * (y2 - current_pose_.y));
+            
+            if (dist1 < dist2) {
+                *robot_x = x1; *robot_y = y1;
             } else {
-                // Default to position 1 if no other info available
-                xr = xr1; yr = yr1;
-                ROS_WARN("Both positions out of bounds, defaulting to position 1 (%.3f, %.3f)", xr1, yr1);
+                *robot_x = x2; *robot_y = y2;
             }
-        } else if (pos1_in_bounds && pos2_in_bounds) {
-            // Both positions are within bounds, use third marker if available
-            ROS_INFO("Both positions within bounds: (%.3f, %.3f) and (%.3f, %.3f)", xr1, yr1, xr2, yr2);
-            if (markers.size() >= 3) {
-                // Use third marker to disambiguate
-                double x3 = std::get<1>(markers[2]), y3 = std::get<2>(markers[2]), d3 = std::get<3>(markers[2]);
-                double dist1_to_3 = std::sqrt((xr1 - x3) * (xr1 - x3) + (yr1 - y3) * (yr1 - y3));
-                double dist2_to_3 = std::sqrt((xr2 - x3) * (xr2 - x3) + (yr2 - y3) * (yr2 - y3));
-                double error1 = std::abs(dist1_to_3 - d3);
-                double error2 = std::abs(dist2_to_3 - d3);
-                
-                if (error1 < error2) {
-                    xr = xr1; yr = yr1;
-                    ROS_INFO("Selected position 1 using third marker (error: %.3f vs %.3f)", error1, error2);
-                } else {
-                    xr = xr2; yr = yr2;
-                    ROS_INFO("Selected position 2 using third marker (error: %.3f vs %.3f)", error1, error2);
-                }
-            } else {
-            // Use previous position for disambiguation (temporal consistency)
-            if (last_absolute_pose_time_.isValid()) {
-                double dist1_to_prev = std::sqrt((xr1 - current_pose_.x) * (xr1 - current_pose_.x) + 
-                                            (yr1 - current_pose_.y) * (yr1 - current_pose_.y));
-                double dist2_to_prev = std::sqrt((xr2 - current_pose_.x) * (xr2 - current_pose_.x) + 
-                                            (yr2 - current_pose_.y) * (yr2 - current_pose_.y));
-                
-                if (dist1_to_prev < dist2_to_prev) {
-                    xr = xr1; yr = yr1;
-                    ROS_INFO("Selected position 1 based on previous position (distances: %.3f vs %.3f)", 
-                            dist1_to_prev, dist2_to_prev);
-                } else {
-                    xr = xr2; yr = yr2;
-                    ROS_INFO("Selected position 2 based on previous position (distances: %.3f vs %.3f)", 
-                            dist1_to_prev, dist2_to_prev);
-                }
-            } else {
-                // Use heading information to disambiguate
-                // Compute expected angles to both landmarks from both positions
-                double angle1_to_lm1 = atan2(y1 - yr1, x1 - xr1);
-                double angle1_to_lm2 = atan2(y2 - yr1, x2 - xr1);
-                double angle2_to_lm1 = atan2(y1 - yr2, x1 - xr2);
-                double angle2_to_lm2 = atan2(y2 - yr2, x2 - xr2);
-                
-                // Compute image angles (simplified - using image center as reference)
-                double img_angle1 = atan2(img1.y - cy_, img1.x - cx_);
-                double img_angle2 = atan2(img2.y - cy_, img2.x - cx_);
-                
-                // Choose position that better matches the relative angles observed in image
-                double relative_world_angle1 = angle1_to_lm2 - angle1_to_lm1;
-                double relative_world_angle2 = angle2_to_lm2 - angle2_to_lm1;
-                double relative_img_angle = img_angle2 - img_angle1;
-                
-                // Normalize angles to [-π, π]
-                while (relative_world_angle1 > M_PI) relative_world_angle1 -= 2*M_PI;
-                while (relative_world_angle1 < -M_PI) relative_world_angle1 += 2*M_PI;
-                while (relative_world_angle2 > M_PI) relative_world_angle2 -= 2*M_PI;
-                while (relative_world_angle2 < -M_PI) relative_world_angle2 += 2*M_PI;
-                while (relative_img_angle > M_PI) relative_img_angle -= 2*M_PI;
-                while (relative_img_angle < -M_PI) relative_img_angle += 2*M_PI;
-                
-                double angle_error1 = std::abs(relative_world_angle1 - relative_img_angle);
-                double angle_error2 = std::abs(relative_world_angle2 - relative_img_angle);
-                
-                if (angle_error1 < angle_error2) {
-                    xr = xr1; yr = yr1;
-                    ROS_INFO("Selected position 1 based on angle consistency (errors: %.3f vs %.3f rad)", 
-                            angle_error1, angle_error2);
-                } else {
-                    xr = xr2; yr = yr2;
-                    ROS_INFO("Selected position 2 based on angle consistency (errors: %.3f vs %.3f rad)", 
-                            angle_error1, angle_error2);
-                }
-            }
+            return true;
         }
-
-        // Compute yaw using the first marker
-        double theta = computeYaw({img1.x, img1.y}, x1, y1, xr, yr);
-
-        // Validate the solution
-        double verification_d1 = std::sqrt((xr - x1) * (xr - x1) + (yr - y1) * (yr - y1));
-        double verification_d2 = std::sqrt((xr - x2) * (xr - x2) + (yr - y2) * (yr - y2));
-        double error1 = std::abs(verification_d1 - d1);
-        double error2 = std::abs(verification_d2 - d2);
         
-        if (error1 > 0.5 || error2 > 0.5) { // 50cm tolerance
-            ROS_WARN("Large localization errors: marker1 error=%.3f m, marker2 error=%.3f m", error1, error2);
-            // Continue anyway but log warning
-        }
+        // Default: choose first point
+        *robot_x = x1; *robot_y = y1;
+        return true;
+    }
 
-        // Update poses
-        baseline_pose_.x = xr;
-        baseline_pose_.y = yr;
+    bool validateTriangulationResult(double robot_x, double robot_y,
+                                   double x1, double y1, double x2, double y2, double x3, double y3,
+                                   const cv::Point2f& img1, const cv::Point2f& img2, const cv::Point2f& img3) {
+        
+        // Check if robot position makes geometric sense
+        double dist1 = std::sqrt((robot_x - x1) * (robot_x - x1) + (robot_y - y1) * (robot_y - y1));
+        double dist2 = std::sqrt((robot_x - x2) * (robot_x - x2) + (robot_y - y2) * (robot_y - y2));
+        double dist3 = std::sqrt((robot_x - x3) * (robot_x - x3) + (robot_y - y3) * (robot_y - y3));
+        
+        // Basic sanity checks
+        if (dist1 < 0.1 || dist2 < 0.1 || dist3 < 0.1) {
+            ROS_WARN("Robot too close to landmarks: %.3f, %.3f, %.3f", dist1, dist2, dist3);
+            return false;
+        }
+        
+        if (dist1 > 20.0 || dist2 > 20.0 || dist3 > 20.0) {
+            ROS_WARN("Robot too far from landmarks: %.3f, %.3f, %.3f", dist1, dist2, dist3);
+            return false;
+        }
+        
+        // Verify angle consistency (optional but recommended)
+        double computed_angle1 = computeBearingAngle(img1, img2);
+        double expected_angle1 = computeExpectedAngle(robot_x, robot_y, x1, y1, x2, y2);
+        double angle_error1 = std::abs(computed_angle1 - expected_angle1);
+        
+        if (angle_error1 > 0.2) { // 0.2 radians ≈ 11.5 degrees tolerance
+            ROS_WARN("Large angle error in validation: %.3f radians", angle_error1);
+            // Don't fail, just warn
+        }
+        
+        return true;
+    }
+
+    double computeExpectedAngle(double robot_x, double robot_y, 
+                               double lm1_x, double lm1_y, double lm2_x, double lm2_y) {
+        // Vectors from robot to landmarks
+        double vec1_x = lm1_x - robot_x;
+        double vec1_y = lm1_y - robot_y;
+        double vec2_x = lm2_x - robot_x;
+        double vec2_y = lm2_y - robot_y;
+        
+        // Compute angle between vectors
+        double dot_product = vec1_x * vec2_x + vec1_y * vec2_y;
+        double mag1 = std::sqrt(vec1_x * vec1_x + vec1_y * vec1_y);
+        double mag2 = std::sqrt(vec2_x * vec2_x + vec2_y * vec2_y);
+        
+        if (mag1 == 0 || mag2 == 0) return 0;
+        
+        double cos_angle = dot_product / (mag1 * mag2);
+        cos_angle = std::max(-1.0, std::min(1.0, cos_angle));
+        
+        return std::acos(cos_angle);
+    }
+
+    double computeRobotHeading(const cv::Point2f& marker_center, 
+                              double marker_x, double marker_y, 
+                              double robot_x, double robot_y) {
+        // Direction to marker in world frame
+        double dx_world = marker_x - robot_x;
+        double dy_world = marker_y - robot_y;
+        double world_bearing = std::atan2(dy_world, dx_world);
+        
+        // Direction to marker in image frame (camera frame)
+        double dx_image = (marker_center.x - cx_) / fx_;
+        double image_bearing = std::atan(dx_image); // Simplified for small angles
+        
+        // Robot heading = world_bearing - camera_bearing - head_yaw
+        double robot_heading = world_bearing - image_bearing;
+        if (use_head_yaw_) {
+            robot_heading -= head_yaw_;
+        }
+        
+        // Normalize to [-π, π]
+        return angles::normalize_angle(robot_heading);
+    }
+
+    void updateRobotPose(double x, double y, double theta) {
+        baseline_pose_.x = x;
+        baseline_pose_.y = y;
         baseline_pose_.theta = theta;
         current_pose_ = baseline_pose_;
         last_absolute_pose_time_ = ros::Time::now();
 
-        // Update adjustment parameters for odometry integration
-        initial_robot_x = xr;
-        initial_robot_y = yr;
+        // Update odometry adjustments
+        initial_robot_x = x;
+        initial_robot_y = y;
         initial_robot_theta = theta;
         adjustment_x_ = initial_robot_x - odom_x_;
         adjustment_y_ = initial_robot_y - odom_y_;
         adjustment_theta_ = initial_robot_theta - odom_theta_;
+    }
 
-        ROS_INFO("Robot Pose (2-Landmark Depth): x=%.3f, y=%.3f, theta=%.3f degrees", 
-                xr, yr, theta * 180.0 / M_PI);
+    // ============================
+    // DEPTH-BASED LOCALIZATION
+    // ============================
+
+    bool computeAbsolutePoseWithDepth() {
+    if (latest_image_.empty() || latest_depth_.empty()) {
+        ROS_WARN("No image or depth data available");
+        return false;
+    }
+
+    // Detect ArUco markers
+    std::vector<int> marker_ids;
+    std::vector<std::vector<cv::Point2f>> marker_corners;
+    cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_4X4_100);
+    cv::aruco::detectMarkers(latest_image_, dictionary, marker_corners, marker_ids);
+
+    // Draw and publish marker image
+    cv::Mat output_image = latest_image_.clone();
+    if (!marker_ids.empty()) {
+        cv::aruco::drawDetectedMarkers(output_image, marker_corners, marker_ids);
+    }
+    sensor_msgs::ImagePtr img_msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", output_image).toImageMsg();
+    image_pub_.publish(img_msg);
+    if (verbose_) {
+        ROS_INFO("Published marker image with %zu markers", marker_ids.size());
+    }
+
+    if (marker_ids.size() < 2) {
+        ROS_WARN("Detected %zu markers, need at least 2", marker_ids.size());
+        return false;
+    }
+
+    // Get horizontal distances from depth image (correcting for height differences)
+    std::vector<std::tuple<int, double, double, double, cv::Point2f>> markers; // id, x, y, horizontal_distance, image_center
+    
+    for (size_t i = 0; i < marker_ids.size(); ++i) {
+        // Check if this marker is in our landmark database
+        if (landmarks3D_.find(marker_ids[i]) == landmarks3D_.end()) {
+            ROS_WARN("Unknown marker ID %d, skipping", marker_ids[i]);
+            continue;
+        }
+
+        auto& corners = marker_corners[i];
+        double cx = (corners[0].x + corners[1].x + corners[2].x + corners[3].x) / 4.0;
+        double cy = (corners[0].y + corners[1].y + corners[2].y + corners[3].y) / 4.0;
         
-        cv::imshow("ArUco Markers", output_image);
-        cv::waitKey(1);
+        // Get depth sensor reading (3D distance from camera to marker)
+        float depth_distance = latest_depth_.at<float>(int(cy), int(cx)) / 1000.0; // Convert mm to m
+        
+        if (std::isnan(depth_distance) || depth_distance <= 0.0) {
+            ROS_WARN("Invalid depth reading for marker %d", marker_ids[i]);
+            continue;
+        }
 
-        return true;
-}
+        // Get marker's known 3D position
+        const Landmark3D& landmark = landmarks3D_[marker_ids[i]];
+        double marker_height = landmark.z;
+        
+        // Calculate height difference between camera and marker
+        double height_diff = marker_height - camera_height_;
+        
+        // Project 3D depth distance to horizontal (X-Y plane) distance
+        // Using Pythagorean theorem: horizontal_distance^2 + height_diff^2 = depth_distance^2
+        double horizontal_distance_squared = depth_distance * depth_distance - height_diff * height_diff;
+        
+        if (horizontal_distance_squared <= 0.0) {
+            ROS_WARN("Marker %d: height difference too large for depth reading (%.3f vs %.3f)", 
+                    marker_ids[i], depth_distance, std::abs(height_diff));
+            continue;
+        }
+        
+        double horizontal_distance = std::sqrt(horizontal_distance_squared);
+        
+        // Use the projected landmark coordinates (already projected to camera height plane)
+        if (projected_landmarks_.find(marker_ids[i]) == projected_landmarks_.end()) {
+            ROS_WARN("Marker %d not found in projected landmarks", marker_ids[i]);
+            continue;
+        }
+        
+        double proj_x = projected_landmarks_[marker_ids[i]].first;
+        double proj_y = projected_landmarks_[marker_ids[i]].second;
+        
+        markers.push_back({marker_ids[i], proj_x, proj_y, horizontal_distance, cv::Point2f(cx, cy)});
+        
+        if (verbose_) {
+            ROS_INFO("Marker ID %d: 3D distance=%.3f m, height_diff=%.3f m, horizontal_distance=%.3f m", 
+                    marker_ids[i], depth_distance, height_diff, horizontal_distance);
+        }
+    }
 
+    // Sort by distance (closest first) for better numerical stability
+    std::sort(markers.begin(), markers.end(), 
+        [](const std::tuple<int, double, double, double, cv::Point2f>& a, 
+        const std::tuple<int, double, double, double, cv::Point2f>& b) {
+            return std::get<3>(a) < std::get<3>(b);
+        });
+
+    ROS_INFO("Valid markers for localization: %zu", markers.size());
+    for (const auto& marker : markers) {
+        ROS_INFO("  Marker ID %d: Position (%.3f, %.3f), Horizontal Distance = %.3f m", 
+                std::get<0>(marker), std::get<1>(marker), std::get<2>(marker), std::get<3>(marker));
+    }
+
+    if (markers.size() < 2) {
+        ROS_WARN("Insufficient valid markers for localization (need at least 2)");
+        return false;
+    }
+
+    // Use the two closest/best markers for localization
+    double x1 = std::get<1>(markers[0]), y1 = std::get<2>(markers[0]), d1 = std::get<3>(markers[0]);
+    double x2 = std::get<1>(markers[1]), y2 = std::get<2>(markers[1]), d2 = std::get<3>(markers[1]);
+    cv::Point2f img1 = std::get<4>(markers[0]);
+    cv::Point2f img2 = std::get<4>(markers[1]);
+
+    // Check that the two landmarks are sufficiently separated
+    double landmark_distance = std::sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
+    double max_measurement_distance = std::max(d1, d2);
+    
+    if (landmark_distance < max_measurement_distance * 0.2) {
+        ROS_WARN("Landmarks too close together for reliable localization (%.3f m apart, max distance %.3f m)", 
+                landmark_distance, max_measurement_distance);
+        // Continue anyway but with reduced confidence
+    }
+
+    // Two-circle intersection (bilateration)
+    double dx = x2 - x1;
+    double dy = y2 - y1;
+    double d = std::sqrt(dx * dx + dy * dy);
+    
+    if (d == 0) {
+        ROS_ERROR("Two landmarks are at the same location");
+        return false;
+    }
+    
+    // Check if circles can intersect
+    if (d > d1 + d2) {
+        ROS_WARN("Circles don't intersect - landmarks too far apart relative to distances");
+        return false;
+    }
+    if (d < std::abs(d1 - d2)) {
+        ROS_WARN("One circle is contained in the other");
+        return false;
+    }
+
+    // Calculate intersection points
+    double a = (d1 * d1 - d2 * d2 + d * d) / (2.0 * d);
+    double h_squared = d1 * d1 - a * a;
+    
+    if (h_squared < 0) {
+        ROS_WARN("No real intersection points");
+        return false;
+    }
+    
+    double h = std::sqrt(h_squared);
+    
+    // Point on line between circle centers
+    double x_mid = x1 + a * dx / d;
+    double y_mid = y1 + a * dy / d;
+    
+    // Two possible robot positions
+    double xr1 = x_mid + h * dy / d;
+    double yr1 = y_mid - h * dx / d;
+    double xr2 = x_mid - h * dy / d;
+    double yr2 = y_mid + h * dx / d;
+
+    ROS_INFO("Two possible positions: (%.3f, %.3f) and (%.3f, %.3f)", xr1, yr1, xr2, yr2);
+
+    // Choose the correct position using additional information
+    double xr, yr;
+    
+    // Use map boundaries (X: 0.0-7.0, Y: 0.0-10.0)
+    bool pos1_in_bounds = (xr1 >= 0.0 && xr1 <= 7.0 && yr1 >= 0.0 && yr1 <= 10.0);
+    bool pos2_in_bounds = (xr2 >= 0.0 && xr2 <= 7.0 && yr2 >= 0.0 && yr2 <= 10.0);
+    
+    if (pos1_in_bounds && !pos2_in_bounds) {
+        xr = xr1; yr = yr1;
+        ROS_INFO("Selected position 1 (%.3f, %.3f) - only position within map bounds", xr1, yr1);
+    } else if (pos2_in_bounds && !pos1_in_bounds) {
+        xr = xr2; yr = yr2;
+        ROS_INFO("Selected position 2 (%.3f, %.3f) - only position within map bounds", xr2, yr2);
+    } else if (!pos1_in_bounds && !pos2_in_bounds) {
+        ROS_WARN("Both positions outside map bounds: (%.3f, %.3f) and (%.3f, %.3f)", xr1, yr1, xr2, yr2);
+        // Use third marker if available
+        if (markers.size() >= 3) {
+            double x3 = std::get<1>(markers[2]), y3 = std::get<2>(markers[2]), d3 = std::get<3>(markers[2]);
+            double dist1_to_3 = std::sqrt((xr1 - x3) * (xr1 - x3) + (yr1 - y3) * (yr1 - y3));
+            double dist2_to_3 = std::sqrt((xr2 - x3) * (xr2 - x3) + (yr2 - y3) * (yr2 - y3));
+            double error1 = std::abs(dist1_to_3 - d3);
+            double error2 = std::abs(dist2_to_3 - d3);
+            
+            if (error1 < error2) {
+                xr = xr1; yr = yr1;
+                ROS_INFO("Selected position 1 using third marker (error: %.3f vs %.3f)", error1, error2);
+            } else {
+                xr = xr2; yr = yr2;
+                ROS_INFO("Selected position 2 using third marker (error: %.3f vs %.3f)", error1, error2);
+            }
+        } else {
+            xr = xr1; yr = yr1;
+            ROS_WARN("Both positions out of bounds, defaulting to position 1");
+        }
+    } else {
+        // Both positions are within bounds, use additional disambiguation
+        if (markers.size() >= 3) {
+            // Use third marker to disambiguate
+            double x3 = std::get<1>(markers[2]), y3 = std::get<2>(markers[2]), d3 = std::get<3>(markers[2]);
+            double dist1_to_3 = std::sqrt((xr1 - x3) * (xr1 - x3) + (yr1 - y3) * (yr1 - y3));
+            double dist2_to_3 = std::sqrt((xr2 - x3) * (xr2 - x3) + (yr2 - y3) * (yr2 - y3));
+            double error1 = std::abs(dist1_to_3 - d3);
+            double error2 = std::abs(dist2_to_3 - d3);
+            
+            if (error1 < error2) {
+                xr = xr1; yr = yr1;
+                ROS_INFO("Selected position 1 using third marker (error: %.3f vs %.3f)", error1, error2);
+            } else {
+                xr = xr2; yr = yr2;
+                ROS_INFO("Selected position 2 using third marker (error: %.3f vs %.3f)", error1, error2);
+            }
+        } else if (last_absolute_pose_time_.isValid()) {
+            // Use previous position for disambiguation (temporal consistency)
+            double dist1_to_prev = std::sqrt((xr1 - current_pose_.x) * (xr1 - current_pose_.x) + 
+                                        (yr1 - current_pose_.y) * (yr1 - current_pose_.y));
+            double dist2_to_prev = std::sqrt((xr2 - current_pose_.x) * (xr2 - current_pose_.x) + 
+                                        (yr2 - current_pose_.y) * (yr2 - current_pose_.y));
+            
+            if (dist1_to_prev < dist2_to_prev) {
+                xr = xr1; yr = yr1;
+                ROS_INFO("Selected position 1 based on previous position (distances: %.3f vs %.3f)", 
+                        dist1_to_prev, dist2_to_prev);
+            } else {
+                xr = xr2; yr = yr2;
+                ROS_INFO("Selected position 2 based on previous position (distances: %.3f vs %.3f)", 
+                        dist1_to_prev, dist2_to_prev);
+            }
+        } else {
+            // Use heading information to disambiguate
+            double angle1_to_lm1 = atan2(y1 - yr1, x1 - xr1);
+            double angle1_to_lm2 = atan2(y2 - yr1, x2 - xr1);
+            double angle2_to_lm1 = atan2(y1 - yr2, x1 - xr2);
+            double angle2_to_lm2 = atan2(y2 - yr2, x2 - xr2);
+            
+            // Compute image angles (simplified - using image center as reference)
+            double img_angle1 = atan2(img1.y - cy_, img1.x - cx_);
+            double img_angle2 = atan2(img2.y - cy_, img2.x - cx_);
+            
+            // Choose position that better matches the relative angles observed in image
+            double relative_world_angle1 = angle1_to_lm2 - angle1_to_lm1;
+            double relative_world_angle2 = angle2_to_lm2 - angle2_to_lm1;
+            double relative_img_angle = img_angle2 - img_angle1;
+            
+            // Normalize angles to [-π, π]
+            relative_world_angle1 = angles::normalize_angle(relative_world_angle1);
+            relative_world_angle2 = angles::normalize_angle(relative_world_angle2);
+            relative_img_angle = angles::normalize_angle(relative_img_angle);
+            
+            double angle_error1 = std::abs(relative_world_angle1 - relative_img_angle);
+            double angle_error2 = std::abs(relative_world_angle2 - relative_img_angle);
+            
+            if (angle_error1 < angle_error2) {
+                xr = xr1; yr = yr1;
+                ROS_INFO("Selected position 1 based on angle consistency (errors: %.3f vs %.3f rad)", 
+                        angle_error1, angle_error2);
+            } else {
+                xr = xr2; yr = yr2;
+                ROS_INFO("Selected position 2 based on angle consistency (errors: %.3f vs %.3f rad)", 
+                        angle_error1, angle_error2);
+            }
+        }
+    }
+
+    // Compute yaw using the first marker
+    double theta = computeYaw({img1.x, img1.y}, x1, y1, xr, yr);
+
+    // Validate the solution
+    double verification_d1 = std::sqrt((xr - x1) * (xr - x1) + (yr - y1) * (yr - y1));
+    double verification_d2 = std::sqrt((xr - x2) * (xr - x2) + (yr - y2) * (yr - y2));
+    double error1 = std::abs(verification_d1 - d1);
+    double error2 = std::abs(verification_d2 - d2);
+    
+    if (error1 > 0.5 || error2 > 0.5) { // 50cm tolerance
+        ROS_WARN("Large localization errors: marker1 error=%.3f m, marker2 error=%.3f m", error1, error2);
+        // Continue anyway but log warning
+    }
+
+    // Update poses
+    baseline_pose_.x = xr;
+    baseline_pose_.y = yr;
+    baseline_pose_.theta = theta;
+    current_pose_ = baseline_pose_;
+    last_absolute_pose_time_ = ros::Time::now();
+
+    // Update adjustment parameters for odometry integration
+    initial_robot_x = xr;
+    initial_robot_y = yr;
+    initial_robot_theta = theta;
+    adjustment_x_ = initial_robot_x - odom_x_;
+    adjustment_y_ = initial_robot_y - odom_y_;
+    adjustment_theta_ = initial_robot_theta - odom_theta_;
+
+    ROS_INFO("Robot Pose (2-Landmark Depth): x=%.3f, y=%.3f, theta=%.3f degrees", 
+            xr, yr, theta * 180.0 / M_PI);
+    
+    cv::imshow("ArUco Markers", output_image);
+    cv::waitKey(1);
+
+    return true;
+    
+    }
+    
     double computeAngle(const std::pair<double, double>& p1, const std::pair<double, double>& p2) {
         // Convert image coordinates to angles using camera intrinsics
         double dx1 = (p1.first - cx_) / fx_;
@@ -845,61 +1135,60 @@ private:
         double *xi, double *yi,
         double *xi_prime, double *yi_prime)
     {
-    double a, dx, dy, d, h, rx, ry;
-    double x2, y2;
+        double a, dx, dy, d, h, rx, ry;
+        double x2, y2;
 
-    /* dx and dy are the vertical and horizontal distances between
-    * the circle centers.
-    */
-    dx = x1 - x0;
-    dy = y1 - y0;
+        /* dx and dy are the vertical and horizontal distances between
+        * the circle centers.
+        */
+        dx = x1 - x0;
+        dy = y1 - y0;
 
-    /* Determine the straight-line distance between the centers. */
-    //d = sqrt((dy*dy) + (dx*dx));
-    d = hypot(dx,dy); // Suggested by Keith Briggs
+        /* Determine the straight-line distance between the centers. */
+        d = hypot(dx, dy); // Suggested by Keith Briggs
 
-    /* Check for solvability. */
-    if (d > (r0 + r1))
-    {
-    /* no solution. circles do not intersect. */
-    return 0;
-    }
-    if (d < fabs(r0 - r1))
-    {
-    /* no solution. one circle is contained in the other */
-    return 0;
-    }
+        /* Check for solvability. */
+        if (d > (r0 + r1))
+        {
+            /* no solution. circles do not intersect. */
+            return 0;
+        }
+        if (d < fabs(r0 - r1))
+        {
+            /* no solution. one circle is contained in the other */
+            return 0;
+        }
 
-    /* 'point 2' is the point where the line through the circle
-    * intersection points crosses the line between the circle
-    * centers.  
-    */
+        /* 'point 2' is the point where the line through the circle
+        * intersection points crosses the line between the circle
+        * centers.  
+        */
 
-    /* Determine the distance from point 0 to point 2. */
-    a = ((r0*r0) - (r1*r1) + (d*d)) / (2.0 * d) ;
+        /* Determine the distance from point 0 to point 2. */
+        a = ((r0*r0) - (r1*r1) + (d*d)) / (2.0 * d) ;
 
-    /* Determine the coordinates of point 2. */
-    x2 = x0 + (dx * a/d);
-    y2 = y0 + (dy * a/d);
+        /* Determine the coordinates of point 2. */
+        x2 = x0 + (dx * a/d);
+        y2 = y0 + (dy * a/d);
 
-    /* Determine the distance from point 2 to either of the
-    * intersection points.
-    */
-    h = sqrt((r0*r0) - (a*a));
+        /* Determine the distance from point 2 to either of the
+        * intersection points.
+        */
+        h = sqrt((r0*r0) - (a*a));
 
-    /* Now determine the offsets of the intersection points from
-    * point 2.
-    */
-    rx = -dy * (h/d);
-    ry = dx * (h/d);
+        /* Now determine the offsets of the intersection points from
+        * point 2.
+        */
+        rx = -dy * (h/d);
+        ry = dx * (h/d);
 
-    /* Determine the absolute intersection points. */
-    *xi = x2 + rx;
-    *xi_prime = x2 - rx;
-    *yi = y2 + ry;
-    *yi_prime = y2 - ry;
+        /* Determine the absolute intersection points. */
+        *xi = x2 + rx;
+        *xi_prime = x2 - rx;
+        *yi = y2 + ry;
+        *yi_prime = y2 - ry;
 
-    return 1;
+        return 1;
     }
 
     int circle_centre(double x1, double y1, double x2, double y2, double alpha, double *xc1, double *yc1, double *xc2, double *yc2, double *r) {
@@ -962,7 +1251,12 @@ private:
         pose_pub_.publish(current_pose_);
     }
 
-};
+}; // End of class RobotLocalizationNode
+
+
+// ============================
+// MAIN FUNCTION
+// ============================
 
 int main(int argc, char** argv) {
     ros::init(argc, argv, "robotLocalization");
