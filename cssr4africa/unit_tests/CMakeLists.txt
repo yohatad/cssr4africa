@@ -39,6 +39,12 @@ add_message_files(
   face_detection_test_msg_file.msg
 )
 
+add_message_files(
+  DIRECTORY
+  sound_detection_test/msg
+  FILES
+  sound_detection_test_microphone_msg_file.msg
+)
 
 add_message_files(
   DIRECTORY
