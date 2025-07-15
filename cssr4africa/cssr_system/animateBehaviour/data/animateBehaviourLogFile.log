@@ -1,0 +1,408 @@
+Fri May 30 14:34:13 2025
+Configuration file opened successfully: /home/cssr4africa/workspace/pepper_rob_ws/src/cssr4africa/cssr_system/animateBehaviour/config/animateBehaviourConfiguration.ini
+Fri May 30 14:34:13 2025
+Config: armMaximumRange = 0.15,0.15,0.2,0.35,0.2
+Fri May 30 14:34:13 2025
+Config: behaviour = body
+Fri May 30 14:34:13 2025
+Config: gestureDuration = 1.0
+Fri May 30 14:34:13 2025
+Config: handMaximumRange = 0.7
+Fri May 30 14:34:13 2025
+Config: legMaximumRange = 0.1,0.1,0.08
+Fri May 30 14:34:13 2025
+Config: legRepeatFactor = 8
+Fri May 30 14:34:13 2025
+Config: numPoints = 100
+Fri May 30 14:34:13 2025
+Config: numPointsLeg = 2
+Fri May 30 14:34:13 2025
+Config: platform = robot
+Fri May 30 14:34:13 2025
+Config: robotTopics = pepperTopics.dat
+Fri May 30 14:34:13 2025
+Config: rotMaximumRange = 0.3
+Fri May 30 14:34:13 2025
+Config: selectedRange = 0.5
+Fri May 30 14:34:13 2025
+Config: simulatorTopics = simulatorTopics.dat
+Fri May 30 14:34:13 2025
+Config: verboseMode = false
+Fri May 30 14:34:13 2025
+animateBehaviour node started. Waiting for activation...
+Fri May 30 14:34:34 2025
+Configuration file opened successfully: /home/cssr4africa/workspace/pepper_rob_ws/src/cssr4africa/cssr_system/animateBehaviour/config/animateBehaviourConfiguration.ini
+Fri May 30 14:34:34 2025
+Config: armMaximumRange = 0.15,0.15,0.2,0.35,0.2
+Fri May 30 14:34:34 2025
+Config: behaviour = body
+Fri May 30 14:34:34 2025
+Config: gestureDuration = 1.0
+Fri May 30 14:34:34 2025
+Config: handMaximumRange = 0.7
+Fri May 30 14:34:34 2025
+Config: legMaximumRange = 0.1,0.1,0.08
+Fri May 30 14:34:34 2025
+Config: legRepeatFactor = 8
+Fri May 30 14:34:34 2025
+Config: numPoints = 100
+Fri May 30 14:34:34 2025
+Config: numPointsLeg = 2
+Fri May 30 14:34:34 2025
+Config: platform = robot
+Fri May 30 14:34:34 2025
+Config: robotTopics = pepperTopics.dat
+Fri May 30 14:34:34 2025
+Config: rotMaximumRange = 0.3
+Fri May 30 14:34:34 2025
+Config: selectedRange = 0.5
+Fri May 30 14:34:34 2025
+Config: simulatorTopics = simulatorTopics.dat
+Fri May 30 14:34:34 2025
+Config: verboseMode = false
+Fri May 30 14:34:34 2025
+Configuration reloaded on enable
+Fri May 30 14:34:34 2025
+Animate behaviour enabled.
+Fri May 30 14:34:34 2025
+animateBehaviour node is active. Ready to animate.
+Fri May 30 14:34:34 2025
+Key: LArm, Value: /pepper_dcm/LeftArm_controller/follow_joint_trajectory
+Fri May 30 14:34:34 2025
+Key: LHand, Value: /pepper_dcm/LeftHand_controller/follow_joint_trajectory
+Fri May 30 14:34:34 2025
+Key: Leg, Value: /pepper_dcm/Pelvis_controller/follow_joint_trajectory
+Fri May 30 14:34:34 2025
+Key: RArm, Value: /pepper_dcm/RightArm_controller/follow_joint_trajectory
+Fri May 30 14:34:34 2025
+Key: RHand, Value: /pepper_dcm/RightHand_controller/follow_joint_trajectory
+Fri May 30 14:34:34 2025
+Key: Wheels, Value: /pepper_dcm/cmd_moveto
+Fri May 30 14:34:34 2025
+Data loaded successfully for platform: robot
+Fri May 30 14:34:34 2025
+Platform configuration loaded successfully: robot
+Fri May 30 14:34:34 2025
+Configuration loaded and data initialized.
+Fri May 30 14:34:34 2025
+[START SUBTLE BODY MOVEMENT]
+Fri May 30 14:34:35 2025
+----------[START LEG ANIMATE MOVEMENT]-----------
+Fri May 30 14:34:35 2025
+The topic name for the leg is /pepper_dcm/Pelvis_controller/follow_joint_trajectory
+Fri May 30 14:34:35 2025
+The joint names for the leg are: ["HipPitch", "HipRoll", "KneePitch"]
+Fri May 30 14:34:35 2025
+The home position of the leg is [-0.0107, -0.00766, 0.03221]
+Fri May 30 14:34:35 2025
+The random position of the leg are:
+Fri May 30 14:34:35 2025
+The size of the generated random positions are: 20
+Fri May 30 14:34:35 2025
+[-0.0757608, 4.8461e-05, 0.015691]
+Fri May 30 14:34:35 2025
+[-0.0760283, -0.0050213, 0.0493149]
+Fri May 30 14:34:35 2025
+[-0.1107, -0.00766, 0.03221]
+Fri May 30 14:34:35 2025
+[-0.1107, -0.00766, 0.03221]
+Fri May 30 14:34:35 2025
+[-0.1107, -0.00766, 0.03221]
+Fri May 30 14:34:35 2025
+[-0.1107, -0.00766, 0.03221]
+Fri May 30 14:34:35 2025
+[-0.1107, -0.00766, 0.03221]
+Fri May 30 14:34:35 2025
+[-0.1107, -0.00766, 0.03221]
+Fri May 30 14:34:35 2025
+[-0.1107, -0.00766, 0.03221]
+Fri May 30 14:34:35 2025
+[-0.1107, -0.00766, 0.03221]
+Fri May 30 14:34:35 2025
+----------[START RIGHT HAND ANIMATE MOVEMENT]-----------
+Fri May 30 14:34:35 2025
+----------[START RIGHT HAND ANIMATE MOVEMENT]-----------
+Fri May 30 14:34:35 2025
+[-0.1107, -0.00766, 0.03221]
+Fri May 30 14:34:35 2025
+The topic name for the right hand is /pepper_dcm/RightHand_controller/follow_joint_trajectory
+Fri May 30 14:34:35 2025
+[-0.1107, -0.00766, 0.03221]
+Fri May 30 14:34:35 2025
+The joint names for the right hand are: ["RHand"]
+Fri May 30 14:34:35 2025
+[-0.0860352, -0.022312, 0.015669]
+Fri May 30 14:34:35 2025
+The home position of the right hand is [0.66608]
+Fri May 30 14:34:35 2025
+The home position of the right hand is [0.66608]
+Fri May 30 14:34:35 2025
+[-0.160401, 0.011938, 0.051628]
+Fri May 30 14:34:35 2025
+The random positions of the right hand are:
+Fri May 30 14:34:35 2025
+----------[START LEFT HAND ANIMATE MOVEMENT]-----------
+Fri May 30 14:34:35 2025
+----------[START LEFT HAND ANIMATE MOVEMENT]-----------
+Fri May 30 14:34:35 2025
+[-0.1107, -0.00766, 0.03221]
+Fri May 30 14:34:35 2025
+The size of the generated random positions are: 20
+Fri May 30 14:34:35 2025
+The topic name for the left hand is /pepper_dcm/LeftHand_controller/follow_joint_trajectory
+Fri May 30 14:34:35 2025
+[-0.1107, -0.00766, 0.03221]
+Fri May 30 14:34:35 2025
+The joint names for the left hand are: ["LHand"]
+Fri May 30 14:34:35 2025
+[0.612081]
+Fri May 30 14:34:35 2025
+[-0.1107, -0.00766, 0.03221]
+Fri May 30 14:34:35 2025
+[0.752642]
+Fri May 30 14:34:35 2025
+[0.752642]
+Fri May 30 14:34:35 2025
+[-0.1107, -0.00766, 0.03221]
+Fri May 30 14:34:35 2025
+[0.775229]
+Fri May 30 14:34:35 2025
+[0.775229]
+Fri May 30 14:34:35 2025
+[-0.1107, -0.00766, 0.03221]
+Fri May 30 14:34:35 2025
+[0.775229]
+Fri May 30 14:34:35 2025
+[-0.1107, -0.00766, 0.03221]
+Fri May 30 14:34:35 2025
+[0.694977]
+Fri May 30 14:34:35 2025
+[-0.1107, -0.00766, 0.03221]
+Fri May 30 14:34:35 2025
+[0.804057]
+Fri May 30 14:34:35 2025
+The home position of the left hand is [0.6695]
+Fri May 30 14:34:35 2025
+The home position of the left hand is [0.6695]
+Fri May 30 14:34:35 2025
+----------[END LEG ANIMATE MOVEMENT]-----------
+Fri May 30 14:34:35 2025
+[0.608005]
+Fri May 30 14:34:35 2025
+The random position of the left hand are
+Fri May 30 14:34:35 2025
+[0.600416]
+Fri May 30 14:34:35 2025
+[0.600416]
+Fri May 30 14:34:35 2025
+The size of the generated random positions are: 20
+Fri May 30 14:34:35 2025
+[0.671714]
+Fri May 30 14:34:35 2025
+[0.664479]
+Fri May 30 14:34:35 2025
+[0.664479]
+Fri May 30 14:34:35 2025
+[0.698621]
+Fri May 30 14:34:35 2025
+[0.669441]
+Fri May 30 14:34:35 2025
+[0.669441]
+Fri May 30 14:34:35 2025
+[0.798993]
+Fri May 30 14:34:35 2025
+[0.83997]
+Fri May 30 14:34:35 2025
+[0.595739]
+Fri May 30 14:34:35 2025
+[0.613423]
+Fri May 30 14:34:35 2025
+[0.803195]
+Fri May 30 14:34:35 2025
+[0.673623]
+Fri May 30 14:34:35 2025
+[0.599703]
+Fri May 30 14:34:35 2025
+[0.766281]
+Fri May 30 14:34:35 2025
+[0.609237]
+Fri May 30 14:34:35 2025
+[0.808835]
+Fri May 30 14:34:35 2025
+[0.782791]
+Fri May 30 14:34:35 2025
+[0.782791]
+Fri May 30 14:34:35 2025
+[0.591327]
+Fri May 30 14:34:35 2025
+[0.540055]
+Fri May 30 14:34:35 2025
+[0.540055]
+Fri May 30 14:34:35 2025
+[0.532895]
+Fri May 30 14:34:35 2025
+[0.622158]
+Fri May 30 14:34:35 2025
+[0.622158]
+Fri May 30 14:34:35 2025
+[0.791147]
+Fri May 30 14:34:35 2025
+[0.640615]
+Fri May 30 14:34:35 2025
+[0.640615]
+Fri May 30 14:34:35 2025
+[0.588189]
+Fri May 30 14:34:35 2025
+[0.799771]
+Fri May 30 14:34:35 2025
+[0.799771]
+Fri May 30 14:34:35 2025
+[0.700937]
+Fri May 30 14:34:35 2025
+----------[END RIGHT HAND ANIMATE MOVEMENT]-----------
+Fri May 30 14:34:35 2025
+[0.683154]
+Fri May 30 14:34:35 2025
+[0.842203]
+Fri May 30 14:34:35 2025
+[0.8351]
+Fri May 30 14:34:35 2025
+[0.827093]
+Fri May 30 14:34:35 2025
+[0.561768]
+Fri May 30 14:34:35 2025
+[0.780115]
+Fri May 30 14:34:35 2025
+[0.806039]
+Fri May 30 14:34:35 2025
+[0.633666]
+Fri May 30 14:34:35 2025
+----------[END LEFT HAND ANIMATE MOVEMENT]-----------
+Fri May 30 14:34:35 2025
+----------[START RIGHT ARM ANIMATE MOVEMENT]-----------
+Fri May 30 14:34:35 2025
+The topic name for the right arm is /pepper_dcm/RightArm_controller/follow_joint_trajectory
+Fri May 30 14:34:35 2025
+The joint names for the right arm are: ["RShoulderPitch", "RShoulderRoll", "RElbowRoll", "RElbowYaw", "RWristYaw"]
+Fri May 30 14:34:35 2025
+The home position of the right arm is [1.741, -0.09664, 0.09664, 1.6981, -0.05679]
+Fri May 30 14:34:35 2025
+The random position of the right arm are
+Fri May 30 14:34:35 2025
+The size of the generated random positions are: 20
+Fri May 30 14:34:35 2025
+[1.5072, -0.0919893, 0.264723, 1.7631, -0.129308]
+Fri May 30 14:34:35 2025
+[1.5915, -0.144177, 0.376831, 1.79545, 0.0345251]
+Fri May 30 14:34:35 2025
+[1.45037, -0.065601, 0.361607, 1.33785, -0.0486153]
+Fri May 30 14:34:35 2025
+[1.55371, -0.142711, 0.344291, 1.78836, -0.150519]
+Fri May 30 14:34:35 2025
+[1.64549, -0.0783169, 0.36499, 1.70739, -0.0117495]
+Fri May 30 14:34:35 2025
+----------[START LEFT ARM ANIMATE MOVEMENT]-----------
+Fri May 30 14:34:35 2025
+[1.67805, -0.0701102, 0.237904, 1.93351, -0.181309]
+Fri May 30 14:34:35 2025
+----------[START LEFT ARM ANIMATE MOVEMENT]-----------
+Fri May 30 14:34:35 2025
+[1.69552, -0.0941748, 0.347221, 2.0527, -0.160839]
+Fri May 30 14:34:35 2025
+The topic name for the left arm is /pepper_dcm/LeftArm_controller/follow_joint_trajectory
+Fri May 30 14:34:35 2025
+The topic name for the left arm is /pepper_dcm/LeftArm_controller/follow_joint_trajectory
+Fri May 30 14:34:35 2025
+[1.51902, -0.113539, 0.327166, 1.41729, -0.0836213]
+Fri May 30 14:34:35 2025
+[1.57316, -0.120681, 0.363924, 1.82681, -0.0151645]
+Fri May 30 14:34:35 2025
+The joint names for the left arm are: ["LShoulderPitch", "LShoulderRoll", "LElbowRoll", "LElbowYaw", "LWristYaw"]
+Fri May 30 14:34:35 2025
+The joint names for the left arm are: ["LShoulderPitch", "LShoulderRoll", "LElbowRoll", "LElbowYaw", "LWristYaw"]
+Fri May 30 14:34:35 2025
+[1.53515, -0.130998, 0.340039, 2.06252, -0.215744]
+Fri May 30 14:34:35 2025
+[1.53818, -0.0680815, 0.302383, 1.62672, -0.206564]
+Fri May 30 14:34:35 2025
+[1.42339, -0.141662, 0.23862, 1.53417, -0.147892]
+Fri May 30 14:34:35 2025
+The home position of the left arm is [1.7625, 0.0997, -0.1334, -1.715, 0.06592]
+Fri May 30 14:34:35 2025
+The home position of the left arm is [1.7625, 0.0997, -0.1334, -1.715, 0.06592]
+Fri May 30 14:34:35 2025
+[1.45121, -0.0615013, 0.251005, 2.03841, -0.0560543]
+Fri May 30 14:34:35 2025
+The random position of the left arm are
+Fri May 30 14:34:35 2025
+The random position of the left arm are
+Fri May 30 14:34:35 2025
+[1.61682, -0.0713375, 0.263776, 1.80592, -0.0329323]
+Fri May 30 14:34:35 2025
+The size of the generated random positions are: 20
+Fri May 30 14:34:35 2025
+The size of the generated random positions are: 20
+Fri May 30 14:34:35 2025
+[1.61227, -0.0677245, 0.327005, 1.73823, 0.0958766]
+Fri May 30 14:34:35 2025
+[1.54834, -0.0729349, 0.359636, 1.79218, -0.0966603]
+Fri May 30 14:34:35 2025
+[1.47391, 0.0926828, -0.396686, -1.79211, -0.103678]
+Fri May 30 14:34:35 2025
+[1.47391, 0.0926828, -0.396686, -1.79211, -0.103678]
+Fri May 30 14:34:35 2025
+[1.41153, -0.0649141, 0.279948, 1.43311, -0.225471]
+Fri May 30 14:34:35 2025
+[1.49262, -0.0681166, 0.250869, 1.62011, -0.0498836]
+Fri May 30 14:34:35 2025
+[1.62223, 0.0438271, -0.358443, -1.51784, 0.0560209]
+Fri May 30 14:34:35 2025
+[1.62223, 0.0438271, -0.358443, -1.51784, 0.0560209]
+Fri May 30 14:34:35 2025
+[1.50368, -0.117515, 0.315054, 1.71023, 0.022279]
+Fri May 30 14:34:35 2025
+[1.4199, -0.088337, 0.314533, 2.01335, 0.0460516]
+Fri May 30 14:34:35 2025
+[1.58318, 0.0676121, -0.267366, -1.96874, 0.198164]
+Fri May 30 14:34:35 2025
+[1.58318, 0.0676121, -0.267366, -1.96874, 0.198164]
+Fri May 30 14:34:35 2025
+----------[END RIGHT ARM ANIMATE MOVEMENT]-----------
+Fri May 30 14:34:35 2025
+[1.41556, 0.0697894, -0.378177, -1.60164, 0.0788343]
+Fri May 30 14:34:35 2025
+[1.67984, 0.107186, -0.382449, -1.91018, -0.0655791]
+Fri May 30 14:34:35 2025
+[1.64772, 0.131722, -0.315765, -1.90048, 0.0421231]
+Fri May 30 14:34:35 2025
+[1.47801, 0.111209, -0.294097, -1.62949, 0.0600826]
+Fri May 30 14:34:35 2025
+[1.69899, 0.0683716, -0.34785, -1.58149, 0.122593]
+Fri May 30 14:34:35 2025
+[1.48802, 0.0660935, -0.393125, -1.81079, -0.106666]
+Fri May 30 14:34:35 2025
+[1.4823, 0.0991771, -0.410562, -1.36924, -0.0898805]
+Fri May 30 14:34:35 2025
+[1.59143, 0.100193, -0.387829, -1.46686, -0.0943547]
+Fri May 30 14:34:35 2025
+[1.44118, 0.122476, -0.380914, -2.00395, 0.164267]
+Fri May 30 14:34:35 2025
+[1.55969, 0.138214, -0.288346, -1.59883, 0.203659]
+Fri May 30 14:34:35 2025
+[1.52099, 0.117358, -0.385532, -1.53823, -0.0409354]
+Fri May 30 14:34:35 2025
+[1.45925, 0.152256, -0.276515, -1.4183, -0.0737835]
+Fri May 30 14:34:35 2025
+[1.68065, 0.119185, -0.419902, -1.49348, -0.00612728]
+Fri May 30 14:34:35 2025
+[1.59023, 0.0812171, -0.306032, -1.72657, -0.113328]
+Fri May 30 14:34:35 2025
+[1.47925, 0.137193, -0.355599, -1.83983, 0.229016]
+Fri May 30 14:34:35 2025
+[1.46231, 0.15755, -0.383547, -1.7723, 0.197427]
+Fri May 30 14:34:35 2025
+[1.49937, 0.0566973, -0.277367, -1.69106, -0.0116375]
+Fri May 30 14:34:35 2025
+----------[END LEFT ARM ANIMATE MOVEMENT]-----------
+Fri May 30 14:34:40 2025
+Animate behaviour disabled.
