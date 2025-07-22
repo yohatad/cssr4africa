@@ -118,6 +118,7 @@
  */
  
 #include <utilities/environmentKnowledgeBaseInterface.h>
+using namespace Environment;
 
 int main() {
 

@@ -18,6 +18,8 @@ find_package(catkin REQUIRED COMPONENTS
   control_msgs
   image_transport
   message_generation
+  utilities
+  behaviortree_cpp
 )
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -151,7 +153,7 @@ catkin_package(
   INCLUDE_DIRS behaviorController gestureExecution overtAttention animateBehaviour
   # LIBRARIES 
   LIBRARIES ${PROJECT_NAME}
-  CATKIN_DEPENDS rospy std_msgs sensor_msgs cv_bridge geometry_msgs message_runtime
+  CATKIN_DEPENDS rospy std_msgs sensor_msgs cv_bridge geometry_msgs message_runtime utilities behaviortree_cpp
 )
 
 find_package(OpenCV REQUIRED)
@@ -168,11 +170,9 @@ find_package(OpenCV REQUIRED)
 include_directories(
 include
 behaviorController/include
-behaviorController/include/utilities/include
 animateBehaviour/include
 overAttention/include
 gestureExecution/include
-BehaviorTree.CPP/include
   ${catkin_INCLUDE_DIRS}
 )
 add_subdirectory(animateBehaviour)
