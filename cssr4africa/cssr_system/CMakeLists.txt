@@ -68,6 +68,7 @@ add_message_files(
   person_detection_msg_file.msg
 )
 
+# Services
 add_service_files(
   DIRECTORY
   animateBehaviour/srv

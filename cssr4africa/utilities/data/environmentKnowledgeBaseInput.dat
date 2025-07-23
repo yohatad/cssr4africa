@@ -1,56 +1,99 @@
 robotLocationDescription      1 Pepper's starting location
-robotLocationPose             1 2.6 8.1 -90
+robotLocationPose             1 4.0 6.8 90.0
 gestureTarget                 1 0.0 0.0 0.0
-preGestureMessageEnglish      1 Welcome the the robotics lab at Carnegie Mellon University Africa
+preGestureMessageEnglish      1 Hello and thank you for visiting the Upanzi DEC. I’m your guide. In this tour, you will be the citizen protagonist
 preGestureMessageIsiZulu      1 No message in isiZulu
 preGestureMessageKinyarwanda  1 Murakazaneza muri laboratwari ya robotikisi muri kaneji meloni iniverisite yafurika
-postGestureMessageEnglish     1 I will give you a short tour. I hope you enjoy it
+postGestureMessageEnglish     1 Together, we’ll explore how Upanzi’s open-source digital solutions make everyday services easier and more secure. Feel free to ask questions as we go along
 postGestureMessageIsiZulu     1 No message in isiZulu
 postGestureMessageKinyarwanda 1 Ngiye kubatemberezaho gato, nizereko muribuze kuryoherwa
 culturalKnowledge             1 SymbolicShapeRespect BowExtentRespect
 
-robotLocationDescription      2 The (other) Pepper robot
-robotLocationPose             2 2.6 8.1 -45
-gestureTarget                 2 3.2 8.4 0.82
-preGestureMessageEnglish      2 This is the Pepper humanoid robot
+robotLocationDescription      2 DPG/DPI Booth 1
+robotLocationPose             2 4.8 8.0 45.0
+gestureTarget                 2 6.0 8.0 0.0
+preGestureMessageEnglish      2 Our first stop is crucial – establishing your digital identity. Here a researcher will get you registered for a National Digital ID
 preGestureMessageIsiZulu      2 No message in isiZulu
 preGestureMessageKinyarwanda  2 Iyi yitwa pepa humanoyidi roboti
-postGestureMessageEnglish     2 We use it for research in social robotics and human-robot interaction
+postGestureMessageEnglish     2 Please introduce yourself, and help our citizen out
 postGestureMessageIsiZulu     2 No message in isiZulu
 postGestureMessageKinyarwanda 2 Tuyikoresha mubushakashatsi mubijyanye nimibanire hamwe nimikoranire hagati yabantu ndetse naza robo
 culturalKnowledge             2 DeicticShape
 
-robotLocationDescription      3 Lynxmotion
-robotLocationPose             3 2.0 6.3 -45
-gestureTarget                 3 0.6 4.8 0.82
-preGestureMessageEnglish      3 This is the Lynxmotion robot
+robotLocationDescription      3 DPG/DPI Booth 2
+robotLocationPose             3 4.8 5.6 45.0
+gestureTarget                 3 6.0 5.6 0.0
+preGestureMessageEnglish      3 Welcome to the Bank of Upanzi! Our able bank officer will assist you in opening your digital bank account today.
 preGestureMessageIsiZulu      3 No message in isiZulu
-preGestureMessageKinyarwanda  3 Iyi robo ni likisi moshoni
-postGestureMessageEnglish     3 We use it for teaching robot manipulation
+preGestureMessageKinyarwanda  3 Iyi yitwa pepa humanoyidi roboti
+postGestureMessageEnglish     3 Please take over and help our citizen out
 postGestureMessageIsiZulu     3 No message in isiZulu
-postGestureMessageKinyarwanda 3 Tuyikoresha mukwigisha roboti manipileshoni
+postGestureMessageKinyarwanda 3 Tuyikoresha mubushakashatsi mubijyanye nimibanire hamwe nimikoranire hagati yabantu ndetse naza robo
 culturalKnowledge             3 DeicticShape
 
-robotLocationDescription      4 Roomba
-robotLocationPose             4 5.0 3.9 110
-gestureTarget                 4 6.8 4.8 0.82
-preGestureMessageEnglish      4 This is the Roomba
+robotLocationDescription      4 Data Exchange Booth 1
+robotLocationPose             4 3.2 1.6 100.0
+gestureTarget                 4 3.2 0.4 270.0
+preGestureMessageEnglish      4 At this station a Program Officer helps citizens enroll in social benefit programs. In our scenario, Upanzi Republic offers a fertilizer subsidy to farmers, and you will sign up for it.
 preGestureMessageIsiZulu      4 No message in isiZulu
-preGestureMessageKinyarwanda  4 Iyiyo yitwa rumba
-postGestureMessageEnglish     4 We use it for teaching mobile robotics
+preGestureMessageKinyarwanda  4 Iyi robo ni likisi moshoni
+postGestureMessageEnglish     4 This process uses the Upanzi Programs Management System (UPMS). Please help out our citizen
 postGestureMessageIsiZulu     4 No message in isiZulu
-postGestureMessageKinyarwanda 4 Tuyikoresha mukwigisha mobile robotikisi
+postGestureMessageKinyarwanda 4 Tuyikoresha mukwigisha roboti manipileshoni
 culturalKnowledge             4 DeicticShape
 
-robotLocationDescription      5 Pepper's starting location
-robotLocationPose             5 2.6 8.1 -90
-gestureTarget                 5 0.0 0.0 0.0
-preGestureMessageEnglish      5 I hope you enjoyed the tour
+robotLocationDescription      5 Data Exchange Booth 2
+robotLocationPose             5 1.6 1.6 50.0
+gestureTarget                 5 1.6 0.4 270.0
+preGestureMessageEnglish      5 Finally, you arrive at a mock retail shop – MojaShop, a demo point-of-sale that showcases how digital payments and subsidies work in real time
 preGestureMessageIsiZulu      5 No message in isiZulu
 preGestureMessageKinyarwanda  5 Nizereko mwaryohewe no gutemberezwa
-postGestureMessageEnglish     5 See you again soon
+postGestureMessageEnglish     5 Our Vendor will help you buy a bag of fertilizer using your subsidy. Over to you
 postGestureMessageIsiZulu     5 No message in isiZulu
 postGestureMessageKinyarwanda 5 Tuzongere kubonana ubutaha
-culturalKnowledge             5 IconicShape
+culturalKnowledge             5 DeicticShape
 
-tourSpecification 5 1 4 3 2 5
+robotLocationDescription      6 Connectivity Booth
+robotLocationPose             6 2.4 3.2 50.0
+gestureTarget                 6 1.2 3.2 180.0
+preGestureMessageEnglish      6 Access to the internet is the gateway to digital services. In the Connectivity section, Upanzi showcases projects aimed at expanding and measuring internet access in Africa, especially in underserved rural regions. Currently, a deep urban-rural digital divide persists: in Africa, about 57% of urban dwellers use the Internet, compared to just 23% of people in rural areas​. Upanzi’s projects tackle this gap from multiple angles – by piloting innovative connectivity solutions, monitoring internet resilience, and promoting open data for informed policy
+preGestureMessageIsiZulu      6 No message in isiZulu
+preGestureMessageKinyarwanda  6 Iyiyo yitwa rumba
+postGestureMessageEnglish     6 Our connectivity engineer will work you through
+postGestureMessageIsiZulu     6 No message in isiZulu
+postGestureMessageKinyarwanda 6 Tuyikoresha mukwigisha mobile robotikisi
+culturalKnowledge             6 DeicticShape
+
+robotLocationDescription      7 Cybersecurity Booth 1
+robotLocationPose             7 2.4 5.2 50.0
+gestureTarget                 7 1.2 5.2 180.0
+preGestureMessageEnglish      7 This section showcases Upanzi’s cutting-edge cybersecurity research projects. As Africa’s digital ecosystem grows (with e-government services, mobile apps, and AI technologies), ensuring their security and integrity is paramount. Upanzi researchers are working on multiple fronts: security testing of e-services and mobile apps, innovative defenses against AI-driven threats like deepfake voices, and studying emerging attack vectors such as smishing (SMS phishing)
+preGestureMessageIsiZulu      7 No message in isiZulu
+preGestureMessageKinyarwanda  7 Iyiyo yitwa rumba
+postGestureMessageEnglish     7 In this interactive lab, you’ll engage with demonstrations of these projects. The goal is to highlight how we proactively find vulnerabilities and develop defenses, making digital infrastructure trustworthy for all users
+postGestureMessageIsiZulu     7 No message in isiZulu
+postGestureMessageKinyarwanda 7 Tuyikoresha mukwigisha mobile robotikisi
+culturalKnowledge             7 DeicticShape
+
+robotLocationDescription      8 Cybersecurity Booth 2
+robotLocationPose             8 2.4 7.6 50.0
+gestureTarget                 8 1.2 7.6 180.0
+preGestureMessageEnglish      8 Digital transformation isn’t just about technology; it’s about people. Upanzi’s Capacity Building initiatives focus on empowering individuals – students, researchers, policymakers and implementers  with the skills, knowledge, and ethical frameworks to drive and sustain digital innovation. In this final section of the tour, you will learn about several programs: our annual Digital Identity Hackathon and picoCTF Africa, the use of AI for Policy Analysis, our efforts in Responsible Research and Innovation (RRI), and the aforementioned Data Quality Measurement project. These initiatives ensure that the digital public goods we develop are used effectively and responsibly, and that a pipeline of talent and ideas continues to grow. The format here is part showcase, part dialogue – you’ll meet an Innovation Coach
+preGestureMessageIsiZulu      8 No message in isiZulu
+preGestureMessageKinyarwanda  8 Iyiyo yitwa rumba
+postGestureMessageEnglish     8 who oversees these programs and even try a mini hackathon challenge yourself!
+postGestureMessageKinyarwanda 8 Tuyikoresha mukwigisha mobile robotikisi
+culturalKnowledge             8 DeicticShape
+
+robotLocationDescription      9 Pepper's ending location
+robotLocationPose             9 4.0 6.8 100
+gestureTarget                 9 0.0 0.0 0.0
+preGestureMessageEnglish      9 Thank you for joining us today and accepting to play the role of citizen protagonist. Overall, the tour painted a comprehensive picture of the Upanzi Network’s approach: building interoperable Digital Public Infrastructure that is open-source and scalable, while simultaneously investing in the governance, security, and capacity required to make that infrastructure impactful. You have seen how a citizen’s single digital identity threads through various services – a powerful illustration of the whole being greater than the sum of its parts. By the end of this immersive experience, it’s evident that digital public goods do not stand alone; they interlock like pieces of a puzzle, supported by robust connectivity and safeguarded by vigilant cybersecurity measures, all driven forward by skilled and conscientious individuals.
+preGestureMessageIsiZulu      9 No message in isiZulu
+preGestureMessageKinyarwanda  9 Murakazaneza muri laboratwari ya robotikisi muri kaneji meloni iniverisite yafurika
+postGestureMessageEnglish     9 Hope you enjoyed the tour, goodbye.
+postGestureMessageIsiZulu     9 No message in isiZulu
+postGestureMessageKinyarwanda 9 Ngiye kubatemberezaho gato, nizereko muribuze kuryoherwa
+culturalKnowledge             9 IconicShape
+
+tourSpecification 1 2 3 4 5 6 7 8 9
