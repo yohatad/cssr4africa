@@ -90,6 +90,13 @@ add_service_files(
   setMode.srv
 )
 
+add_service_files(
+  DIRECTORY 
+  text_to_speech/srv
+  FILES
+  TTS.srv
+)
+
 ## Generate services in the 'srv' folder
 add_service_files(
   DIRECTORY
