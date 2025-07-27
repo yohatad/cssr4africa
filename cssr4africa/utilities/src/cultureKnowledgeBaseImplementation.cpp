@@ -709,7 +709,6 @@ void CultureKnowledgeBase::readConfigurationData() {
    /* ------------------------------------ */
    
    packagedir = ros::package::getPath(ROS_PACKAGE_NAME); // get the package directory
-   packagedir = packagedir + "/behaviorController/include/utilities";
    
    if (debug) cout << "Package directory: " << packagedir << endl;
 

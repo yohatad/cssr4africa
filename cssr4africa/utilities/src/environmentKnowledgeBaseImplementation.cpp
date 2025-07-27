@@ -693,7 +693,6 @@ void EnvironmentKnowledgeBase::readConfigurationData() {
    /* ------------------------------------ */
    
    packagedir = ros::package::getPath(ROS_PACKAGE_NAME); // get the package directory
-   packagedir = packagedir + "/behaviorController/include/utilities";
    if (debug) cout << "Package directory: " << packagedir << endl;
 
    strcat(path_and_configuration_filename, packagedir.c_str());  
