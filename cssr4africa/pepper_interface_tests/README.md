@@ -1,12 +1,16 @@
-# Pepper Interface Tests
+<div align="center">
+<h1> Pepper Interface Tests </h1>
+</div>
+<div align="center">
+  <img src="../CSSR4AfricaLogo.svg" alt="CSSR4Africa Logo" style="width:50%; height:auto;">
+</div>
 
-<img src="CSSR4AfricaLogo.svg" alt="CSSR4Africa Logo" style="width:100%; height:auto;">
 
-The Pepper interface tests package is a ROS package designed to test the sensors and actuators of the Pepper robot on both physical and simulated platforms. After setting up the development environment using the software installation document as outlined in the [D3.3 Software Installation Manual](https://cssr4africa.github.io/deliverables/CSSR4Africa_Deliverable_D3.3.pdf), the package can be installed and run on the Pepper robot.
+The **Pepper interface tests package** is a ROS package designed to test the sensors and actuators of the Pepper robot on both physical and simulated platforms. After setting up the development environment using the software installation document as outlined in the [D3.3 Software Installation Manual](https://cssr4africa.github.io/deliverables/CSSR4Africa_Deliverable_D3.3.pdf), the package can be installed and run on the Pepper robot.
 
 The package is divided into two parts: sensor tests and actuator tests. The sensor tests are designed to evaluate the performance of the following sensors: sonar, laser, microphone, and camera. The actuator tests assess the functionality of the following actuators: head, arms, hands, legs, and wheels.
 
-## Documentation
+# 📄 Documentation
 Accompanying this code, there are deliverable reports that explain the code and how to run the tests. The deliverable reports are can be found in [D4.1 Sensor test](https://cssr4africa.github.io/deliverables/CSSR4Africa_Deliverable_D4.1.pdf) and [5.1 Actuator test](https://cssr4africa.github.io/deliverables/CSSR4Africa_Deliverable_D5.1.pdf)
 
 ## Running Tests
