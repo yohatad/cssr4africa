@@ -721,7 +721,7 @@ std::vector<std::string> extractTests(std::string test) {
     
     bool debug = false;
     
-    std::string inputFileName = "actuatorTestInput.ini";
+    std::string inputFileName = "actuatorTestInput.dat";
     std::string packagePath;
     std::string inputPathFile;
     
@@ -734,7 +734,7 @@ std::vector<std::string> extractTests(std::string test) {
         promptAndExit(1);
     #endif
     
-    inputPathFile = packagePath + "/config/" + inputFileName;
+    inputPathFile = packagePath + "/data/" + inputFileName;
 
     if (debug) printf("Input file is %s\n", inputPathFile.c_str());
 

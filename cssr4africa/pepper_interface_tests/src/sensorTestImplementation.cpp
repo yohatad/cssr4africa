@@ -1824,7 +1824,7 @@ std::vector<std::string> extractTests(std::string set){
     // Initialize debug flag and input file variables
     bool debug = false;   // used to turn debug message on
     
-    std::string inputFileName = "sensorTestInput.ini";  // input filename
+    std::string inputFileName = "sensorTestInput.dat";  // input filename
     std::string inputPath;                              // input path
     std::string inputPathFile;                          // input path and filename
     
@@ -1841,7 +1841,7 @@ std::vector<std::string> extractTests(std::string set){
     #endif
 
     // Set input file path
-    inputPathFile = inputPath + "/config/" + inputFileName;
+    inputPathFile = inputPath + "/data/" + inputFileName;
 
     if (debug) printf("Input file is %s\n", inputPathFile.c_str());
 

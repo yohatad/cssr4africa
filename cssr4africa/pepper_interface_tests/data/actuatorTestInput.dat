@@ -1,0 +1,7 @@
+head                true
+rArm                true
+lArm                true
+rHand               true
+lHand               true
+leg                 true
+wheels              false
