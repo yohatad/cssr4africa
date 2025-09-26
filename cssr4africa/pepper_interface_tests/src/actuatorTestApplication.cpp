@@ -1,4 +1,4 @@
-/* actuatorTestApplication.cpp
+/* actuatorTestApplication.cpp Application code for running the actuator tests on Pepper robot
 *
 * Copyright (C) 2023 CSSR4Africa Consortium
 *
@@ -9,27 +9,24 @@
 *
 * This program comes with ABSOLUTELY NO WARRANTY.
 
-* <detailed functional description>
 * The component test the functionality of the actuator of the robot using the ROS interface.
 * The test is performed by sending commands to the robot and checking if the robot performs the
 * expected action. The test is performed in two modes: sequential and parallel. In the sequential
 * mode, the tests are performed one after the other. In the parallel mode, the tests are performed
 * simultaneously. 
 
-...
 * Libraries
 * Standard libraries
 - std::string, std::vector, std::thread, std::fstream, std::cout, std::endl, std::cin, std::pow, std::sqrt, std::abs
 * ROS libraries
 - ros/ros.h, ros/package.h, actionlib/client/simple_action_client.h, control_msgs/FollowJointTrajectoryAction.h, geometry_msgs/Twist.h
 
-...
 * Parameters
 *
 * Command-line Parameters
 *
 * None
-...
+
 * Configuration File Parameters
 
 * Key | Value 
@@ -49,11 +46,11 @@
 * Leg    | true
 * Wheels | false
 
-...
+
 * Subscribed Topics and Message Types
 *
 * None
-...
+
 * Published Topics and Message Types
 * 
 * /pepper_dcm/Head_controller/follow_joint_trajectory           trajectory_msgs/JointTrajectory
@@ -69,41 +66,72 @@
 * /pepper/LeftArm_controller/follow_joint_trajectory            trajectory_msgs/JointTrajectory
 * /pepper/Pelvis_controller/follow_joint_trajectory             trajectory_msgs/JointTrajectory
 * /pepper/cmd_vel                                               geometry_msgs/Twist
-...
+
+* Services Invoked
+*
+* None
+
+* Services Advertised and Request Message
+* 
+* None
+
 * Input Data Files
 *
 * pepperTopics.dat
 * simulatorTopics.dat
-...
+* actuatorTestInput.dat
+
 * Output Data Files
 *
 * None
-...
+
 * Configuration Files
 *
 * actuatorTestConfiguration.ini
-* actuatorTestInput.ini
-...
+
 * Example Instantiation of the Module
 *
 * rosrun pepper_interface_tests actuatorTest
-...
+
 *
-* Author: Yohannes Tadesse Haile, Carnegie Mellon University Africa
+* Author: Yohannes Tadesse Haile and Mihirteab Taye Hordofa, Carnegie Mellon University Africa
 * Email: yohanneh@andrew.cmu.edu
-* Date: May 21, 2025
+* Date: September 25, 2025
 * Version: v1.1
 *
 */
 
-# include "pepper_interface_tests/actuatorTest.h"
+# include "pepper_interface_tests/actuatorTestInterface.h"
 
 int main(int argc, char** argv) {
-    std::vector<std::string> testName = extractTests("actuator");
-
     // Initialize ROS
     ros::init(argc, argv, "actuatorTest");
     ros::NodeHandle nh;
+
+    // Get the name of the node 
+    std::string node_name = ros::this_node::getName();
+    std::string software_version = "v1.1";
+
+    std::string copyright_message = node_name + ": " + software_version + 
+                                    "\n\t\t\t\tThis project is funded by the African Engineering and Technology Network (Afretec)"
+                                    "\n\t\t\t\tInclusive Digital Transformation Research Grant Programme."
+                                    "\n\t\t\t\tWebsite: www.cssr4africa.org"
+                                    "\n\t\t\t\tThis program comes with ABSOLUTELY NO WARRANTY.";
+
+    ROS_INFO("%s", copyright_message.c_str());
+
+    ROS_INFO("%s: startup.", node_name.c_str());                                                    // Print the copyright message
+    
+    std::vector<std::string> testName = extractTests("actuator");
+
+    // Check if required topics are available before running tests
+    for (const auto& test : testName) {
+        std::string topic = extractTopic(test);
+        std::cout<<"Checking topic for test: " << test << " -> " << topic << std::endl;
+        if (!topic.empty()) {
+            checkTopicAvailable(topic, nh);
+        }
+    }
 
     // Extract the mode to run the tests
     std::string mode = extractMode();

@@ -1171,12 +1171,12 @@ ControlClientPtr create_client(const std::string& topic_name) {
     ControlClientPtr actionClient(new ControlClient(topic_name, true));
     int max_iterations = 5;                                            // maximum number of iterations to wait for the server to come up
 
-    for (int iterations = 0; iterations < max_iterations; ++iterations) {
-        if (actionClient->waitForServer(ros::Duration(1.0))) {
-            return actionClient;                                        // return the action client if the server is available
-        }
-        ROS_WARN_THROTTLE(INITIALIZATION_INFO_PERIOD,"%s: waiting for the %s controller to come up", node_name.c_str(), topic_name.c_str());
-    }
+    // for (int iterations = 0; iterations < max_iterations; ++iterations) {
+    //     if (actionClient->waitForServer(ros::Duration(1.0))) {
+    //         return actionClient;                                        // return the action client if the server is available
+    //     }
+    //     ROS_WARN_THROTTLE(INITIALIZATION_INFO_PERIOD,"%s: waiting for the %s controller to come up", node_name.c_str(), topic_name.c_str());
+    // }
     // Throw an exception if the server is not available and client creation fails
     ROS_ERROR("%s: error creating action client for %s controller: Server not available", node_name.c_str(), topic_name.c_str());
     return nullptr;                                                     // return nullptr if the server is not available
@@ -2020,10 +2020,10 @@ int scanning_attention(double control_head_yaw, double control_head_pitch, strin
     //     ROS_WARN("%s: error moving the robot's head to the scanning location", node_name.c_str());
     //     return -1;                                                      // return -1 if the robot's head is not moved to the specified scanning location
     // }
-    if(move_robot_head(head_topic, control_head_pitch, control_head_yaw, 0.5, debug) != 0){
-        ROS_WARN("%s: error moving the robot's head to the scanning location", node_name.c_str());
-        return -1;                                                      // return -1 if the robot's head is not moved to the specified scanning location
-    }
+    // if(move_robot_head(head_topic, control_head_pitch, control_head_yaw, 0.5, debug) != 0){
+    //     ROS_WARN("%s: error moving the robot's head to the scanning location", node_name.c_str());
+    //     return -1;                                                      // return -1 if the robot's head is not moved to the specified scanning location
+    // }
     ros::Duration(1).sleep();
 
     // Clear the face labels, attention_head_pitch and attention_head_yaw
@@ -2102,10 +2102,10 @@ int seeking_attention(string topics_file, int realignment_threshold, ros::Publis
     //     return -1;                                                      // return -1 if the robot's head is not moved to the specified seeking location
     // }
 
-    if(move_robot_head_biological_motion(head_topic, control_head_pitch, control_head_yaw, 1.0, debug) != 0){
-        ROS_WARN("%s: error moving the robot's head to the seeking location", node_name.c_str());
-        return -1;                                                      // return -1 if the robot's head is not moved to the specified seeking location
-    }
+    // if(move_robot_head_biological_motion(head_topic, control_head_pitch, control_head_yaw, 1.0, debug) != 0){
+    //     ROS_WARN("%s: error moving the robot's head to the seeking location", node_name.c_str());
+    //     return -1;                                                      // return -1 if the robot's head is not moved to the specified seeking location
+    // }
 
     ros::Duration(3).sleep();
 
