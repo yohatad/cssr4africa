@@ -1,7 +1,7 @@
-/* sensorTestImplementation.cpp
+/* sensorTestImplementation.cpp Implementation code to test the sensors of the Pepper robot using ROS interface.
 *
-* Author: Yohannes Tadesse Haile and Mihirteab Taye Hordofa 
-* Date: May 21, 2025
+* Author: Yohannes Tadesse Haile and Mihirteab Taye Hordofa
+* Date: September 25, 2025
 * Version: v1.1
 *
 * Copyright (C) 2023 CSSR4Africa Consortium
@@ -14,7 +14,7 @@
 * This program comes with ABSOLUTELY NO WARRANTY.
 */
 
-#include "pepper_interface_tests/sensorTest.h"
+#include "pepper_interface_tests/sensorTestInterface.h"
 
 // Global variables to handle the output file 
 bool output;
@@ -2147,6 +2147,56 @@ std::string getOutputFilePath() {
     #endif
 
     return basePath + fileName;
+}
+
+oid checkTopicAvailable(std::string topic, ros::NodeHandle& nh){
+    /*
+     * Checks if a specified ROS topic is available indefinitely until it becomes available
+     * or the program is terminated. Print out the warn message if the topic is not available
+     * every 5 seconds.
+     *
+     * @param:
+     *     topic: The name of the ROS topic to check for availability
+     *     nh: ROS NodeHandle for communication with ROS system
+     *
+     * @return:
+     *     None
+     */
+    ros::Rate rate(10); // 10 Hz for responsive callback processing
+    ros::Time lastWarningTime = ros::Time::now();
+    const ros::Duration warningInterval(5.0); // 5 seconds between warnings
+    
+    ROS_INFO("Checking availability of topic: %s", topic.c_str());
+    
+    while (ros::ok()) {
+        // Get list of published topics
+        ros::master::V_TopicInfo master_topics;
+        ros::master::getTopics(master_topics);
+        
+        // Check if our topic is in the list
+        bool topicFound = false;
+        for (const auto& topic_info : master_topics) {
+            if (topic_info.name == topic) {
+                topicFound = true;
+                break;
+            }
+        }
+        
+        if (topicFound) {
+            ROS_INFO("Topic %s is available", topic.c_str());
+            break;
+        } else {
+            // Only print warning every 5 seconds to avoid spam
+            ros::Time currentTime = ros::Time::now();
+            if (currentTime - lastWarningTime >= warningInterval) {
+                ROS_WARN("Topic %s is not available, waiting...", topic.c_str());
+                lastWarningTime = currentTime;
+            }
+        }
+        
+        ros::spinOnce(); // Process callbacks at 10 Hz
+        rate.sleep();
+    }
 }
 
 void executeTestsSequentially(const std::vector<std::string>& testNames, ros::NodeHandle& nh) {

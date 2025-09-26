@@ -213,11 +213,11 @@ int main(int argc, char** argv) {
         shut_down_handler(0);
         return 0;
     }
-    ROS_INFO("%s: subscribing to %s...", node_name.c_str(), joint_states_topic.c_str());
-    while(ros::ok() && !is_topic_available(joint_states_topic)){
-        ROS_WARN_THROTTLE(INITIALIZATION_INFO_PERIOD, "%s: waiting for %s topic to be available...", node_name.c_str(), joint_states_topic.c_str());
-        ros::Duration(1).sleep();
-    }
+    // ROS_INFO("%s: subscribing to %s...", node_name.c_str(), joint_states_topic.c_str());
+    // while(ros::ok() && !is_topic_available(joint_states_topic)){
+    //     ROS_WARN_THROTTLE(INITIALIZATION_INFO_PERIOD, "%s: waiting for %s topic to be available...", node_name.c_str(), joint_states_topic.c_str());
+    //     ros::Duration(1).sleep();
+    // }
     ros::Subscriber joint_states_subscriber = nh.subscribe(joint_states_topic, 1, &joint_states_message_received);
     ROS_INFO("%s: subscribed to %s.", node_name.c_str(), joint_states_topic.c_str());
 
@@ -244,10 +244,10 @@ int main(int argc, char** argv) {
         return 0;
     }
     ROS_INFO("%s: subscribing to %s topic...", node_name.c_str(), sound_localization_topic.c_str());
-    while(ros::ok() && !is_topic_available(sound_localization_topic)){
-        ROS_WARN_THROTTLE(INITIALIZATION_INFO_PERIOD, "%s: waiting for %s topic to be available...", node_name.c_str(), sound_localization_topic.c_str());
-        ros::Duration(1).sleep();
-    }
+    // while(ros::ok() && !is_topic_available(sound_localization_topic)){
+    //     ROS_WARN_THROTTLE(INITIALIZATION_INFO_PERIOD, "%s: waiting for %s topic to be available...", node_name.c_str(), sound_localization_topic.c_str());
+    //     ros::Duration(1).sleep();
+    // }
     ros::Subscriber sound_localization_subscriber = nh.subscribe(sound_localization_topic, 1, &sound_localization_data_received);
     ROS_INFO("%s: subscribed to %s topic.", node_name.c_str(), sound_localization_topic.c_str());
     
@@ -259,11 +259,11 @@ int main(int argc, char** argv) {
         return 0;
     }
     ROS_INFO("%s: creating a publisher for the velocity commands...", node_name.c_str());
-    while(ros::ok() && !is_topic_available(velocity_topic)){
-        ROS_WARN_THROTTLE(INITIALIZATION_INFO_PERIOD, "%s: waiting for %s topic to be available...", node_name.c_str(), velocity_topic.c_str());
-        attention_velocity_publisher = nh.advertise<geometry_msgs::Twist>(velocity_topic.c_str(), 1, true);
-        ros::Duration(1).sleep();
-    }
+    // while(ros::ok() && !is_topic_available(velocity_topic)){
+    //     ROS_WARN_THROTTLE(INITIALIZATION_INFO_PERIOD, "%s: waiting for %s topic to be available...", node_name.c_str(), velocity_topic.c_str());
+    //     attention_velocity_publisher = nh.advertise<geometry_msgs::Twist>(velocity_topic.c_str(), 1, true);
+    //     ros::Duration(1).sleep();
+    // }
     // attention_velocity_publisher = n.advertise<geometry_msgs::Twist>(velocity_topic.c_str(), 1000, true);
     ROS_INFO("%s: created a publisher for the velocity commands.", node_name.c_str());
 
@@ -275,10 +275,10 @@ int main(int argc, char** argv) {
         return 0;
     }
     ROS_INFO("%s: subscribing to robot pose topic...", node_name.c_str());
-    while(ros::ok() && !is_topic_available(robot_pose_topic)){
-        ROS_WARN_THROTTLE(INITIALIZATION_INFO_PERIOD, "%s: waiting for %s topic to be available...", node_name.c_str(), robot_pose_topic.c_str());
-        ros::Duration(1).sleep();
-    }
+    // while(ros::ok() && !is_topic_available(robot_pose_topic)){
+    //     ROS_WARN_THROTTLE(INITIALIZATION_INFO_PERIOD, "%s: waiting for %s topic to be available...", node_name.c_str(), robot_pose_topic.c_str());
+    //     ros::Duration(1).sleep();
+    // }
     ros::Subscriber robot_pose_subscriber = nh.subscribe(robot_pose_topic, 1, &robot_pose_message_received);
     ROS_INFO("%s: subscribed to robot pose topic.", node_name.c_str());
 
@@ -308,11 +308,11 @@ int main(int argc, char** argv) {
     std::string head_topic;     // stores the head topic
     if(extract_topic("Head", topics_filename, &head_topic) == 0){
         // Set to head to horizontal looking forward
-        if(move_robot_head_biological_motion(head_topic, DEFAULT_HEAD_PITCH, DEFAULT_HEAD_YAW, 1.0, verbose_mode) != 0){
-            ROS_ERROR("%s: error setting the head to the horizontal looking forward pose.", node_name.c_str());
-            shut_down_handler(0);
-            return -1;                                                                // return -1 if the head cannot be set to the horizontal looking forward pose
-        }
+        // if(move_robot_head_biological_motion(head_topic, DEFAULT_HEAD_PITCH, DEFAULT_HEAD_YAW, 1.0, verbose_mode) != 0){
+        //     ROS_ERROR("%s: error setting the head to the horizontal looking forward pose.", node_name.c_str());
+        //     shut_down_handler(0);
+        //     return -1;                                                                // return -1 if the head cannot be set to the horizontal looking forward pose
+        // }
         node_initialized = true;                                                     // Set the node initialized flag to true
     }
 
@@ -333,9 +333,9 @@ int main(int argc, char** argv) {
 
                 if(!disabled_once){                                             // If the disabled mode has not been called at least once, set the previous time to the current time
                     // Set head to center pose looking forward
-                    if(move_robot_head_biological_motion(head_topic, DEFAULT_HEAD_PITCH, DEFAULT_HEAD_YAW, 1.0, verbose_mode) != 0){
-                        ROS_ERROR("%s: error setting the head to the horizontal looking forward pose in disabled mode.", node_name.c_str());
-                    }
+                    // if(move_robot_head_biological_motion(head_topic, DEFAULT_HEAD_PITCH, DEFAULT_HEAD_YAW, 1.0, verbose_mode) != 0){
+                    //     ROS_ERROR("%s: error setting the head to the horizontal looking forward pose in disabled mode.", node_name.c_str());
+                    // }
                     disabled_once = true;
                 }
                 break;
@@ -411,15 +411,15 @@ int main(int argc, char** argv) {
                         // ROS_INFO("dropping head now...");
                         next_head_drop_time = now + std::chrono::seconds(5);
                         ros::Duration(1).sleep();
-                        // Set head to focus on the person with whom mutual gaze was established
-                        if(move_robot_head_biological_motion(head_topic, DROP_HEAD_PITCH, mutual_gaze_person_yaw, 1.0, verbose_mode) != 0){
-                            ROS_ERROR("%s: error setting the head to focus on the person in seeking mode.", node_name.c_str());
-                        }
+                        // // Set head to focus on the person with whom mutual gaze was established
+                        // if(move_robot_head_biological_motion(head_topic, DROP_HEAD_PITCH, mutual_gaze_person_yaw, 1.0, verbose_mode) != 0){
+                        //     ROS_ERROR("%s: error setting the head to focus on the person in seeking mode.", node_name.c_str());
+                        // }
                     } else{
-                        // Set head to focus on the person with whom mutual gaze was established
-                        if(move_robot_head_biological_motion(head_topic, mutual_gaze_person_pitch, mutual_gaze_person_yaw, 1.0, verbose_mode) != 0){
-                            ROS_ERROR("%s: error setting the head to focus on the person in seeking mode.", node_name.c_str());
-                        }
+                        // // Set head to focus on the person with whom mutual gaze was established
+                        // if(move_robot_head_biological_motion(head_topic, mutual_gaze_person_pitch, mutual_gaze_person_yaw, 1.0, verbose_mode) != 0){
+                        //     ROS_ERROR("%s: error setting the head to focus on the person in seeking mode.", node_name.c_str());
+                        // }
                     }
                     
                     break;

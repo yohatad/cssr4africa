@@ -1,7 +1,7 @@
-/* actuatorTestImplementation.cpp
+/* actuatorTestImplementation.cpp Implementation code for running the actuator tests on Pepper robot
 *
 * Author: Yohannes Tadesse Haile and Mihirteab Taye Hordofa 
-* Date: May 21, 2025
+* Date: September 25, 2025
 * Version: v1.1
 *
 * Copyright (C) 2023 CSSR4Africa Consortium
@@ -14,7 +14,6 @@
 * This program comes with ABSOLUTELY NO WARRANTY.
 */
 
-
 /*  Description:
 * This file contains the implementation of the actuator tests for the Pepper robot.  The tests are designed 
 * to test the head, arms, hands, legs and wheels of the robot. The tests are implemented using the ROS actionlib 
@@ -25,7 +24,7 @@
 * do 90 degree turns both clockwise and counter-clockwise.
 */
 
-# include "pepper_interface_tests/actuatorTest.h"
+# include "pepper_interface_tests/actuatorTestInterface.h"
 
 // Global variables for the wheels
 bool shutdownInitiated = false;
@@ -799,6 +798,56 @@ void promptAndContinue() {
     
     printf("Press any key to proceed ...\n");
     getchar();
+}
+
+void checkTopicAvailable(std::string topic, ros::NodeHandle& nh){
+    /*
+     * Checks if a specified ROS topic is available indefinitely until it becomes available
+     * or the program is terminated. Print out the warn message if the topic is not available
+     * every 5 seconds.
+     *
+     * @param:
+     *     topic: The name of the ROS topic to check for availability
+     *     nh: ROS NodeHandle for communication with ROS system
+     *
+     * @return:
+     *     None
+     */
+    ros::Rate rate(10); // 10 Hz for responsive callback processing
+    ros::Time lastWarningTime = ros::Time::now();
+    const ros::Duration warningInterval(5.0); // 5 seconds between warnings
+    
+    ROS_INFO("Checking availability of topic: %s", topic.c_str());
+    
+    while (ros::ok()) {
+        // Get list of published topics
+        ros::master::V_TopicInfo master_topics;
+        ros::master::getTopics(master_topics);
+        
+        // Check if our topic is in the list
+        bool topicFound = false;
+        for (const auto& topic_info : master_topics) {
+            if (topic_info.name == topic) {
+                topicFound = true;
+                break;
+            }
+        }
+        
+        if (topicFound) {
+            ROS_INFO("Topic %s is available", topic.c_str());
+            break;
+        } else {
+            // Only print warning every 5 seconds to avoid spam
+            ros::Time currentTime = ros::Time::now();
+            if (currentTime - lastWarningTime >= warningInterval) {
+                ROS_WARN("Topic %s is not available, waiting...", topic.c_str());
+                lastWarningTime = currentTime;
+            }
+        }
+        
+        ros::spinOnce(); // Process callbacks at 10 Hz
+        rate.sleep();
+    }
 }
 
 void executeTestsSequentially(const std::vector<std::string>& testNames, ros::NodeHandle& nh) {

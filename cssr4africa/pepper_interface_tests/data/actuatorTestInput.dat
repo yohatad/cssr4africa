@@ -1,7 +1,7 @@
 head                true
-rArm                true
-lArm                true
-rHand               true
-lHand               true
-leg                 true
+rArm                false
+lArm                false
+rHand               false
+lHand               false
+leg                 false
 wheels              false

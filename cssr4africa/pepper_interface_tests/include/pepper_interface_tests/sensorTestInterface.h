@@ -1,3 +1,20 @@
+/* sensorTestInterface.h - Header file for the sensorTest module to test the sensors of the Pepper robot using ROS interface.
+ *
+ * Author:  Yohannes Tadesse Haile and Mihirteab Taye Hordofa, Carnegie Mellon University Africa
+ * Email:   yohanneh@andrew.cmu.edu
+ * Date:    September 25, 2025
+ * Version: v1.1
+ *
+ * Copyright (C) 2023 CSSR4Africa Consortium
+ *
+ * This project is funded by the African Engineering and Technology Network (Afretec)
+ * Inclusive Digital Transformation Research Grant Programme.
+ *
+ * Website: www.cssr4africa.org
+ *
+ * This program comes with ABSOLUTELY NO WARRANTY.
+ */
+
 #ifndef SENSOR_TEST_H
 #define SENSOR_TEST_H
 

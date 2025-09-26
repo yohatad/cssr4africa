@@ -26,7 +26,7 @@ Make sure you are running Ubuntu 20.04. The ROS environment should be properly s
 cd $HOME/workspace/pepper_rob_ws && source devel/setup.bash
 
 # Build the package
-catkin build pepper_interface_tests
+catkin_make
 ```
 
 # 🔧 Configuration Parameters
