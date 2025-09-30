@@ -27,6 +27,7 @@
 # include "pepper_interface_tests/actuatorTestInterface.h"
 
 // Global variables for the wheels
+bool verboseMode = false; 
 bool shutdownInitiated = false;
 ros::Time startTime;
 ros::Publisher pub;
@@ -40,6 +41,21 @@ enum Robotstate{
 };
 
 Robotstate state = MOVE_FORWARD;
+
+static inline std::string rstrip_slash(std::string s) {
+    while (!s.empty() && s.back() == '/') s.pop_back();
+    return s;
+}
+
+// Strip leading '/' from a ROS node name
+std::string cleanNodeName(const std::string& name) {
+    return (!name.empty() && name.front() == '/') ? name.substr(1) : name;
+}
+
+// 10-second heartbeat
+void heartbeatCb(const ros::TimerEvent&) {
+    ROS_INFO_STREAM( cleanNodeName(ros::this_node::getName()) << ": running..." );
+}
 
 void signalHandler(int signum) {
     /*
@@ -179,6 +195,7 @@ void head(ros::NodeHandle& nh) {
      */
     
     std::string headTopic = extractTopic("Head");
+    checkTopicAvailable(headTopic);
     ControlClientPtr headClient = createClient(headTopic);
     std::vector<std::string> jointNames = {"HeadPitch", "HeadYaw"};
     std::vector<double> position(2, 0.0);
@@ -227,6 +244,7 @@ void rArm(ros::NodeHandle& nh) {
      */
     
     std::string rightArmTopic = extractTopic("RArm");
+    checkTopicAvailable(rightArmTopic);
     ControlClientPtr rightArmClient = createClient(rightArmTopic);
     std::vector<std::string> jointNames = {"RShoulderPitch", "RShoulderRoll",  "RElbowRoll", "RElbowYaw", "RWristYaw"};
     std::vector<double> position(5, 0.0);
@@ -275,6 +293,7 @@ void rHand(ros::NodeHandle& nh) {
      */
     
     std::string rightHandTopic = extractTopic("RHand");
+    checkTopicAvailable(rightHandTopic);
     ControlClientPtr rightHandClient = createClient(rightHandTopic);
     std::vector<std::string> jointNames = {"RHand"};
     std::vector<double> position(1, 0.0);
@@ -323,6 +342,7 @@ void lArm(ros::NodeHandle& nh) {
      */
     
     std::string leftArmTopic = extractTopic("LArm");
+    checkTopicAvailable(leftArmTopic);
     ControlClientPtr leftArmClient = createClient(leftArmTopic);
     std::vector<std::string> jointNames = {"LShoulderPitch", "LShoulderRoll", "LElbowRoll", "LElbowYaw", "LWristYaw"};
     std::vector<double> position(5, 0.0);
@@ -371,6 +391,7 @@ void lHand(ros::NodeHandle& nh) {
      */
     
     std::string leftHandTopic = extractTopic("LHand");
+    checkTopicAvailable(leftHandTopic);
     ControlClientPtr leftHandClient = createClient(leftHandTopic);
     std::vector<std::string> jointNames = {"LHand"};
     std::vector<double> position(1, 0.0);
@@ -418,6 +439,7 @@ void leg(ros::NodeHandle& nh) {
      */
     
     std::string legTopic = extractTopic("Leg");
+    checkTopicAvailable(legTopic);
     ControlClientPtr legClient = createClient(legTopic);
     std::vector<std::string> jointNames = {"HipPitch", "HipRoll", "KneePitch"};
     std::vector<double> position(3, 0.0);
@@ -467,6 +489,7 @@ void wheels(ros::NodeHandle& nh) {
      */
     
     std::string wheelTopic = extractTopic("Wheels");
+    checkTopicAvailable(wheelTopic);
     pub = nh.advertise<geometry_msgs::Twist>(wheelTopic, 1000);
     ros::Rate rate(10);
 
@@ -561,6 +584,7 @@ std::string extractTopic(std::string key) {
     std::string platformKey = "platform";
     std::string robotTopicKey = "robottopics";
     std::string simulatorTopicKey = "simulatortopics";
+    std::string verboseModeKey = "verboseMode";
 
     std::string platformValue;
     std::string robotTopicValue;
@@ -602,6 +626,11 @@ std::string extractTopic(std::string key) {
         if (paramKey == platformKey) { platformValue = paramValue; }
         else if (paramKey == robotTopicKey) { robotTopicValue = paramValue; }
         else if (paramKey == simulatorTopicKey) { simulatorTopicValue = paramValue; }
+        else if (paramKey == verboseModeKey) { 
+            transform(paramValue.begin(), paramValue.end(), paramValue.begin(), ::tolower);
+            if (paramValue == "true") verboseMode = true;
+            else verboseMode = false;
+        }
     }
     configFile.close();
 
@@ -703,7 +732,7 @@ std::string extractMode() {
     return modeValue;
 }
 
-std::vector<std::string> extractTests(std::string test) {
+std::vector<std::string> extractTests() {
     /*
      * Extracts list of enabled tests from input configuration file
      * Reads test configuration and returns names of tests marked as "true"
@@ -764,6 +793,12 @@ std::vector<std::string> extractTests(std::string test) {
     }
     inputFile.close();
 
+    std::cout<<"Tests to be executed: ";
+    for (const auto& name : testName) {
+        std::cout << name << " ";
+    }
+    std::cout << std::endl;
+
     return testName;
 }
 
@@ -800,54 +835,59 @@ void promptAndContinue() {
     getchar();
 }
 
-void checkTopicAvailable(std::string topic, ros::NodeHandle& nh){
+bool checkTopicAvailable(const std::string& topic_name_raw) {
     /*
-     * Checks if a specified ROS topic is available indefinitely until it becomes available
-     * or the program is terminated. Print out the warn message if the topic is not available
-     * every 5 seconds.
-     *
-     * @param:
-     *     topic: The name of the ROS topic to check for availability
-     *     nh: ROS NodeHandle for communication with ROS system
-     *
-     * @return:
-     *     None
-     */
-    ros::Rate rate(10); // 10 Hz for responsive callback processing
-    ros::Time lastWarningTime = ros::Time::now();
-    const ros::Duration warningInterval(5.0); // 5 seconds between warnings
-    
-    ROS_INFO("Checking availability of topic: %s", topic.c_str());
-    
-    while (ros::ok()) {
-        // Get list of published topics
-        ros::master::V_TopicInfo master_topics;
-        ros::master::getTopics(master_topics);
-        
-        // Check if our topic is in the list
-        bool topicFound = false;
-        for (const auto& topic_info : master_topics) {
-            if (topic_info.name == topic) {
-                topicFound = true;
-                break;
-            }
+    * @brief
+    *     Checks availability of a specified ROS topic or action base in a single shot.
+    *
+    * @param:
+    *     topic_name_raw: Raw name of the topic or action base to check.
+    *
+    * @return:
+    *     true if the topic exists or if the action base has at least one standard subtopic,
+    *     false otherwise.
+    *
+    * @note:
+    *     Prints an informational message with the current node name when a subscription
+    *     is detected. Performs no retries or waiting — call repeatedly if you need
+    *     continuous checking.
+    */
+
+    if (!ros::master::check()) return false;
+
+    const std::string resolved = rstrip_slash(ros::names::resolve(topic_name_raw));
+    ros::master::V_TopicInfo topics;
+    if (!ros::master::getTopics(topics)) return false;
+
+    // Helper to strip leading slash
+    auto cleanNodeName = [](const std::string& s) {
+        return (!s.empty() && s.front() == '/') ? s.substr(1) : s;
+    };
+
+    const std::string nodeName = cleanNodeName(ros::this_node::getName());
+
+    // Fast path: exact match
+    for (const auto& t : topics) {
+        if (t.name == resolved) {
+            ROS_INFO_STREAM(nodeName << ": subscribed to " << resolved << ".");
+            return true;
         }
-        
-        if (topicFound) {
-            ROS_INFO("Topic %s is available", topic.c_str());
-            break;
-        } else {
-            // Only print warning every 5 seconds to avoid spam
-            ros::Time currentTime = ros::Time::now();
-            if (currentTime - lastWarningTime >= warningInterval) {
-                ROS_WARN("Topic %s is not available, waiting...", topic.c_str());
-                lastWarningTime = currentTime;
-            }
-        }
-        
-        ros::spinOnce(); // Process callbacks at 10 Hz
-        rate.sleep();
     }
+
+    // Action-style check
+    static const char* kActionSuffixes[] = {
+        "/goal", "/status", "/feedback", "/result", "/cancel"
+    };
+    for (const auto& t : topics) {
+        for (const char* suf : kActionSuffixes) {
+            if (t.name == resolved + suf) {
+                ROS_INFO_STREAM(nodeName << ": subscribed to " << resolved << ".");
+                return true;
+            }
+        }
+    }
+
+    return false;
 }
 
 void executeTestsSequentially(const std::vector<std::string>& testNames, ros::NodeHandle& nh) {
