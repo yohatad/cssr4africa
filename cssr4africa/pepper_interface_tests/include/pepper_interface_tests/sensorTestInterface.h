@@ -40,6 +40,10 @@
 #include <vector>
 #include <cstdlib>
 #include <filesystem>
+#include <unordered_set>
+#include <algorithm>
+#include <sstream>
+
 #ifdef PEPPER_ROBOT
 #include <naoqi_driver/AudioCustomMsg.h>
 #endif // DEBUG
@@ -87,7 +91,7 @@ void microphone(ros::NodeHandle nh);
 void microphoneMessageReceived(const naoqi_driver::AudioCustomMsg& msg);
 #endif // DEBUG
 
-std::vector<std::string> extractTests();
+std::vector<std::string> extractTests(const std::string& camera);
 string extractTopic(string key);   
 std::string extractMode();
 void writeWavHeader(std::ofstream &file, int sampleRate, int numSamples);
