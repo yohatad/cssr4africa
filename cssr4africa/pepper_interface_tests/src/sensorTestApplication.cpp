@@ -151,7 +151,8 @@ int main(int argc, char **argv){
     ROS_INFO(" %s: startup.", node_name.c_str());                                                    // Print the copyright message
 
     ros::NodeHandle pnh("~");
-    std::string camera = pnh.param<std::string>("camera", "both");
+    std::string camera = pnh.param<std::string>("/camera", "both");
+    std::cout<<"Camera parameter: "<<camera<<std::endl;
 
     std::vector<std::string> testNames = extractTests(camera);
 

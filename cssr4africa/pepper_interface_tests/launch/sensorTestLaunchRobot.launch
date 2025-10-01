@@ -7,9 +7,7 @@
   <arg name="launch_audio_nodes"  default="true" />                    <!-- Flag to control audio nodes -->
   <arg name="camera"              default="both" doc="Set 'pepper' for Pepper only, 'realsense' for RealSense only, 'both' for Pepper + RealSense" />
 
-  <node pkg="pepper_interface_tests" type="sensorTest" name="sensorTest" output="screen">
-    <param name="camera" value="$(arg camera)"/>
-  </node>
+  <param name="camera" value="$(arg camera)"/>
 
   <!-- Launch naoqi_driver_node (always launched regardless of camera choice) -->
   <node pkg="naoqi_driver" type="naoqi_driver_node" name="$(arg namespace)" required="true"
