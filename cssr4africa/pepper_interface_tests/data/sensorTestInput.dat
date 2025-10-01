@@ -7,7 +7,7 @@ realsenseDepthCamera    true
 depthCamera             true
 stereoCamera            true
 laser                   true
-microphone              true
+microphone              false
 jointState              true
 odometry                true
 imu                     true

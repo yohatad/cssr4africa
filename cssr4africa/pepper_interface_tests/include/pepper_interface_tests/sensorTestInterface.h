@@ -50,6 +50,8 @@ using TestFunction = std::function<void(ros::NodeHandle&)>;
 extern bool output;
 extern int timeDuration;
 
+extern bool verboseMode;
+
 #define ROS
 
 void backSonar(ros::NodeHandle nh);
@@ -85,7 +87,7 @@ void microphone(ros::NodeHandle nh);
 void microphoneMessageReceived(const naoqi_driver::AudioCustomMsg& msg);
 #endif // DEBUG
 
-std::vector<string> extractTests(string key);
+std::vector<std::string> extractTests();
 string extractTopic(string key);   
 std::string extractMode();
 void writeWavHeader(std::ofstream &file, int sampleRate, int numSamples);
@@ -97,6 +99,9 @@ void finalizeOutputFile(std::ofstream& out_of, const std::string& path);
 void executeTestsSequentially(const std::vector<std::string>& testNames, ros::NodeHandle& nh);
 void executeTestsInParallel(const std::vector<std::string>& testNames, ros::NodeHandle& nh);
 void switchMicrophoneChannel();
+bool checkTopicAvailable(const std::string& topic_name);
+void heartbeatCb(const ros::TimerEvent&);
+std::string cleanNodeName(const std::string& name);
 
 void promptAndExit(int err);
 void promptAndContinue();

@@ -16,11 +16,27 @@
 
 #include "pepper_interface_tests/sensorTestInterface.h"
 
-// Global variables to handle the output file 
+// Global variables to handle the output file
+bool verboseMode = false;
 bool output;
 std::ofstream outputFile;
 int timeDuration = 10;
 std::string outputFilePath;
+
+static inline std::string rstrip_slash(std::string s) {
+    while (!s.empty() && s.back() == '/') s.pop_back();
+    return s;
+}
+
+// Strip leading '/' from a ROS node name
+std::string cleanNodeName(const std::string& name) {
+    return (!name.empty() && name.front() == '/') ? name.substr(1) : name;
+}
+
+// 10-second heartbeat
+void heartbeatCb(const ros::TimerEvent&) {
+    ROS_INFO_STREAM( cleanNodeName(ros::this_node::getName()) << ": running..." );
+}
 
 // Global variables to handle the audio file 
 std::ofstream outAudio;
@@ -46,6 +62,7 @@ void backSonar(ros::NodeHandle nh){
     
     // Find the respective topic for the back sonar sensor
     string topicName = extractTopic("BackSonar");
+    checkTopicAvailable(topicName);
     output = true;
 
     // Check if the topic name is empty
@@ -85,6 +102,7 @@ void frontSonar(ros::NodeHandle nh){
     
     // Find the respective topic for the front sonar sensor
     string topicName = extractTopic("FrontSonar");
+    checkTopicAvailable(topicName);
     output = true;
 
     // Check if the topic name is empty
@@ -125,6 +143,7 @@ void frontCamera(ros::NodeHandle nh) {
     
     // Find the respective topic for the front camera sensor
     string topicName = extractTopic("FrontCamera");
+    checkTopicAvailable(topicName);
     output = true;
 
     // Check if the topic name is empty
@@ -174,6 +193,7 @@ void bottomCamera(ros::NodeHandle nh){
     
     // Find the respective topic for the bottom camera sensor
     string topicName = extractTopic("BottomCamera");
+    checkTopicAvailable(topicName);
     output = true;
 
     // Check if the topic name is empty
@@ -223,6 +243,7 @@ void realsenseRGBCamera(ros::NodeHandle nh) {
     
     // Find the respective topic for the RealSense RGB camera sensor
     string topicName = extractTopic("RealSenseCameraRGB");
+    checkTopicAvailable(topicName);
     output = true;
 
     // Check if the topic name is empty
@@ -272,6 +293,7 @@ void depthCamera(ros::NodeHandle nh){
     
     // Find the respective topic for the depth camera sensor
     string topicName = extractTopic("DepthCamera");
+    checkTopicAvailable(topicName);
     output = true;
 
     // Check if the topic name is empty
@@ -321,6 +343,7 @@ void realsenseDepthCamera(ros::NodeHandle nh) {
     
     // Find the respective topic for the RealSense depth camera sensor
     string topicName = extractTopic("RealSenseCameraDepth");
+    checkTopicAvailable(topicName);
     output = true;
 
     // Check if the topic name is empty
@@ -370,6 +393,7 @@ void laserSensor(ros::NodeHandle nh){
     
     // Find the respective topic for the laser sensor
     string topicName = extractTopic("Laser");
+    checkTopicAvailable(topicName);
     output = true;
 
     // Check if the topic name is empty
@@ -410,6 +434,7 @@ void odom(ros::NodeHandle nh){
     
     // Find the respective topic for the odometry sensor
     string topicName = extractTopic("Odometry");
+    checkTopicAvailable(topicName);
     output = true;
 
     // Check if the topic name is empty
@@ -450,6 +475,7 @@ void imu(ros::NodeHandle nh){
     
     // Find the respective topic for the IMU sensor
     string topicName = extractTopic("IMU");
+    checkTopicAvailable(topicName);
     output = true;
 
     // Check if the topic name is empty
@@ -490,6 +516,7 @@ void jointState(ros::NodeHandle nh){
     
     // Find the respective topic for the joint state sensor
     string topicName = extractTopic("JointState");
+    checkTopicAvailable(topicName);
     output = true;
 
     // Check if the topic name is empty
@@ -532,6 +559,7 @@ void speech(ros::NodeHandle nh){
     
     // Extract the topic name for speech output using the custom extractTopic function
     std::string topicName = extractTopic("Speech");
+    checkTopicAvailable(topicName);
 
     // Create a publisher for the speech message topic
     ros::Publisher pub = nh.advertise<std_msgs::String>(topicName, 1);
@@ -560,6 +588,7 @@ void stereoCamera(ros::NodeHandle nh){
     
     // Find the respective topic for the stereo camera sensor
     string topicName = extractTopic("StereoCamera");
+    checkTopicAvailable(topicName);
     output = true;
 
     // Check if the topic name is empty
@@ -609,6 +638,7 @@ void microphone(ros::NodeHandle nh) {
     
     // Extract the topic name for microphone input and set the audio sample rate
     std::string topicName = extractTopic("Microphone");
+    checkTopicAvailable(topicName);
     int sampleRate = 48000;
 
     // Check if the topic name is empty
@@ -1809,7 +1839,7 @@ string extractTopic(string key){
     return topic_value;
 }
 
-std::vector<std::string> extractTests(std::string set){
+std::vector<std::string> extractTests() {
     /*
      * Function to extract test names from input configuration file based on enabled flags
      * The function reads the input file and returns a vector of test names that are set to true
@@ -1872,6 +1902,13 @@ std::vector<std::string> extractTests(std::string set){
         if (paramValue == "true"){ testName.push_back(paramKey);}
     }
     inputFile.close();
+
+    std::cout<<"Tests to be executed: ";
+    for (const auto& name : testName) {
+        std::cout << name << " ";
+    }
+
+    std::cout << std::endl;
 
     return testName;
 }
@@ -2149,54 +2186,59 @@ std::string getOutputFilePath() {
     return basePath + fileName;
 }
 
-oid checkTopicAvailable(std::string topic, ros::NodeHandle& nh){
+bool checkTopicAvailable(const std::string& topic_name_raw) {
     /*
-     * Checks if a specified ROS topic is available indefinitely until it becomes available
-     * or the program is terminated. Print out the warn message if the topic is not available
-     * every 5 seconds.
-     *
-     * @param:
-     *     topic: The name of the ROS topic to check for availability
-     *     nh: ROS NodeHandle for communication with ROS system
-     *
-     * @return:
-     *     None
-     */
-    ros::Rate rate(10); // 10 Hz for responsive callback processing
-    ros::Time lastWarningTime = ros::Time::now();
-    const ros::Duration warningInterval(5.0); // 5 seconds between warnings
-    
-    ROS_INFO("Checking availability of topic: %s", topic.c_str());
-    
-    while (ros::ok()) {
-        // Get list of published topics
-        ros::master::V_TopicInfo master_topics;
-        ros::master::getTopics(master_topics);
-        
-        // Check if our topic is in the list
-        bool topicFound = false;
-        for (const auto& topic_info : master_topics) {
-            if (topic_info.name == topic) {
-                topicFound = true;
-                break;
-            }
+    * @brief
+    *     Checks availability of a specified ROS topic or action base in a single shot.
+    *
+    * @param:
+    *     topic_name_raw: Raw name of the topic or action base to check.
+    *
+    * @return:
+    *     true if the topic exists or if the action base has at least one standard subtopic,
+    *     false otherwise.
+    *
+    * @note:
+    *     Prints an informational message with the current node name when a subscription
+    *     is detected. Performs no retries or waiting — call repeatedly if you need
+    *     continuous checking.
+    */
+
+    if (!ros::master::check()) return false;
+
+    const std::string resolved = rstrip_slash(ros::names::resolve(topic_name_raw));
+    ros::master::V_TopicInfo topics;
+    if (!ros::master::getTopics(topics)) return false;
+
+    // Helper to strip leading slash
+    auto cleanNodeName = [](const std::string& s) {
+        return (!s.empty() && s.front() == '/') ? s.substr(1) : s;
+    };
+
+    const std::string nodeName = cleanNodeName(ros::this_node::getName());
+
+    // Fast path: exact match
+    for (const auto& t : topics) {
+        if (t.name == resolved) {
+            ROS_INFO_STREAM(nodeName << ": subscribed to " << resolved << ".");
+            return true;
         }
-        
-        if (topicFound) {
-            ROS_INFO("Topic %s is available", topic.c_str());
-            break;
-        } else {
-            // Only print warning every 5 seconds to avoid spam
-            ros::Time currentTime = ros::Time::now();
-            if (currentTime - lastWarningTime >= warningInterval) {
-                ROS_WARN("Topic %s is not available, waiting...", topic.c_str());
-                lastWarningTime = currentTime;
-            }
-        }
-        
-        ros::spinOnce(); // Process callbacks at 10 Hz
-        rate.sleep();
     }
+
+    // Action-style check
+    static const char* kActionSuffixes[] = {
+        "/goal", "/status", "/feedback", "/result", "/cancel"
+    };
+    for (const auto& t : topics) {
+        for (const char* suf : kActionSuffixes) {
+            if (t.name == resolved + suf) {
+                ROS_INFO_STREAM(nodeName << ": subscribed to " << resolved << ".");
+                return true;
+            }
+        }
+    }
+
+    return false;
 }
 
 void executeTestsSequentially(const std::vector<std::string>& testNames, ros::NodeHandle& nh) {

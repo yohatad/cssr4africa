@@ -127,28 +127,30 @@ int main(int argc, char **argv){
     ros::init(argc, argv, "sensorTest");
     ros::NodeHandle nh;
 
-    std::string node_name = ros::this_node::getName();
+   // Start an async spinner so timers/callbacks keep firing even if tests block
+    ros::AsyncSpinner spinner(1);
+    spinner.start();
+
+    // Get the name of the node (without leading '/')
+    const std::string node_name = cleanNodeName(ros::this_node::getName());
+
+    // Heartbeat every 10 seconds
+    ros::Timer heartbeat = nh.createTimer(ros::Duration(10.0), heartbeatCb);
+
     std::string software_version = "v1.1";
 
-    std::string copyright_message = node_name + ": " + software_version + 
-                                    "\n\t\t\t\tThis project is funded by the African Engineering and Technology Network (Afretec)"
-                                    "\n\t\t\t\tInclusive Digital Transformation Research Grant Programme."
-                                    "\n\t\t\t\tWebsite: www.cssr4africa.org"
-                                    "\n\t\t\t\tThis program comes with ABSOLUTELY NO WARRANTY.";
+    std::string copyright_message =
+        " " + node_name + ": " + software_version +
+        "\n\t\t\t\tThis project is funded by the African Engineering and Technology Network (Afretec)"
+        "\n\t\t\t\tInclusive Digital Transformation Research Grant Programme."
+        "\n\t\t\t\tWebsite: www.cssr4africa.org"
+        "\n\t\t\t\tThis program comes with ABSOLUTELY NO WARRANTY.";
 
     ROS_INFO("%s", copyright_message.c_str());
 
-    ROS_INFO("%s: startup.", node_name.c_str());                                                    // Print the copyright message
+    ROS_INFO(" %s: startup.", node_name.c_str());                                                    // Print the copyright message
 
-    std::vector<std::string> testNames = extractTests("sensor");
-
-    // Check if required topics are available before running tests
-    for (const auto& test : testNames) {
-        std::string topic = extractTopic(test);
-        if (!topic.empty()) {
-            checkTopicAvailable(topic, nh);
-        }
-    }
+    std::vector<std::string> testNames = extractTests();
 
     std::string mode = extractMode();
 
@@ -167,5 +169,9 @@ int main(int argc, char **argv){
     }
 
     finalizeOutputFile(out_of, path);
+
+    // Give timers/logs a chance to flush if tests return immediately
+    ros::Duration(0.1).sleep();
+
     return 0;
 }
