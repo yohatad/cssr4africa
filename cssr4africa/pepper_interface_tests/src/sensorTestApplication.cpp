@@ -120,9 +120,13 @@
 */
 
 # include "pepper_interface_tests/sensorTestInterface.h"
+#include <X11/Xlib.h>
 
 /* Main function */
 int main(int argc, char **argv){
+
+    XInitThreads(); // To avoid potential X11 multithreading issues with OpenCV
+
     // Initialize the ROS node
     ros::init(argc, argv, "sensorTest");
     ros::NodeHandle nh;
