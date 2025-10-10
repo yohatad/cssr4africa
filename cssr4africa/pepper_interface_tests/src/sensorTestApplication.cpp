@@ -173,8 +173,6 @@ int main(int argc, char **argv){
     }
 
     finalizeOutputFile(out_of, path);
-
-    // Give timers/logs a chance to flush if tests return immediately
     ros::Duration(0.1).sleep();
 
     return 0;

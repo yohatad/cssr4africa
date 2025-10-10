@@ -43,6 +43,10 @@
 #include <unordered_set>
 #include <algorithm>
 #include <sstream>
+#include <mutex>
+#include <unordered_map>
+#include <condition_variable>
+
 
 #ifdef PEPPER_ROBOT
 #include <naoqi_driver/AudioCustomMsg.h>

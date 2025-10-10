@@ -1,9 +1,9 @@
-backSonar               false
-frontSonar              false
+backSonar               true
+frontSonar              true
 bottomCamera            false
-frontCamera             false
+frontCamera             true
 realsenseRGBCamera      true
-realsenseDepthCamera    false
+realsenseDepthCamera    true
 depthCamera             false
 stereoCamera            false
 laser                   false
