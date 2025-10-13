@@ -1,7 +1,7 @@
 /* sensorTestImplementation.cpp Implementation code to test the sensors of the Pepper robot using ROS interface.
 *
 * Author: Yohannes Tadesse Haile and Mihirteab Taye Hordofa
-* Date: September 25, 2025
+* Date: October 13, 2025
 * Version: v1.1
 *
 * Copyright (C) 2023 CSSR4Africa Consortium
