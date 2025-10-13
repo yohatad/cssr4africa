@@ -23,8 +23,14 @@ std::ofstream outputFile;
 int timeDuration = 10;
 std::string outputFilePath;
 
-#include <mutex>
-#include <unordered_map>
+
+// Global variables to handle the audio file 
+std::ofstream outAudio;
+int totalSamples = 0;
+std::string currentChannel = "rearLeft";
+
+// Global variables to handle the video file 
+bool saveVideo = true;
 
 struct WriterEntry {
     cv::VideoWriter writer;
@@ -146,13 +152,7 @@ static inline std::string toLower(std::string s) {
     return s;
 }
 
-// Global variables to handle the audio file 
-std::ofstream outAudio;
-int totalSamples = 0;
-std::string currentChannel = "rearLeft";
 
-// Global variables to handle the video file 
-bool saveVideo = true;
 
 void backSonar(ros::NodeHandle nh){
     /*
