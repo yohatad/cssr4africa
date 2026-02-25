@@ -15,7 +15,7 @@ pyaudio
 pytorch-lightning==1.9.5
 rospkg
 rospy
-sentencepiece==0.2.0
+sentencepiece==0.2.1
 scipy==1.10.1
 torch==2.4.1
 transformers==4.46.3
