@@ -158,7 +158,7 @@ generate_messages(
 
 catkin_package(
   # INCLUDE_DIRS include
-  INCLUDE_DIRS behaviorController gestureExecution overtAttention animateBehaviour
+  INCLUDE_DIRS behaviorController gestureExecution mapGeneration overtAttention animateBehaviour
   # LIBRARIES 
   LIBRARIES ${PROJECT_NAME}
   CATKIN_DEPENDS rospy std_msgs sensor_msgs cv_bridge geometry_msgs message_runtime utilities behaviortree_cpp
@@ -181,10 +181,12 @@ behaviorController/include
 animateBehaviour/include
 overAttention/include
 gestureExecution/include
+mapGeneration/include
   ${catkin_INCLUDE_DIRS}
 )
 add_subdirectory(animateBehaviour)
 add_subdirectory(gestureExecution)
 add_subdirectory(overtAttention)
 add_subdirectory(behaviorController)
+add_subdirectory(mapGeneration)
 
